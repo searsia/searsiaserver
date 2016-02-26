@@ -1,0 +1,60 @@
+{
+  "hits": [
+    {
+      "title": "FedWeb Greatest Hits",
+      "description": "FedWeb Greatest Hits Presenting the New Test Collection for Federated Web Searchby Thomas Demeester, Dolf Trieschnigg, Ke Zhou, Dong Nguyen, and Djoerd HiemstraThis paper presents FedWeb Greatest Hits, a large newtest collection for research in web information retrieval. As acombination and extension of the datasets used in the TRECFederated Web Search Track, this collection opens up newresearch possibilities [...] Wednesday, March 11th, 2015. Posted in Distributed Search",
+      "url": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/2015\/fedweb-greatest-hits.html"
+    },
+    {
+      "title": "Niek Tax graduates on scaling learning to rank to big data",
+      "description": "Niek Tax graduates on scaling learning to rank to big data Scaling Learning to Rank to Big Data: Using MapReduce to Parallelise Learning to Rankby Niek TaxLearning to rank is an increasingly important task within the scientific fields ofmachine learning and information retrieval, that comprises the use of machinelearning for the ranking task. New learning to rank methods are generally evaluated in terms of ranking accuracy [...] Tuesday, November 25th, 2014. Posted in Course Big Data",
+      "url": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/2014\/niek-tax-graduates-on-scaling-learning-to-rank-to-big-data.html"
+    },
+    {
+      "title": "SIGIR Call for Demos",
+      "description": "SIGIR Call for Demos ACM SIGIR is the major international forum for the presentation of new researchresults and for the demonstration of new systems and techniques forInformation Retrieval (IR). SIGIR 2015 will be held in Santiago, Chile on9-13 August 2015. The Conference and Program Chairs invite all thoseworking in areas related to IR to submit original proposals fordemonstrations.Demonstrations present [...] Monday, October 20th, 2014. Posted in Conference & Workshop",
+      "url": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/2014\/sigir-call-for-demos.html"
+    },
+    {
+      "title": "Workshop on Heterogeneous Information Access",
+      "description": "Workshop on Heterogeneous Information Access We organize a workshop on Heterogeneous Information Access hosted by the 8th International Conference on Web Search and Data Mining on 6 February 2015 in Shanghai, ChinaInvited speakers: Mounia Lalmas (Yahoo) and Milad Shokouhi, (Microsoft Research)Information access is becoming increasingly heterogeneous. Especiallywhen the user\u2019s information need is for exploratory purpose, returninga set of diverse [...] Tuesday, September 23rd, 2014. Posted in Distributed Search, Deep Web",
+      "url": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/2014\/workshop-on-heterogeneous-information-access.html"
+    },
+    {
+      "title": "The Importance of Prior Probabilities for Entry Page Search",
+      "description": "The Importance of Prior Probabilities for Entry Page Search by Wessel Kraaij, Thijs Westerveld, and Djoerd HiemstraAn important class of searches on the world-wide-web has the goalto find an entry page (homepage) of an organisation. Entry pagesearch is quite different from Ad Hoc search. Indeed a plain AdHoc system performs disappointingly. We explored three non-contentfeatures of web pages: page length, number of incoming links [...] Thursday, July 10th, 2014. Posted in Paper abstracts, Photos",
+      "url": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/2014\/the-importance-of-prior-probabilities-for-entry-page-search.html"
+    },
+    {
+      "title": "Cum laude PhD degree for Sergio Duarte Torres",
+      "description": "Cum laude PhD degree for Sergio Duarte Torres Sergio Duarte Torres\u2019 PhD defense last Friday February 14th resulted in a exceptional PhD degree cum laude. His PhD thesis: \u201cInformation Retrieval for Children: Search Behavior and Solutions\u201d was writtenat the Database Group as part of the European project PuppyIR, a joint project with amongst othersHuman Media Interaction. Sergio\u2019s research shows an extraordinary diversity and [...] Tuesday, February 18th, 2014. Posted in Photos, IR for children, PhD defense",
+      "url": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/2014\/cum-laude-phd-degree-for-sergio-duarte-torres.html"
+    },
+    {
+      "title": "Ilya Markov defends Phd thesis on Distributed Information Retrieval",
+      "description": "Ilya Markov defends Phd thesis on Distributed Information Retrieval Today, Ilya Markov successfully defended his PhD thesis at the Universit\u00c3  della Svizzera italiana in Lugano, Switzerland.Uncertainty in Distributed Information Retrievalby Ilya MarkovLarge amounts of available digital information call for distributed processing and managementsolutions. Distributed Information Retrieval (DIR), also known as FederatedSearch, provides techniques for performing retrieval over such distributed data. In particular,it studies approaches [...] Friday, January 31st, 2014. Posted in Distributed Search, PhD defense",
+      "url": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/2014\/ilya-markov-defends-phd-thesis-on-distributed-information-retrieval.html"
+    },
+    {
+      "title": "Celebrating Stephen Robertson\u2019s Retirement",
+      "description": "Celebrating Stephen Robertson\u2019s Retirement by Djoerd Hiemstra, John Tait, Andrew MacFarlane, and Nick BelkinStephen Robertson was named fellow of the Association for Computing Machinery (ACM) last week. Robertson retired from the Microsoft Research Lab in Cambridge this year after a long career as one of the most influential, well liked and eminent researchers in Information Retrieval throughout the [...] Friday, December 20th, 2013. Posted in Uncategorized",
+      "url": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/2013\/celebrating-stephen-robertsons-retirement.html"
+    },
+    {
+      "title": "Kien Tjin-Kam-Jet defends PhD thesis on Distributed Deep Web Search",
+      "description": "Kien Tjin-Kam-Jet defends PhD thesis on Distributed Deep Web Search Distributed Deep Web Searchby Kien Tjin-Kam-JetThe World Wide Web contains billions of documents (and counting); hence, it islikely that some document will contain the answer or content you are searchingfor. While major search engines like Bing and Google often manage to returnrelevant results to your query, there are plenty of situations in which they are [...] Thursday, December 19th, 2013. Posted in Distributed Search, Deep Web, PhD defense",
+      "url": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/2013\/kien-tjin-kam-jet-defends-phd-thesis-on-distributed-deep-web-search.html"
+    },
+    {
+      "title": "SSR",
+      "description": "SSR SIKS\/Twente Seminar on Searching and RankingTogether with SIKS and the CTIT we have organized several one day seminars, usually in conjunction with a PhD defense here in Twente. SSR-1: Searching and Ranking in Structured Text Repositories on 27 June 2008, with Debora Donato, and Ricardo Baeza-Yates, both from Yahoo! Research Barcelona SSR-2: Searching [...] Saturday, August 31st, 2013. Posted in Conference & Workshop, SIKS",
+      "url": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/2013\/ssr.html"
+    }
+  ],
+  "resource": {
+    "id": "nl.utwente.hiemstra",
+    "urltemplate": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/?s={q}",
+    "favicon": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/images\/ut.ico",
+    "name": "Djoerd Hiemstra"
+  }
+}
