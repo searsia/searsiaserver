@@ -66,9 +66,9 @@ public class TestResourceEngines {
     	Assert.assertTrue("No private parameters expected", e4.getJsonPrivateParameters() == null);
     	SearchEngine e6 = engines.get(newby().getId());
     	Assert.assertTrue("Private parameters expected", e6.getJsonPrivateParameters() != null);
-    	Assert.assertTrue("Top 1", engines.topValues(1).size() == 1);
-    	Assert.assertTrue("Top 2", engines.topValues(2).size() == 2);
-    	Assert.assertTrue("Top 3", engines.topValues(3).size() == 3);
+    	Assert.assertTrue("Top 1", engines.topValues("", 1).size() == 1);
+    	Assert.assertTrue("Top 2", engines.topValues(null, 2).size() == 2);
+    	Assert.assertTrue("Top 3", engines.topValues("anything", 3).size() == 3);
     }
 	
     @Test

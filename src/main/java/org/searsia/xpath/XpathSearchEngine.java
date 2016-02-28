@@ -26,6 +26,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -45,7 +46,6 @@ import org.jsoup.Jsoup;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
 import org.searsia.Hit;
 import org.searsia.SearchResult;
 
@@ -503,6 +503,24 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
 		}
 	}
 
+	public float score(String query) {
+		float score = 0.0f;
+		Map<String, Boolean> nameTerm = new HashMap<String, Boolean>();
+		String name = getName();
+		if (name != null && query != null) {
+			nameTerm.put(getId().toLowerCase(), true);
+    		for (String term: name.toLowerCase().split("[^0-9a-z]+")) {
+	    		nameTerm.put(term, true);
+		    }
+    		for (String term: query.toLowerCase().split("[^0-9a-z]+")) {
+	    		if (nameTerm.containsKey(term)) {
+	    		    score += 2.0f; // some arbitrary number	
+	    		}
+		    }
+         }
+		return score;
+	}
+	
 
 	@Override
 	public JSONObject toJson() {

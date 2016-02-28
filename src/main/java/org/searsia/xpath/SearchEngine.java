@@ -43,6 +43,7 @@ public interface SearchEngine {
     public String getBanner();
     public String getTestQuery();
     public float getPrior();
+    public float score(String query);
     public JSONObject toJson();
 	public JSONObject getJsonPrivateParameters();
 	public SearchResult search() throws SearchException;

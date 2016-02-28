@@ -20,9 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.logging.Logger;
@@ -236,27 +234,30 @@ public class ResourceEngines {
 	    }
 	}
 	
-	// Efficiency can be gained here:
-	public List<SearchEngine> topValues(int max) {
+	// Efficiency can be gained here?
+	public Map<String, Float> topValues(String queryString, int max) {
+        Float[] topScores = new Float[max];
 		SearchEngine[] topEngines = new SearchEngine[max];
 		int size = 0;
 		float lastScore = -99.0f;
 		for (SearchEngine engine: this.engines.values()) {
-		    float score = engine.getPrior();
+		    float score = engine.score(queryString) + engine.getPrior(); // TODO: add bias ?
 	        if (size < max || score > lastScore) {
 	            if (size < max) size++;
 	            int index = size - 1;
-	            while(index > 0 && topEngines[index - 1].getPrior() < score) {
+	            while(index > 0 && topScores[index - 1] < score) {
+	            	topScores[index]  = topScores[index - 1];
 	                topEngines[index] = topEngines[index - 1];
 	                index -= 1;
 	            }
+	            topScores[index] = score;
 	            topEngines[index] = engine;
-	            lastScore = topEngines[size - 1].getPrior();
+	            lastScore = topScores[size - 1];
 	        }
 		}
-		List<SearchEngine> result = new ArrayList<SearchEngine>();
+		Map<String, Float> result = new LinkedHashMap<String, Float>();
 		for (int i=0; i < size; i += 1) {
-			result.add(topEngines[i]);
+			result.put(topEngines[i].getId(), topScores[i]);
 		}
 		return result; 
 	}
@@ -287,5 +288,20 @@ public class ResourceEngines {
 		}
         return max;
 	}
-		
+	
+	/**
+	 *  Dumps the resource index to standard output.
+	 */
+	public void dump() {
+        for (SearchEngine engine: this.engines.values()) {
+            System.out.println(engine.toJson());	
+        }
+	}
+	
+	public void close() throws IOException {
+		this.writer.close();
+		this.motherId = null;
+		this.me = null;
+	}
+	
 }

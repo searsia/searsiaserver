@@ -96,9 +96,9 @@ public class SearchResult {
 			if (rid != null) {
 				float prior = 0.0f;
 				if (engines.containsKey(rid)) {
-    				prior = engines.get(rid).getPrior() * bias;
+    				prior = engines.get(rid).getPrior();
 				}
-    			float score = hit.getScore() + prior;
+    			float score = hit.getScore() * bias + prior;
 				Float max = maxScore.get(rid);
 				if (max == null || max < score) {
 					maxScore.put(rid, score);
@@ -115,14 +115,12 @@ public class SearchResult {
                 hit.setScore(score);    				
 			}
 		}
-    	for (SearchEngine engine: engines.topValues(25)) {
-    		String rid = engine.getId();
+		Map <String, Float> topEngines = engines.topValues(query, 10);
+    	for (String rid: topEngines.keySet()) {
 	   		if (!maxScore.containsKey(rid)) {
-				float prior = 0.0f;
-    			prior = engine.getPrior() * bias;
 	   	        Hit hit = new Hit();
 	            hit.put("rid", rid);
-	            hit.setScore(prior);
+	            hit.setScore(topEngines.get(rid));
 	            this.hits.add(hit);
 	   		}
 		}
