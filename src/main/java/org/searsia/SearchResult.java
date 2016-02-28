@@ -115,7 +115,7 @@ public class SearchResult {
                 hit.setScore(score);    				
 			}
 		}
-		Map <String, Float> topEngines = engines.topValues(query, 10);
+		Map <String, Float> topEngines = engines.topValues(query, 20);
     	for (String rid: topEngines.keySet()) {
 	   		if (!maxScore.containsKey(rid)) {
 	   	        Hit hit = new Hit();
