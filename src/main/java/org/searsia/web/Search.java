@@ -120,7 +120,7 @@ public class Search {
 						result.removeResourceRank();     // only trust your mother
 					}
 					json = result.toJson();                         // first json for response, so
-					result.addQueryResourceRank(query, engine.getId()); // response will not have query + resource
+					result.addQueryResourceRankDate(query, engine.getId()); // response will not have query + resource
 					queue.offer(result);  //  maybe do this AFTER the http response is sent:  https://jersey.java.net/documentation/latest/async.html (11.1.1)
 					json.put("resource", engine.toJson());
 					return SearsiaApplication.responseOk(json);

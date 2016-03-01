@@ -202,7 +202,7 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
 		String thisQuery = nextQuery;
 		nextQuery = null; // so, nextQuery will be null in case of an searchexception
 		SearchResult result = search(thisQuery);
-		result.addQueryResourceRank(thisQuery, getId()); // response will not have query + resource
+		result.addQueryResourceRankDate(thisQuery, getId()); // response will not have query + resource
 		nextQuery = result.randomTerm();
 		return result;
 	}

@@ -16,8 +16,11 @@
 
 package org.searsia;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,14 +28,14 @@ import java.util.Random;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-
 import org.searsia.index.ResourceEngines;
 import org.searsia.xpath.SearchEngine;
 
 public class SearchResult {
-	public final static String SEARSIA_MIME_TYPE     = "application/searsia+json";
-	public final static String SEARSIA_MIME_ENCODING = SEARSIA_MIME_TYPE + "; charset=utf-8";
-	private final static String TOKENIZER = "[^A-Za-z0-9]+";
+	public  static final String SEARSIA_MIME_TYPE     = "application/searsia+json";
+	public  static final String SEARSIA_MIME_ENCODING = SEARSIA_MIME_TYPE + "; charset=utf-8";
+	private static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	private static final String TOKENIZER = "[^A-Za-z0-9]+";
 	private List<Hit> hits;
 	private SearchEngine resource;
 	private Random random;
@@ -65,12 +68,13 @@ public class SearchResult {
 	}
 	
 	// TODO: maybe a list of query-resource pairs, if result found by multiple engines for multiple queries.
-	public void addQueryResourceRank(String query, String resourceID) {
+	public void addQueryResourceRankDate(String query, String resourceID) {
 		int rank = 1;
 		for (Hit hit: this.hits) {
 			hit.putIfEmpty("query", query);
 			hit.putIfEmpty("rid", resourceID);  // TODO: if unknown rid, then replace!
 			hit.putIfEmpty("rank", rank++);
+			hit.putIfEmpty("time", df.format(new Date()));
 		}
 	}
 	

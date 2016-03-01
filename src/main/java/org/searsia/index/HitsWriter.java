@@ -19,8 +19,8 @@ package org.searsia.index;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.logging.Logger;
 
+import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -108,7 +108,7 @@ public class HitsWriter implements Runnable {
             addSearchResult(result);
         } 
         this.indexWriter.commit();
-        LOGGER.info("Flushed cache to index.");
+        LOGGER.info("{\"message\":\"Flushed cache to index.\"}");
     }
     
     public boolean check() throws IOException {
