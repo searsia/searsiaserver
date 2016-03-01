@@ -34,7 +34,7 @@ import org.searsia.xpath.SearchEngine;
 public class SearchResult {
 	public  static final String SEARSIA_MIME_TYPE     = "application/searsia+json";
 	public  static final String SEARSIA_MIME_ENCODING = SEARSIA_MIME_TYPE + "; charset=utf-8";
-	private static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	private static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
 	private static final String TOKENIZER = "[^A-Za-z0-9]+";
 	private List<Hit> hits;
 	private SearchEngine resource;
@@ -74,7 +74,7 @@ public class SearchResult {
 			hit.putIfEmpty("query", query);
 			hit.putIfEmpty("rid", resourceID);  // TODO: if unknown rid, then replace!
 			hit.putIfEmpty("rank", rank++);
-			hit.putIfEmpty("time", df.format(new Date()));
+			hit.putIfEmpty("foundBefore", df.format(new Date()));
 		}
 	}
 	
