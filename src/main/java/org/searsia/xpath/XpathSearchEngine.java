@@ -26,18 +26,19 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -51,11 +52,16 @@ import org.searsia.SearchResult;
 
 public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine> {
 
-    private final static Logger LOGGER = Logger.getLogger(XpathSearchEngine.class.getName());
     public final static String defaultTestQuery = "searsia";
+    private final static Logger LOGGER = Logger.getLogger(XpathSearchEngine.class.getName());
+
+    // For rate limiting: Default = 1000 queries per day
+    private final static int defaultRATE = 1000;    // unit: queries
+    private final static int defaultPER = 86400000; // unit: miliseconds (86400000 miliseconds is one day)
     
 	// TODO: private static final Pattern queryPattern = Pattern.compile("\\{q\\??\\}");
-	
+
+    // data to be set by setters
 	private String id = null;
 	private String name = null;
 	private String urlAPITemplate = null;
@@ -66,13 +72,19 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
     private String banner = null;
 	private String itemXpath = null;
 	private String testQuery = defaultTestQuery;
-	private String nextQuery = null;
 	private List<TextExtractor> extractors = new ArrayList<>();
 	private Map<String, String> headers     = new LinkedHashMap<>();
 	private Map<String, String> privateParameters = new LinkedHashMap<>();
 	private Float prior = null;
 	private String rerank = null;
-	
+	private int rate = defaultRATE;
+
+	// internal data not to be shared
+	private String nextQuery = null;
+	private double allowance = defaultRATE / 2;
+	private long lastCheck = new Date().getTime(); // Unix time
+
+
 	public XpathSearchEngine(String urlAPITemplate, String id) {
 		this.urlAPITemplate = urlAPITemplate;
 		this.id = id;
@@ -100,6 +112,7 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
 		if (jo.has("banner"))      this.banner          = jo.getString("banner");
 		if (jo.has("itempath"))    this.itemXpath       = jo.getString("itempath");
 		if (jo.has("prior"))       this.prior           = new Float(jo.getDouble("prior"));
+		if (jo.has("maxqueriesperday")) this.rate       = jo.getInt("maxqueriesperday");
 		if (jo.has("extractors")) {
 			JSONObject json = (JSONObject) jo.get("extractors");
 			Iterator<?> keys = json.keys();
@@ -184,6 +197,10 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
 
 	public void setPrior(float prior) {
 		this.prior = prior;
+	}
+	
+	public void setRate(int maxQueriesPerDay) {
+		this.rate = maxQueriesPerDay;
 	}
 
 	public void setRerank(String rerank) {
@@ -280,7 +297,7 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
     		    XpathSearchEngine engine = new XpathSearchEngine(json.getJSONObject("resource"));
     		    result.setResource(engine);
 			} catch (XPathExpressionException e) {
-    			LOGGER.warning("Warning: " + e.getMessage());
+    			LOGGER.warn("Warning: " + e.getMessage());
     		}
 		}
 		return result;
@@ -314,7 +331,7 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
     		try {
 				extractor.extract(item, hit);
 			} catch (XPathExpressionException e) {
-				LOGGER.warning(e.getMessage()); // TODO: handle this gracefully :-)
+				LOGGER.warn(e.getMessage()); // TODO: handle this gracefully :-)
 			}
     	}
 		return hit;
@@ -359,13 +376,35 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
    		}
         return new SearchException(message);
 	}
-
+    
+    /**
+     * Rate limiting based on:
+     * http://stackoverflow.com/questions/667508/whats-a-good-rate-limiting-algorithm
+     */
+    private boolean rateLimitReached() {
+        Long now = new Date().getTime();
+        Long timePassed = now - this.lastCheck;
+        this.lastCheck = now;
+        this.allowance += (((double) timePassed / defaultPER)) * this.rate;
+        if (this.allowance > this.rate) { 
+        	this.allowance = this.rate;
+        } 
+        if (this.allowance > 1) {
+        	this.allowance -= 1;
+        	return false;
+        } else {
+      	    return true;
+        }
+    }
 
     // TODO refactor, waaay too big:
 	private String getCompleteWebPage(String urlString, String postString, Map<String, String> headers) throws IOException {
-        URL url = new URL(urlString);	
+        if (rateLimitReached()) {
+        	throw new IOException("Rate limited");
+        }
+		URL url = new URL(urlString);	
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestProperty("User-Agent", "Searsia/0.1");
+        connection.setRequestProperty("User-Agent", "Searsia/0.3");
         connection.setRequestProperty("Accept", this.mimeType); //TODO: "*/*"
         connection.setRequestProperty("Accept-Language", "en-US,en;q=0.5"); // TODO: from browser?
         for (Map.Entry<String, String> entry : headers.entrySet()) {
@@ -403,17 +442,11 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
                 page.append(inputLine);
             }
             in.close();
-            /*
-            for (int i=0; ; i++) {
-                String name = connection.getHeaderFieldKey(i);
-                String value = connection.getHeaderField(i);
-                if (name == null && value == null) break; 
-                metaData.put(name, value);
-            }*/
         }
         return page.toString();
     }
-	
+
+
 	@Override
 	public String getId() {
 		return this.id;
@@ -494,6 +527,10 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
 		}
 	}
 
+	public int getRate() {
+		return this.rate;
+	}
+	
 	@Override
 	public float getPrior() {
 		if (this.prior == null) {
@@ -536,6 +573,7 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
 		if (postString != null)      engine.put("post", postString);
 		if (testQuery != null)       engine.put("testquery", testQuery);
 		if (prior != null)           engine.put("prior", prior);
+		if (rate != defaultRATE)     engine.put("maxqueriesperday", rate);
 		if (itemXpath != null)       engine.put("itempath", itemXpath);
 		if (extractors != null && extractors.size() > 0) {
 			JSONObject json = new JSONObject();
@@ -568,6 +606,7 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
     	if (!stringEquals(this.getItemXpath(), e.getItemXpath())) return false;
     	if (!stringEquals(this.getUrlAPITemplate(), e.getUrlAPITemplate())) return false;
     	if (!stringEquals(this.getUrlUserTemplate(), e.getUrlUserTemplate())) return false;
+    	if (this.getRate() != e.getRate()) return false;
         if (Math.abs(this.getPrior() - e.getPrior()) > 0.0001f) return false;
     	if (!listEquals(this.getExtractors(), e.getExtractors())) return false; 
     	if (!mapEquals(this.getHeaders(), e.getHeaders())) return false; 

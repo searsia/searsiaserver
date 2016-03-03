@@ -24,6 +24,7 @@ public class XpathSearchEngineTest {
 		hiemstra.addPrivateParameter("apikey", SECRET_API_KEY);
 		hiemstra.addHeader("User-Agent", "Test/1.0");
 		hiemstra.setPrior(0.3f);
+		hiemstra.setRate(133);
         hiemstra.setMimeType("text/html");
         hiemstra.setRerank("lm");
         hiemstra.setFavicon("http://wwwhome.cs.utwente.nl/~hiemstra/images/ut.ico");
@@ -104,6 +105,7 @@ public class XpathSearchEngineTest {
 		Assert.assertEquals("itempath", se1.getItemXpath(), se2.getItemXpath());
 		Assert.assertEquals("testquery", se1.getTestQuery(), se2.getTestQuery());
 		Assert.assertEquals("prior", se1.getPrior(), se2.getPrior(), 0.0001d);
+		Assert.assertEquals("maxqueriesperday", se1.getRate(), se2.getRate());
 		Assert.assertEquals("extractors", se1.getExtractors().size(), se2.getExtractors().size());
 		Assert.assertEquals("headers", se1.getHeaders().size(), se2.getHeaders().size());
 		Assert.assertEquals("post", se1.getPostString(), se2.getPostString());
