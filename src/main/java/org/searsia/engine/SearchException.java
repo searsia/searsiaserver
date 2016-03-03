@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.searsia.xpath;
+package org.searsia.engine;
 
 
 public class SearchException extends Exception {

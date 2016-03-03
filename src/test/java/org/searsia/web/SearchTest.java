@@ -19,9 +19,7 @@ import org.searsia.index.HitsSearcher;
 import org.searsia.index.HitsWriter;
 import org.searsia.index.ResourceEngines;
 import org.searsia.web.Search;
-import org.searsia.xpath.SearchEngine;
-import org.searsia.xpath.XpathSearchEngine;
-
+import org.searsia.engine.SearchEngine;
 
 public class SearchTest {
 
@@ -36,15 +34,15 @@ public class SearchTest {
     private static HitsWriter writer;
     
     private static SearchEngine utwente() {
-    	return new XpathSearchEngine("http://search.utwente.nl/searsia/search.php?q={q?}&r={r?}", "utwente");
+    	return new SearchEngine("http://search.utwente.nl/searsia/search.php?q={q?}&r={r?}", "utwente");
     }
  
     private static SearchEngine wrong() {
-    	return new XpathSearchEngine("http://searsia.com/doesnotexist?q={q}", "wrong");
+    	return new SearchEngine("http://searsia.com/doesnotexist?q={q}", "wrong");
     }
     
     private static SearchEngine me() {
-    	return new XpathSearchEngine("http://me.org?q={q}");
+    	return new SearchEngine("http://me.org?q={q}");
     }
     
     

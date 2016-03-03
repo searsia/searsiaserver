@@ -29,7 +29,7 @@ import java.util.Random;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.searsia.index.ResourceEngines;
-import org.searsia.xpath.SearchEngine;
+import org.searsia.engine.SearchEngine;
 
 public class SearchResult {
 	public  static final String SEARSIA_MIME_TYPE     = "application/searsia+json";

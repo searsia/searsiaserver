@@ -30,8 +30,7 @@ import org.json.JSONObject;
 
 import org.searsia.SearchResult;
 import org.searsia.index.ResourceEngines;
-import org.searsia.xpath.SearchEngine;
-import org.searsia.xpath.XpathSearchEngine;
+import org.searsia.engine.SearchEngine;
 
 /**
  * Enables on-line updates, only if --open set in the options.
@@ -97,7 +96,7 @@ public class Update {
 			if (!id.equals(jsonResource.get("id"))) {
 				return SearsiaApplication.responseError(400, "Conflicting id's");
 			}
-    		engine = new XpathSearchEngine(jsonResource);
+    		engine = new SearchEngine(jsonResource);
 		} catch (Exception e) {
 			return SearsiaApplication.responseError(400, e.getMessage());
 		}
@@ -138,7 +137,7 @@ public class Update {
 		    		if (engine.getBanner() == null) { engine.setBanner(resource.getBanner()); }
 			    	if (engine.getFavicon() == null) { engine.setFavicon(resource.getFavicon()); }
 				    if (engine.getRerank() == null) { engine.setRerank(resource.getRerank()); }
-    				if (engine.getTestQuery().equals(XpathSearchEngine.defaultTestQuery)) { engine.setTestQuery(resource.getTestQuery()); } // awkward if the user typed 'searsia'
+    				if (engine.getTestQuery().equals(SearchEngine.defaultTestQuery)) { engine.setTestQuery(resource.getTestQuery()); } // awkward if the user typed 'searsia'
 	    		}
 		    } catch (Exception e) {
 			    // nothing

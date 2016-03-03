@@ -35,8 +35,8 @@ import org.json.JSONObject;
 import org.searsia.SearchResult;
 import org.searsia.index.HitsSearcher;
 import org.searsia.index.ResourceEngines;
-import org.searsia.xpath.SearchEngine;
-import org.searsia.xpath.SearchException;
+import org.searsia.engine.SearchEngine;
+import org.searsia.engine.SearchException;
 
 /**
  * Generates json response for search.

@@ -8,8 +8,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.searsia.index.ResourceEngines;
-import org.searsia.xpath.SearchEngine;
-import org.searsia.xpath.XpathSearchEngine;
+import org.searsia.engine.SearchEngine;
 
 public class TestResourceEngines {
 	
@@ -31,26 +30,26 @@ public class TestResourceEngines {
     }
      
     private static SearchEngine utwente() {
-    	SearchEngine e = new XpathSearchEngine("http://utwente.nl/search?q={q}", "567");
+    	SearchEngine e = new SearchEngine("http://utwente.nl/search?q={q}", "567");
     	e.setName("UT");
     	return e;
     }
     
     private static SearchEngine searsia() {
-    	SearchEngine e = new XpathSearchEngine("http://searsia.com/?q={q}", "1234");
+    	SearchEngine e = new SearchEngine("http://searsia.com/?q={q}", "1234");
     	e.addPrivateParameter("api", "topsecret");
     	return e;
     }
     
     private static SearchEngine newby() {
-    	SearchEngine e = new XpathSearchEngine("http://new.com/?q={q}");
+    	SearchEngine e = new SearchEngine("http://new.com/?q={q}");
     	e.changeId("890");
     	e.addPrivateParameter("apikey", "secret");
     	return e;
     }
     
     private static SearchEngine me() {
-    	SearchEngine e = new XpathSearchEngine("http://me.org");
+    	SearchEngine e = new SearchEngine("http://me.org");
     	e.setName("Me");
     	return e;
     }

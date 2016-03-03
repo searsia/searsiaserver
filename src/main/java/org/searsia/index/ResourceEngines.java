@@ -45,8 +45,7 @@ import org.apache.lucene.util.Version;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import org.searsia.xpath.SearchEngine;
-import org.searsia.xpath.XpathSearchEngine;
+import org.searsia.engine.SearchEngine;
 
 /**
  * Stores resources in a Lucene index
@@ -97,7 +96,7 @@ public class ResourceEngines {
 		SearchEngine me = null;
 		try {
 			JSONObject json = new JSONObject(content);
-			me = new XpathSearchEngine(json);
+			me = new SearchEngine(json);
 		} catch (javax.xml.xpath.XPathExpressionException e) {
 			throw new IOException(e);
 		}
@@ -120,7 +119,7 @@ public class ResourceEngines {
             for (ScoreDoc hit: hits) {
                 Document doc = searcher.doc(hit.doc);
                 JSONObject json = new JSONObject(doc.get("json"));
-                SearchEngine engine = new XpathSearchEngine(json);
+                SearchEngine engine = new SearchEngine(json);
                 this.engines.put(engine.getId(), engine);
             }
         } catch (javax.xml.xpath.XPathExpressionException e) {

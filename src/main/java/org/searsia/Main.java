@@ -39,9 +39,8 @@ import org.searsia.index.HitsSearcher;
 import org.searsia.index.HitsWriter;
 import org.searsia.index.ResourceEngines;
 import org.searsia.web.SearsiaApplication;
-import org.searsia.xpath.SearchEngine;
-import org.searsia.xpath.SearchException;
-import org.searsia.xpath.XpathSearchEngine;
+import org.searsia.engine.SearchEngine;
+import org.searsia.engine.SearchException;
 
 
 /**
@@ -179,8 +178,8 @@ public class Main {
     	String motherTemplate = options.getMotherTemplate();
     	SearchEngine mother = null;
         SearchResult result = null;
-    	if (motherTemplate != null) { 
-        	mother = new XpathSearchEngine(motherTemplate);
+	if (motherTemplate != null) {
+        	mother = new SearchEngine(motherTemplate);
     	    try {
                	result = mother.search();
          	} catch (SearchException e) {
@@ -211,10 +210,10 @@ public class Main {
         SearchEngine me = null;
         String myId = options.getMyName();
         if (myId == null) {
-        	me = new XpathSearchEngine(myTemplate);
+        	me = new SearchEngine(myTemplate);
         	myId = me.getId();
         } else {
-        	me = new XpathSearchEngine(myTemplate, myId);
+        	me = new SearchEngine(myTemplate, myId);
         }
         String prefix;
     	if (motherTemplate != null) {

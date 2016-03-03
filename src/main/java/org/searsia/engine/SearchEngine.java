@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.searsia.xpath;
+package org.searsia.engine;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -50,10 +50,10 @@ import org.w3c.dom.NodeList;
 import org.searsia.Hit;
 import org.searsia.SearchResult;
 
-public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine> {
+public class SearchEngine implements Comparable<SearchEngine> {
 
     public final static String defaultTestQuery = "searsia";
-    private final static Logger LOGGER = Logger.getLogger(XpathSearchEngine.class.getName());
+    private final static Logger LOGGER = Logger.getLogger(SearchEngine.class.getName());
 
     // For rate limiting: Default = 1000 queries per day
     private final static int defaultRATE = 1000;    // unit: queries
@@ -85,7 +85,7 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
 	private long lastCheck = new Date().getTime(); // Unix time
 
 
-	public XpathSearchEngine(String urlAPITemplate, String id) {
+	public SearchEngine(String urlAPITemplate, String id) {
 		this.urlAPITemplate = urlAPITemplate;
 		this.id = id;
 		this.name = null;
@@ -93,11 +93,11 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
 		this.testQuery = defaultTestQuery;
 	}
 	
-	public XpathSearchEngine(String urlAPITemplate) {
+	public SearchEngine(String urlAPITemplate) {
 		this(urlAPITemplate, getHashString(urlAPITemplate));
 	}
 	
-	public XpathSearchEngine(JSONObject jo) throws XPathExpressionException, JSONException {	
+	public SearchEngine(JSONObject jo) throws XPathExpressionException, JSONException {	
 		this.mimeType = SearchResult.SEARSIA_MIME_TYPE;
 		this.testQuery = defaultTestQuery;
 		if (jo.has("id"))          this.id              = jo.getString("id");
@@ -211,7 +211,6 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
     	this.id = id;			
 	}	
 
-	@Override
 	public SearchResult randomSearch() throws SearchException {
 		if (nextQuery == null) {
 			nextQuery = testQuery;
@@ -225,7 +224,6 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
 	}
 
 	
-	@Override
 	public SearchResult search(String query) throws SearchException {
 		try {
 			String url = createUrl(this.urlAPITemplate, query);		
@@ -265,18 +263,18 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
 	}
 
 	
-	public XpathSearchEngine searchResource(String resourceid) throws SearchException {
+	public SearchEngine searchResource(String resourceid) throws SearchException {
 		if (!this.mimeType.equals(SearchResult.SEARSIA_MIME_TYPE)) {
 			throw new SearchException("Resource is not a searsia engine: " + resourceid);
 		}
 		try {
-			XpathSearchEngine engine = null;
+			SearchEngine engine = null;
     		String url = this.urlAPITemplate.replaceAll("\\{r\\??\\}", URLEncoder.encode(resourceid, "UTF-8"));
             url = url.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", ""); // remove optional parameters 
        		String jsonPage = getCompleteWebPage(url, this.postString, this.headers);
     		JSONObject json = new JSONObject(jsonPage);
     		if (json.has("resource")) {
-        		engine = new XpathSearchEngine(json.getJSONObject("resource"));
+        		engine = new SearchEngine(json.getJSONObject("resource"));
     		}
             return engine;
 		} catch (Exception e) {
@@ -294,7 +292,7 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
 		}
 		if (json.has("resource")) {
 			try {
-    		    XpathSearchEngine engine = new XpathSearchEngine(json.getJSONObject("resource"));
+    		    SearchEngine engine = new SearchEngine(json.getJSONObject("resource"));
     		    result.setResource(engine);
 			} catch (XPathExpressionException e) {
     			LOGGER.warn("Warning: " + e.getMessage());
@@ -447,37 +445,30 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
     }
 
 
-	@Override
 	public String getId() {
 		return this.id;
 	}
 	
-	@Override
 	public String getMD5() {
 		return getHashString(this.urlAPITemplate);
 	}
 	
-	@Override
 	public String getName() {
 		return this.name;
 	}
 	
-	@Override
 	public String getUrlUserTemplate() {
 		return this.urlUserTemplate;
 	}	
 
-	@Override
 	public String getAPIUserTemplate() {
 		return this.urlAPITemplate;
 	}	
 
-	@Override
 	public String getMimeType() {
 		return this.mimeType;
 	}
 
-	@Override
 	public String getFavicon() {
 		return this.favicon;
 	}
@@ -486,7 +477,6 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
 		return this.banner;
 	}
 
-	@Override
 	public String getTestQuery() {
 		return this.testQuery;
 	}
@@ -531,7 +521,6 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
 		return this.rate;
 	}
 	
-	@Override
 	public float getPrior() {
 		if (this.prior == null) {
 			return 0.0f; 
@@ -559,7 +548,6 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
 	}
 	
 
-	@Override
 	public JSONObject toJson() {
 		JSONObject engine = new JSONObject();
 		if (id != null)              engine.put("id", id);
@@ -595,7 +583,7 @@ public class XpathSearchEngine implements SearchEngine, Comparable<SearchEngine>
     @Override
     public boolean equals(Object o) {  // TODO: AARGH, can't this be done simpler?
     	if (o == null) return false;
-    	XpathSearchEngine e = (XpathSearchEngine) o;
+    	SearchEngine e = (SearchEngine) o;
     	if (!stringEquals(this.getId(), e.getId())) return false;
     	if (!stringEquals(this.getName(), e.getName())) return false;
     	if (!stringEquals(this.getMimeType(), e.getMimeType())) return false;

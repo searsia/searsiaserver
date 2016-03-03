@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.searsia.xpath;
+package org.searsia.engine;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
