@@ -75,7 +75,7 @@ public class SearsiaOptions {
         pollInterval   = 120;
         logLevel       = 2;
         myURI          = "http://localhost:16842/searsia/";
-        motherTemplate = "http://search.utwente.nl/searsia/search?q={q?}&r={r?}";
+        motherTemplate = "https://search.utwente.nl/searsia/search?q={q?}&r={r?}";
         indexPath      = friendlyIndexPath();
         myName         = null;
     }

@@ -76,7 +76,7 @@ public class Update {
 
 	/**
 	 * Updates the engines database with a new resource. Test with:
-	 * curl -X PUT -H 'Content-Type: application/searsia+json; charset=UTF-8' http://localhost:16842/searsia/update/2 -d '{"resource":{"id":"2", "apitemplate":"http://search.utwente.nl/searsia/suggestions.php?q={q}", "testquery":"osiris"}}'
+	 * curl -X PUT -H 'Content-Type: application/searsia+json; charset=UTF-8' http://localhost:16842/searsia/update/2 -d '{"resource":{"id":"2", "apitemplate":"https://search.utwente.nl/searsia/suggestions.php?q={q}", "testquery":"osiris"}}'
 	 * 
 	 * @param id engine identifier
 	 * @param headers http headers

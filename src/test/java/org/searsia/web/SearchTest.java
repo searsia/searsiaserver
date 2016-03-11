@@ -34,7 +34,7 @@ public class SearchTest {
     private static HitsWriter writer;
     
     private static SearchEngine utwente() {
-    	return new SearchEngine("http://search.utwente.nl/searsia/search.php?q={q?}&r={r?}", "utwente");
+    	return new SearchEngine("https://search.utwente.nl/searsia/search.php?q={q?}&r={r?}", "utwente");
     }
  
     private static SearchEngine wrong() {
