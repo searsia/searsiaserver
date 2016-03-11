@@ -46,7 +46,7 @@ import org.searsia.SearchResult;
 public class HitsWriter implements Runnable {
 
     public static final Hit SEARSIA_HIT = 
-      new Hit("Searsia", "Search for noobs", "http://searsia.org", "http://searsia.org/images/search.png");
+      new Hit("Searsia", "Search for noobs", "http://searsia.org", "http://searsia.org/images/searsia.png");
     private final static Logger LOGGER = Logger.getLogger(HitsWriter.class.getName());
 
     private ArrayBlockingQueue<SearchResult> queue;
