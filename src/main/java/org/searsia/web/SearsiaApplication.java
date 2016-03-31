@@ -25,7 +25,6 @@ import javax.ws.rs.core.Response;
 
 import org.glassfish.jersey.server.ResourceConfig;
 import org.json.JSONObject;
-
 import org.searsia.SearchResult;
 import org.searsia.index.HitsSearcher;
 import org.searsia.index.ResourceEngines;
@@ -37,7 +36,7 @@ import org.searsia.index.ResourceEngines;
  */
 public class SearsiaApplication extends ResourceConfig {
 	
-	public static final String VERSION = "v0.3.0";
+	public static final String VERSION = "v0.3.1";
 	
 	protected static Response responseOk(JSONObject json) {
 		json.put("searsia", VERSION);
@@ -58,6 +57,15 @@ public class SearsiaApplication extends ResourceConfig {
 				.build();
 	}
 	
+	protected static Response jsonResponse(int status, JSONObject json) {
+		json.put("searsia", VERSION);
+		return  Response
+				.status(status)
+				.entity(json.toString())
+				.header("Access-Control-Allow-Origin", "*")
+				.build();
+	}
+
 	public SearsiaApplication(ArrayBlockingQueue<SearchResult> queue, HitsSearcher searcher, ResourceEngines engines, Boolean openWide) throws IOException {
 		super();
     	Logger.getLogger("org.glassfish.grizzly").setLevel(Level.WARNING);

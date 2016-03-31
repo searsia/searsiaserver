@@ -225,6 +225,11 @@ public class SearchEngine implements Comparable<SearchEngine> {
 
 	
 	public SearchResult search(String query) throws SearchException {
+        return search(query, false);
+	}
+
+
+	public SearchResult search(String query, boolean debug) throws SearchException {
 		try {
 			String url = createUrl(this.urlAPITemplate, query);		
 			String postString = "";
@@ -236,7 +241,7 @@ public class SearchEngine implements Comparable<SearchEngine> {
             if (this.mimeType != null && this.mimeType.equals(SearchResult.SEARSIA_MIME_TYPE)) {
             	result = searsiaSearch(page);
             } else {
-            	result = xpathSearch(url, page);
+            	result = xpathSearch(url, page, debug);
             }
             if (this.rerank != null && query != null) {
                 result.scoreReranking(query, this.rerank);
@@ -301,8 +306,8 @@ public class SearchEngine implements Comparable<SearchEngine> {
 		return result;
 	}
 	
-	
-	private SearchResult xpathSearch(String url, String page)
+
+	private SearchResult xpathSearch(String url, String page, boolean debug)
 			throws IOException, XPathExpressionException {
 		Document document;
 		if (this.mimeType != null && this.mimeType.equals("application/json")) {
@@ -313,6 +318,9 @@ public class SearchEngine implements Comparable<SearchEngine> {
 		    document = parseDocumentHTML(page, url);
 		}	
 		SearchResult result = new SearchResult();
+		if (debug) {
+			result.setXmlOut(DOMBuilder.DOM2String(document));
+		}
 		XPathFactory xFactory = XPathFactory.newInstance();
 		XPath xpath = xFactory.newXPath();
 		NodeList xmlNodeList = (NodeList) xpath.evaluate(itemXpath, document, XPathConstants.NODESET);

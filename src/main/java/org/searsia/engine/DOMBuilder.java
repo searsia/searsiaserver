@@ -17,12 +17,19 @@
 package org.searsia.engine;
 
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -53,6 +60,22 @@ public class DOMBuilder {
       throw new RuntimeException(e);
     }
     return document;
+  }
+
+  
+  public static String DOM2String(Document document) {
+      TransformerFactory tf = TransformerFactory.newInstance();
+      Transformer transformer;
+      try {
+          transformer = tf.newTransformer();
+          transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+          StringWriter writer = new StringWriter();
+          transformer.transform(new DOMSource(document), new StreamResult(writer));
+          String output = writer.getBuffer().toString();
+          return output;
+      } catch (TransformerException e) {
+      }
+      return null;  
   }
 
 

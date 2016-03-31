@@ -37,18 +37,22 @@ public class SearchResult {
 	private static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
 	private static final String TOKENIZER = "[^A-Za-z0-9]+";
 	private List<Hit> hits;
-	private SearchEngine resource;
 	private Random random;
+	private SearchEngine resource;
+	private String xmlOut;
 	
 	public SearchResult() {
-		this.hits = new ArrayList<Hit>();
-		this.random = new Random();
+		this(null);
 	}
 	
 	public SearchResult(Hit hit) {
 		this.hits = new ArrayList<Hit>();
 		this.random = new Random();
-		this.hits.add(hit);
+		this.resource = null;
+		this.xmlOut = null;
+		if (hit != null) {
+			this.hits.add(hit);
+		}
 	}
 	
 	public List<Hit> getHits() {
@@ -65,6 +69,14 @@ public class SearchResult {
 	
 	public SearchEngine getResource() {
 		return this.resource;
+	}
+	
+	public void setXmlOut(String xmlOut) {
+		this.xmlOut = xmlOut;
+	}
+	
+	public String getXmlOut() {
+		return this.xmlOut;
 	}
 	
 	// TODO: maybe a list of query-resource pairs, if result found by multiple engines for multiple queries.

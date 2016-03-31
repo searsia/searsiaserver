@@ -16,6 +16,8 @@
 
 package org.searsia.web;
 
+import java.util.List;
+
 import javax.ws.rs.DELETE;
 import javax.ws.rs.OPTIONS;
 import javax.ws.rs.PUT;
@@ -27,7 +29,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 import org.json.JSONObject;
-
+import org.searsia.Hit;
 import org.searsia.SearchResult;
 import org.searsia.index.ResourceEngines;
 import org.searsia.engine.SearchEngine;
@@ -48,9 +50,8 @@ public class Update {
 		this.engines = engines;
 		this.wideOpen = wideOpen;
 	}
-	
-	
-	
+		
+
 	private JSONObject getJSONResource(String postString, HttpHeaders headers) {
 		JSONObject jsonResource = null;
 		String contentType = headers.getHeaderString("Content-Type").toLowerCase();
@@ -103,15 +104,26 @@ public class Update {
 		SearchResult result = null;
     	updateEngine(engine);
 		try {			
-			result = engine.search(engine.getTestQuery());
+			result = engine.search(engine.getTestQuery(), true); // debug = true
 		} catch (Exception e) {
 			return SearsiaApplication.responseError(503, "Resource unavailable: " + e.getMessage());
 		}
-		if (result == null || result.getHits().size() == 0) {
-			return SearsiaApplication.responseError(405, "No results for test query: '" + engine.getTestQuery() + "'" );
-		}
 		JSONObject jsonOutput = result.toJson();
 		jsonOutput.put("resource", engine.toJson());
+		jsonOutput.put("debug", result.getXmlOut());
+		List<Hit> hits = result.getHits();
+		if (result == null || hits.size() == 0) {
+			jsonOutput.put("error", "No results for test query: '" + engine.getTestQuery() + "'" );
+			return SearsiaApplication.jsonResponse(405, jsonOutput);
+		} else {
+			for (Hit hit: hits) {
+			    if (hit.getTitle() == null) {
+					jsonOutput.put("error", "Search result without title for query: '" + engine.getTestQuery() + "'");
+					return SearsiaApplication.jsonResponse(405, jsonOutput);
+			    }
+			    break; // check only first
+			}
+		}
 		try {
 			engines.put(engine);
 		} catch (Exception e) {
