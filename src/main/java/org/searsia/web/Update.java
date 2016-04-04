@@ -108,6 +108,7 @@ public class Update {
 		} catch (Exception e) {
 			return SearsiaApplication.responseError(503, "Resource unavailable: " + e.getMessage());
 		}
+		
 		JSONObject jsonOutput = result.toJson();
 		jsonOutput.put("resource", engine.toJson());
 		jsonOutput.put("debug", result.getXmlOut());
@@ -115,6 +116,7 @@ public class Update {
 		if (result == null || hits.size() == 0) {
 			jsonOutput.put("error", "No results for test query: '" + engine.getTestQuery() + "'" );
 			return SearsiaApplication.jsonResponse(405, jsonOutput);
+			//return SearsiaApplication.responseError(405, "No results for test query: '" + engine.getTestQuery() + "'" );
 		} else {
 			for (Hit hit: hits) {
 			    if (hit.getTitle() == null) {

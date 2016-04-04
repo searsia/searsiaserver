@@ -316,7 +316,10 @@ public class SearchEngine implements Comparable<SearchEngine> {
 		    document = parseDocumentXML(page);
 		} else {
 		    document = parseDocumentHTML(page, url);
-		}	
+		}
+		if (document == null) {
+			throw new IOException("Error parsing document. Wrong mimetype?");
+		}
 		SearchResult result = new SearchResult();
 		if (debug) {
 			result.setXmlOut(DOMBuilder.DOM2String(document));
@@ -354,12 +357,13 @@ public class SearchEngine implements Comparable<SearchEngine> {
         	jsonString = "{\"list\":" + jsonString + "}";
         }
         String xml = "<root>" + XML.toString(new JSONObject(jsonString)) + "</root>";
-        //System.out.println(xml);
         return DOMBuilder.string2DOM(xml);
     }
 	
     private Document parseDocumentXML(String xmlString) throws IOException {
-        return DOMBuilder.string2DOM(xmlString);
+        return DOMBuilder.string2DOM(xmlString); //May hang if not well-formed
+    	//org.jsoup.nodes.Document jsoupDoc = Jsoup.parse(xmlString, "", Parser.xmlParser());
+        //return DOMBuilder.jsoup2DOM(jsoupDoc);
     }
 
     private String createUrl(String template, String query) throws UnsupportedEncodingException {

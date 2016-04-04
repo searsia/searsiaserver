@@ -16,6 +16,7 @@
 
 package org.searsia.engine;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.HashMap;
@@ -46,8 +47,9 @@ public class DOMBuilder {
    * Returns a W3C DOM that exposes the content as the supplied XML string. 
    * @param xmlString The XML string to parse.
    * @return A W3C Document.
+   * @throws   
    */
-  public static Document string2DOM(String xmlString) {
+  public static Document string2DOM(String xmlString) throws IOException {
 
     Document document = null;
 
@@ -57,7 +59,7 @@ public class DOMBuilder {
         DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
         document  =  docBuilder.parse(new InputSource(new StringReader(xmlString)));
     } catch (Exception e) {
-      throw new RuntimeException(e);
+        throw new IOException(e);
     }
     return document;
   }
@@ -73,9 +75,9 @@ public class DOMBuilder {
           transformer.transform(new DOMSource(document), new StreamResult(writer));
           String output = writer.getBuffer().toString();
           return output;
-      } catch (TransformerException e) {
+      } catch (Exception e) {
+          return "";  
       }
-      return null;  
   }
 
 

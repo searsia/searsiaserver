@@ -50,18 +50,20 @@ public class SearsiaApplication extends ResourceConfig {
 		JSONObject json = new JSONObject();
 		json.put("searsia", VERSION);
 		json.put("error", error);
+		String entity = json.toString();
 		return  Response
 				.status(status)
-				.entity(json.toString())
+				.entity(entity)
 				.header("Access-Control-Allow-Origin", "*")
 				.build();
 	}
 	
 	protected static Response jsonResponse(int status, JSONObject json) {
 		json.put("searsia", VERSION);
+		String entity = json.toString();
 		return  Response
 				.status(status)
-				.entity(json.toString())
+				.entity(entity)
 				.header("Access-Control-Allow-Origin", "*")
 				.build();
 	}
