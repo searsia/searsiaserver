@@ -47,7 +47,7 @@ public class HitsSearcher  {
 	private File hitsDir;
     private IndexReader reader;
     private IndexSearcher searcher;
-    private int requests;
+    private int nrRequests;
     
     /**
      *  Opens the local index "indexName" at "path".
@@ -62,13 +62,13 @@ public class HitsSearcher  {
         open();
     }
     
-    public void open() throws IOException {
-        reader   = DirectoryReader.open(FSDirectory.open(hitsDir));
-        searcher = new IndexSearcher(reader);
+    private void open() throws IOException {
+        this.reader   = DirectoryReader.open(FSDirectory.open(this.hitsDir));
+        this.searcher = new IndexSearcher(this.reader);
         //searcher.setSimilarity(new BM25Similarity(1.2f, 0.75f)); // k1, b
         //searcher.setSimilarity(new LMDirichletSimilarity(200f)); // mu
         //searcher.setSimilarity(new LMJelinekMercerSimilarity(0.5f)); // lambda
-        requests = 0;
+        nrRequests = 0;
     }
     
     public void close() throws IOException {
@@ -107,7 +107,10 @@ public class HitsSearcher  {
             hit.put("score", doc.score);
             result.addHit(hit);
         }
-        if (requests++ > 10) close(); // close index every 10 searches, to see updates
+        if (nrRequests++ > 10) {
+        	nrRequests = 0;
+        	close(); // close index every 10 searches, to see updates
+        }
         return result;
     }
     

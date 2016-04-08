@@ -31,7 +31,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
@@ -43,7 +42,7 @@ import org.searsia.SearchResult;
  * 
  *  @author Djoerd Hiemstra and Dolf Trieschnigg
  */
-public class HitsWriter implements Runnable {
+public class HitsWriter {
 
     public static final Hit SEARSIA_HIT = 
       new Hit("Searsia", "Search for noobs", "http://searsia.org", "http://searsia.org/images/searsia.png");
@@ -51,23 +50,14 @@ public class HitsWriter implements Runnable {
 
     private ArrayBlockingQueue<SearchResult> queue;
     private int limit;
-    private int interval;
 
     private final Version     version = Version.LUCENE_4_10_4;
-    private Directory         indexDir;
-    private StandardAnalyzer  indexAnalyzer;
-    private IndexWriterConfig indexConfig;
     private IndexWriter       indexWriter;
-
+   
     public HitsWriter(String path, String indexName, ArrayBlockingQueue<SearchResult> queue) throws IOException {
-    	this(path, indexName, queue, 6);
-    }
-    
-    public HitsWriter(String path, String indexName, ArrayBlockingQueue<SearchResult> queue, int interval) throws IOException {
-    	this.initIndex(path, indexName);
+    	initIndex(path, indexName);
         this.queue    = queue;
         this.limit    = ((queue.remainingCapacity() + queue.size()) / 2) - 1;  // half of the capacity
-        this.interval = interval;
     }
 
     private void initIndex(String path, String indexName) throws IOException { 
@@ -79,11 +69,10 @@ public class HitsWriter implements Runnable {
         if (!hitsDir.exists()) {
             hitsDir.mkdir();
         }
-        this.indexDir = FSDirectory.open(hitsDir);
-        this.indexAnalyzer   = new StandardAnalyzer();
-        this.indexConfig     = new IndexWriterConfig(version, indexAnalyzer);
-        this.indexConfig.setOpenMode(OpenMode.CREATE_OR_APPEND);
-        this.indexWriter     = new IndexWriter(this.indexDir, this.indexConfig);
+        StandardAnalyzer indexAnalyzer   = new StandardAnalyzer();
+        IndexWriterConfig indexConfig     = new IndexWriterConfig(version, indexAnalyzer);
+        indexConfig.setOpenMode(OpenMode.CREATE_OR_APPEND);
+        this.indexWriter     = new IndexWriter(FSDirectory.open(hitsDir), indexConfig);
         addSearchResult(new SearchResult(SEARSIA_HIT));
         this.indexWriter.commit();
     }
@@ -119,16 +108,4 @@ public class HitsWriter implements Runnable {
         return full;
     }
 
-    @Override  // so, it can be spawned as a thread, not used currently...
-    public void run() {
-        try {
-            while(true) {
-                check();
-                Thread.sleep(interval * 1000);
-            }
-        } catch (InterruptedException e) {
-        } catch (IOException e) {
-        }
-    }
-		
 }
