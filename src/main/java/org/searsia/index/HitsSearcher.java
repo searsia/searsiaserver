@@ -23,12 +23,14 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.FSDirectory;
 
@@ -95,7 +97,7 @@ public class HitsSearcher  {
             throw new IOException(e);
         }
         collector = TopScoreDocCollector.create(hitsPerPage, true);
-    	if (searcher == null) open(); // reopen index every 3 searches, to see updates.
+    	if (searcher == null) open(); // reopen index to see updates.
         searcher.search(query, collector);
         docs = collector.topDocs().scoreDocs;
         for(ScoreDoc doc: docs) {
@@ -105,8 +107,25 @@ public class HitsSearcher  {
             hit.put("score", doc.score);
             result.addHit(hit);
         }
-        if (requests++ > 3) close(); // close index every 3 searches, to see updates
+        if (requests++ > 10) close(); // close index every 10 searches, to see updates
         return result;
+    }
+    
+    
+    public Hit getDocument(String hitId) throws IOException {
+    	Term term = new Term("id", hitId);
+    	Query query = new TermQuery(term);
+    	TopScoreDocCollector collector = TopScoreDocCollector.create(1, true);
+    	if (searcher == null) open();
+    	searcher.search(query, collector);
+    	if (collector.getTotalHits() > 0) {
+        	ScoreDoc[] docs = collector.topDocs().scoreDocs;
+        	Document doc = searcher.doc(docs[0].doc);
+        	Hit hit = new Hit(doc.get("result"));
+        	return hit;
+    	} else {
+    		return null;
+    	}
     }
     
     /**
@@ -117,7 +136,7 @@ public class HitsSearcher  {
         TopScoreDocCollector collector;
         ScoreDoc[] docs;
         collector = TopScoreDocCollector.create(999999, true);
-    	if (searcher == null) open(); // reopen index every 3 searches, to see updates.
+    	if (searcher == null) open();
         searcher.search(new MatchAllDocsQuery(), collector);
         docs = collector.topDocs().scoreDocs;
         for(ScoreDoc doc: docs) {

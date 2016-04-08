@@ -4,15 +4,14 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.apache.log4j.Logger;
+import org.apache.log4j.varia.NullAppender;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import org.searsia.Hit;
 import org.searsia.SearchResult;
 import org.searsia.index.HitsSearcher;
@@ -23,6 +22,7 @@ import org.searsia.index.HitsWriter;
  */
 public class TestHitsSearcher {
 
+    private static final Logger LOGGER = Logger.getLogger("org.searsia");
     private static final String PATH  = "target/index-test";
     private static final String INDEX = "test";
     private static HitsWriter writer;
@@ -31,7 +31,8 @@ public class TestHitsSearcher {
       
     @BeforeClass
     public static void setUp() throws Exception {
-    	Logger.getLogger("").setLevel(Level.WARNING); 
+    	LOGGER.removeAllAppenders();
+    	LOGGER.addAppender(new NullAppender());
     	queue = new ArrayBlockingQueue<SearchResult>(2);
     	writer = new HitsWriter(PATH, INDEX, queue);
         SearchResult result = readFile("exampleSearchResult.json");
@@ -39,7 +40,7 @@ public class TestHitsSearcher {
         writer.flush();
         searcher = new HitsSearcher(PATH, INDEX);
     }
- 
+    
     private static SearchResult readFile(String fileString) throws IOException {
         SearchResult result = new SearchResult();       
         String s, jsonString = "";       // TODO: Does the following file name work in Windows?
@@ -80,8 +81,15 @@ public class TestHitsSearcher {
         SearchResult result = searcher.search("retrieval");
 		Assert.assertEquals(6, result.getHits().size());
     }
-
     
+    @Test
+    public void testSearch4() throws Exception {
+        SearchResult result = readFile("exampleSearchResult.json");
+        Hit hit1 = result.getHits().get(0);
+		Hit hit2 = searcher.getDocument(hit1.getId());
+		Assert.assertEquals(hit1.getTitle(), hit2.getTitle());
+    }
+
     /** 
      *  Can also be used from the command line to test an existing index
      *  @param args query
