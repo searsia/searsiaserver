@@ -11,14 +11,14 @@ import java.util.logging.Logger;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.searsia.SearchResult;
-import org.searsia.engine.SearchEngine;
+import org.searsia.engine.Resource;
 
 public class SearchEngineTest {
 
 	private static final String SECRET_API_KEY = "a7235cdsf43d3a2dfgeda";
 	
-	private SearchEngine hiemstraSearch() throws XPathExpressionException {
-		SearchEngine hiemstra = new SearchEngine("hiemstra", "Djoerd Hiemstra");
+	private Resource hiemstraSearch() throws XPathExpressionException {
+		Resource hiemstra = new Resource("hiemstra", "Djoerd Hiemstra");
 		hiemstra.setUrlUserTemplate("http://wwwhome.cs.utwente.nl/~hiemstra/?s={q}&api={apikey}&p={p?}");
 		hiemstra.setUrlAPITemplate(hiemstra.getUrlUserTemplate());
 		hiemstra.setItemXpath("//div[./h3/a]");
@@ -37,8 +37,8 @@ public class SearchEngineTest {
 		return hiemstra;
 	}
 	
-	private SearchEngine searsiaSearch() throws XPathExpressionException {
-		return new SearchEngine("https://search.utwente.nl/searsia/search.php?q={q?}&r={r?}");
+	private Resource searsiaSearch() throws XPathExpressionException {
+		return new Resource("https://search.utwente.nl/searsia/search.php?q={q?}&r={r?}");
 	}
 	
     @BeforeClass
@@ -48,35 +48,35 @@ public class SearchEngineTest {
 	
 	@Test
 	public void testSearch1() throws XPathExpressionException, SearchException {
-		SearchEngine se = hiemstraSearch();
+		Resource se = hiemstraSearch();
 		SearchResult result = se.search("dolf");
 		Assert.assertEquals(7, result.getHits().size());
 	}
 
 	@Test
 	public void testSearch2() throws XPathExpressionException, SearchException {
-		SearchEngine se = searsiaSearch();
+		Resource se = searsiaSearch();
 		SearchResult result = se.search("test");
 		Assert.assertTrue(result.getHits().size() > 0);
 	}
 
 	@Test
 	public void testSearch3() throws XPathExpressionException, SearchException {
-		SearchEngine se = searsiaSearch();
+		Resource se = searsiaSearch();
 		SearchResult result = se.search();
 		Assert.assertTrue(result.getHits().size() > 0);
 	}
 
 	@Test
 	public void testSearchResource() throws XPathExpressionException, SearchException {
-		SearchEngine se = searsiaSearch();
-		SearchEngine engine = se.searchResource("utnieuws");
+		Resource se = searsiaSearch();
+		Resource engine = se.searchResource("utnieuws");
 		Assert.assertTrue(engine != null);
 	}
 
 	@Test
 	public void testSearchError() throws XPathExpressionException  {
-		SearchEngine se = hiemstraSearch();
+		Resource se = hiemstraSearch();
 		se.setUrlAPITemplate("http://wwwhome.cs.utwente.nl/~hiemstra/WRONG/?s={q}&api={apikey}&p={p?}");
 		String message = null;
 		try {
@@ -90,11 +90,11 @@ public class SearchEngineTest {
 
 	@Test
 	public void testJsonRoundtrip() throws XPathExpressionException {
-		SearchEngine se1 = hiemstraSearch();
+		Resource se1 = hiemstraSearch();
 		se1.setPostString("POST");
 		se1.setBanner("me.png");
 		JSONObject json = se1.toJson();
-		SearchEngine se2 = new SearchEngine(json);
+		Resource se2 = new Resource(json);
 		Assert.assertEquals("id", se1.getId(), se2.getId());
 		Assert.assertEquals("name", se1.getName(), se2.getName());
 		Assert.assertEquals("mimetype", se1.getMimeType(), se2.getMimeType());
@@ -115,17 +115,17 @@ public class SearchEngineTest {
 
 	@Test
 	public void equalEngines1() throws XPathExpressionException {
-		SearchEngine se1 = hiemstraSearch();
+		Resource se1 = hiemstraSearch();
 		JSONObject json = se1.toJson();
-		SearchEngine se2 = new SearchEngine(json);
+		Resource se2 = new Resource(json);
         Assert.assertTrue("Equals big engine", se1.equals(se2));
 	}
 	
 	@Test
 	public void equalEngines2() throws XPathExpressionException {
-		SearchEngine se1 = searsiaSearch();
+		Resource se1 = searsiaSearch();
 		JSONObject json = se1.toJson();
-		SearchEngine se2 = new SearchEngine(json);
+		Resource se2 = new Resource(json);
         Assert.assertTrue("Truely Equals small engine", se1.equals(se2));
         Assert.assertEquals("Equals small equals", se1, se2);
 	}

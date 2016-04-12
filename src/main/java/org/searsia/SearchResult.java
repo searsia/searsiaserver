@@ -28,8 +28,8 @@ import java.util.Random;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.searsia.index.ResourceEngines;
-import org.searsia.engine.SearchEngine;
+import org.searsia.index.ResourceIndex;
+import org.searsia.engine.Resource;
 
 public class SearchResult {
 	public  static final String SEARSIA_MIME_TYPE     = "application/searsia+json";
@@ -38,7 +38,7 @@ public class SearchResult {
 	private static final String TOKENIZER = "[^A-Za-z0-9]+";
 	private List<Hit> hits;
 	private Random random;
-	private SearchEngine resource;
+	private Resource resource;
 	private String xmlOut;
 	
 	public SearchResult() {
@@ -63,11 +63,11 @@ public class SearchResult {
   		this.hits.add(hit);
 	}
 	
-	public void setResource(SearchEngine resource) {
+	public void setResource(Resource resource) {
 		this.resource = resource;
 	}
 	
-	public SearchEngine getResource() {
+	public Resource getResource() {
 		return this.resource;
 	}
 	
@@ -104,7 +104,7 @@ public class SearchResult {
 	//   3. order by score (given rule 1 and rule 2)
 	//   4. TODO: not more than x (=10?) hits per resource
 	//   5. stop after 20 resources
-	public void scoreResourceSelection(String query, ResourceEngines engines) {
+	public void scoreResourceSelection(String query, ResourceIndex engines) {
 		final float bias = 1.0f;
 		Map<String, Float> maxScore = new HashMap<String, Float>();
 		for (Hit hit: this.hits) {

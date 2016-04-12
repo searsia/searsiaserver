@@ -50,10 +50,10 @@ import org.w3c.dom.NodeList;
 import org.searsia.Hit;
 import org.searsia.SearchResult;
 
-public class SearchEngine implements Comparable<SearchEngine> {
+public class Resource implements Comparable<Resource> {
 
     public final static String defaultTestQuery = "searsia";
-    private final static Logger LOGGER = Logger.getLogger(SearchEngine.class.getName());
+    private final static Logger LOGGER = Logger.getLogger(Resource.class.getName());
 
     // For rate limiting: Default = 1000 queries per day
     private final static int defaultRATE = 1000;    // unit: queries
@@ -85,7 +85,7 @@ public class SearchEngine implements Comparable<SearchEngine> {
 	private long lastCheck = new Date().getTime(); // Unix time
 
 
-	public SearchEngine(String urlAPITemplate, String id) {
+	public Resource(String urlAPITemplate, String id) {
 		this.urlAPITemplate = urlAPITemplate;
 		this.id = id;
 		this.name = null;
@@ -93,11 +93,11 @@ public class SearchEngine implements Comparable<SearchEngine> {
 		this.testQuery = defaultTestQuery;
 	}
 	
-	public SearchEngine(String urlAPITemplate) {
+	public Resource(String urlAPITemplate) {
 		this(urlAPITemplate, getHashString(urlAPITemplate));
 	}
 	
-	public SearchEngine(JSONObject jo) throws XPathExpressionException, JSONException {	
+	public Resource(JSONObject jo) throws XPathExpressionException, JSONException {	
 		this.mimeType = SearchResult.SEARSIA_MIME_TYPE;
 		this.testQuery = defaultTestQuery;
 		if (jo.has("id"))          this.id              = jo.getString("id");
@@ -268,18 +268,18 @@ public class SearchEngine implements Comparable<SearchEngine> {
 	}
 
 	
-	public SearchEngine searchResource(String resourceid) throws SearchException {
+	public Resource searchResource(String resourceid) throws SearchException {
 		if (!this.mimeType.equals(SearchResult.SEARSIA_MIME_TYPE)) {
 			throw new SearchException("Resource is not a searsia engine: " + resourceid);
 		}
 		try {
-			SearchEngine engine = null;
+			Resource engine = null;
     		String url = this.urlAPITemplate.replaceAll("\\{r\\??\\}", URLEncoder.encode(resourceid, "UTF-8"));
             url = url.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", ""); // remove optional parameters 
        		String jsonPage = getCompleteWebPage(url, this.postString, this.headers);
     		JSONObject json = new JSONObject(jsonPage);
     		if (json.has("resource")) {
-        		engine = new SearchEngine(json.getJSONObject("resource"));
+        		engine = new Resource(json.getJSONObject("resource"));
     		}
             return engine;
 		} catch (Exception e) {
@@ -297,7 +297,7 @@ public class SearchEngine implements Comparable<SearchEngine> {
 		}
 		if (json.has("resource")) {
 			try {
-    		    SearchEngine engine = new SearchEngine(json.getJSONObject("resource"));
+    		    Resource engine = new Resource(json.getJSONObject("resource"));
     		    result.setResource(engine);
 			} catch (XPathExpressionException e) {
     			LOGGER.warn("Warning: " + e.getMessage());
@@ -595,7 +595,7 @@ public class SearchEngine implements Comparable<SearchEngine> {
     @Override
     public boolean equals(Object o) {  // TODO: AARGH, can't this be done simpler?
     	if (o == null) return false;
-    	SearchEngine e = (SearchEngine) o;
+    	Resource e = (Resource) o;
     	if (!stringEquals(this.getId(), e.getId())) return false;
     	if (!stringEquals(this.getName(), e.getName())) return false;
     	if (!stringEquals(this.getMimeType(), e.getMimeType())) return false;
@@ -614,7 +614,7 @@ public class SearchEngine implements Comparable<SearchEngine> {
     }
     
     @Override
-    public int compareTo(SearchEngine e2) {
+    public int compareTo(Resource e2) {
     	Float score1 = getPrior();
     	Float score2 = e2.getPrior();
    		return score1.compareTo(score2);

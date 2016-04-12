@@ -7,19 +7,19 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.searsia.index.ResourceEngines;
-import org.searsia.engine.SearchEngine;
+import org.searsia.index.ResourceIndex;
+import org.searsia.engine.Resource;
 
-public class TestResourceEngines {
+public class TestResourceIndex {
 	
     private static final String PATH  = "target/index-test";
     private static final String INDEX = "test";
-    private static ResourceEngines engines;
+    private static ResourceIndex engines;
    
     @BeforeClass
     public static void setUp() throws Exception {
-    	engines = new ResourceEngines(PATH, INDEX);
-    	SearchEngine engine = searsia();
+    	engines = new ResourceIndex(PATH, INDEX);
+    	Resource engine = searsia();
     	engines.putMother(engine);
     }
     
@@ -29,41 +29,41 @@ public class TestResourceEngines {
     	checkFiles();
     }
      
-    private static SearchEngine utwente() {
-    	SearchEngine e = new SearchEngine("http://utwente.nl/search?q={q}", "567");
+    private static Resource utwente() {
+    	Resource e = new Resource("http://utwente.nl/search?q={q}", "567");
     	e.setName("UT");
     	return e;
     }
     
-    private static SearchEngine searsia() {
-    	SearchEngine e = new SearchEngine("http://searsia.com/?q={q}", "1234");
+    private static Resource searsia() {
+    	Resource e = new Resource("http://searsia.com/?q={q}", "1234");
     	e.addPrivateParameter("api", "topsecret");
     	return e;
     }
     
-    private static SearchEngine newby() {
-    	SearchEngine e = new SearchEngine("http://new.com/?q={q}");
+    private static Resource newby() {
+    	Resource e = new Resource("http://new.com/?q={q}");
     	e.changeId("890");
     	e.addPrivateParameter("apikey", "secret");
     	return e;
     }
     
-    private static SearchEngine me() {
-    	SearchEngine e = new SearchEngine("http://me.org");
+    private static Resource me() {
+    	Resource e = new Resource("http://me.org");
     	e.setName("Me");
     	return e;
     }
     
     
     public static void checkFiles() throws IOException {
-    	SearchEngine e1 = me();
-    	SearchEngine e2 = engines.getMyself();
+    	Resource e1 = me();
+    	Resource e2 = engines.getMyself();
     	Assert.assertTrue("Trying to retrieve me", e1.equals(e2));
-    	SearchEngine e3 = utwente();
-    	SearchEngine e4 = engines.get(e3.getId());
+    	Resource e3 = utwente();
+    	Resource e4 = engines.get(e3.getId());
     	Assert.assertTrue("Trying to retrieve utwente", e3.equals(e4));
     	Assert.assertTrue("No private parameters expected", e4.getJsonPrivateParameters() == null);
-    	SearchEngine e6 = engines.get(newby().getId());
+    	Resource e6 = engines.get(newby().getId());
     	Assert.assertTrue("Private parameters expected", e6.getJsonPrivateParameters() != null);
     	Assert.assertTrue("Top 1", engines.topValues("", 1).size() == 1);
     	Assert.assertTrue("Top 2", engines.topValues(null, 2).size() == 2);
@@ -72,17 +72,17 @@ public class TestResourceEngines {
 	
     @Test
     public void addResource() {
-    	SearchEngine e1 = utwente();
+    	Resource e1 = utwente();
     	engines.put(e1);
-    	SearchEngine e2 = engines.get(e1.getId());
+    	Resource e2 = engines.get(e1.getId());
     	Assert.assertTrue("add", e1.equals(e2));
     }
  
     @Test
     public void addMe() {
-    	SearchEngine e1 = me();
+    	Resource e1 = me();
     	engines.putMyself(e1);
-    	SearchEngine e2 = engines.getMyself();
+    	Resource e2 = engines.getMyself();
     	Assert.assertTrue("me", e1.equals(e2));
     }
 

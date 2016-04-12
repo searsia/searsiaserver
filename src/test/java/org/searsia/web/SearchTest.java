@@ -1,7 +1,6 @@
 package org.searsia.web;
 
 import java.io.IOException;
-import java.util.concurrent.ArrayBlockingQueue;
 
 import javax.ws.rs.core.Response;
 
@@ -14,35 +13,30 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.searsia.SearchResult;
-import org.searsia.index.HitsSearcher;
-import org.searsia.index.HitsWriter;
-import org.searsia.index.ResourceEngines;
+import org.searsia.index.SearchResultIndex;
+import org.searsia.index.ResourceIndex;
 import org.searsia.web.Search;
-import org.searsia.engine.SearchEngine;
+import org.searsia.engine.Resource;
 
 public class SearchTest {
 
     private static final Logger LOGGER = Logger.getLogger("org.searsia");
     private static final String PATH  = "target/index-test";
     private static final String INDEX = "test2";
-    private static HitsSearcher searcher;
-    private static ArrayBlockingQueue<SearchResult> queue;
-    private static ResourceEngines engines;
+    private static SearchResultIndex index;
+    private static ResourceIndex engines;
     
-    @SuppressWarnings("unused")
-    private static HitsWriter writer;
     
-    private static SearchEngine utwente() {
-    	return new SearchEngine("https://search.utwente.nl/searsia/search.php?q={q?}&r={r?}", "utwente");
+    private static Resource utwente() {
+    	return new Resource("https://search.utwente.nl/searsia/search.php?q={q?}&r={r?}", "utwente");
     }
  
-    private static SearchEngine wrong() {
-    	return new SearchEngine("http://searsia.com/doesnotexist?q={q}", "wrong");
+    private static Resource wrong() {
+    	return new Resource("http://searsia.com/doesnotexist?q={q}", "wrong");
     }
     
-    private static SearchEngine me() {
-    	return new SearchEngine("http://me.org?q={q}");
+    private static Resource me() {
+    	return new Resource("http://me.org?q={q}");
     }
     
     
@@ -50,10 +44,8 @@ public class SearchTest {
     public static void setUp() throws Exception {
     	LOGGER.removeAllAppenders();
     	LOGGER.addAppender(new NullAppender()); // thou shall not log
-    	queue = new ArrayBlockingQueue<SearchResult>(2);
-    	writer = new HitsWriter(PATH, INDEX, queue);
-        searcher = new HitsSearcher(PATH, INDEX);
-    	engines = new ResourceEngines(PATH, INDEX);
+    	index = new SearchResultIndex(PATH, INDEX, 2);
+    	engines = new ResourceIndex(PATH, INDEX);
     	engines.putMother(utwente());
     	engines.put(wrong());   	
     	engines.putMyself(me());
@@ -61,12 +53,12 @@ public class SearchTest {
 
     @AfterClass
     public static void lastThing() throws IOException {
-    	searcher.close();    	
+    	index.close();    	
     }
    
     @Test // returns 'my' resource description
 	public void test() throws IOException {
-		Search search = new Search(queue, searcher, engines);
+		Search search = new Search(index, engines);
 		Response response = search.query("", "");
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
@@ -78,7 +70,7 @@ public class SearchTest {
     
     @Test // returns local search results for 'searsia'
 	public void testQuery() throws IOException {
-		Search search = new Search(queue, searcher, engines);
+		Search search = new Search(index, engines);
 		Response response = search.query("", "searsia search for noobs");
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
@@ -99,7 +91,7 @@ public class SearchTest {
     
     @Test // returns local resource 'wrong' 
 	public void testResource() throws IOException {
-		Search search = new Search(queue, searcher, engines);
+		Search search = new Search(index, engines);
 		Response response = search.query("wrong", "");
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
@@ -111,7 +103,7 @@ public class SearchTest {
     
     @Test // returns resource 'youtube' (from mother)
 	public void testResourceUnknown() throws IOException {
-		Search search = new Search(queue, searcher, engines);
+		Search search = new Search(index, engines);
 		Response response = search.query("youtube", "");
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
@@ -123,7 +115,7 @@ public class SearchTest {
     
     @Test // returns results for the engine 'wrong' (which does not exist)
 	public void testError() throws IOException {
-		Search search = new Search(queue, searcher, engines);
+		Search search = new Search(index, engines);
 		Response response = search.query("wrong", "testquery");
 		int status = response.getStatus();
 		Assert.assertEquals(503, status);

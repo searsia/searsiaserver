@@ -17,7 +17,6 @@
 package org.searsia.web;
 
 import java.io.IOException;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -25,9 +24,8 @@ import javax.ws.rs.core.Response;
 
 import org.glassfish.jersey.server.ResourceConfig;
 import org.json.JSONObject;
-import org.searsia.SearchResult;
-import org.searsia.index.HitsSearcher;
-import org.searsia.index.ResourceEngines;
+import org.searsia.index.SearchResultIndex;
+import org.searsia.index.ResourceIndex;
 
 /**
  * Searsia Web API application.
@@ -36,7 +34,7 @@ import org.searsia.index.ResourceEngines;
  */
 public class SearsiaApplication extends ResourceConfig {
 	
-	public static final String VERSION = "v0.3.1";
+	public static final String VERSION = "v0.4.0";
 	
 	protected static Response responseOk(JSONObject json) {
 		json.put("searsia", VERSION);
@@ -68,10 +66,10 @@ public class SearsiaApplication extends ResourceConfig {
 				.build();
 	}
 
-	public SearsiaApplication(ArrayBlockingQueue<SearchResult> queue, HitsSearcher searcher, ResourceEngines engines, Boolean openWide) throws IOException {
+	public SearsiaApplication(SearchResultIndex index, ResourceIndex engines, Boolean openWide) throws IOException {
 		super();
     	Logger.getLogger("org.glassfish.grizzly").setLevel(Level.WARNING);
-		register(new Search(queue, searcher, engines));
+		register(new Search(index, engines));
 		register(new Update(engines, openWide));
 		register(new OpenSearch(engines));
 	}

@@ -3,7 +3,6 @@ package org.searsia.index;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.concurrent.ArrayBlockingQueue;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.varia.NullAppender;
@@ -12,33 +11,29 @@ import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.searsia.Hit;
 import org.searsia.SearchResult;
-import org.searsia.index.HitsSearcher;
-import org.searsia.index.HitsWriter;
+import org.searsia.index.SearchResultIndex;
 
 /**
  *  Tests Searsia's hits  index
  */
-public class TestHitsSearcher {
+public class TestSearchResultIndex {
 
     private static final Logger LOGGER = Logger.getLogger("org.searsia");
     private static final String PATH  = "target/index-test";
     private static final String INDEX = "test";
-    private static HitsWriter writer;
-    private static HitsSearcher searcher;
-    private static ArrayBlockingQueue<SearchResult> queue;
+    private static SearchResultIndex index;
       
     @BeforeClass
     public static void setUp() throws Exception {
     	LOGGER.removeAllAppenders();
     	LOGGER.addAppender(new NullAppender());
-    	queue = new ArrayBlockingQueue<SearchResult>(2);
-    	writer = new HitsWriter(PATH, INDEX, queue);
+    	index = new SearchResultIndex(PATH, INDEX, 2);
         SearchResult result = readFile("exampleSearchResult.json");
-        queue.offer(result);
-        writer.flush();
-        searcher = new HitsSearcher(PATH, INDEX);
+        index.offer(result);
+        index.flush();
     }
     
     private static SearchResult readFile(String fileString) throws IOException {
@@ -62,23 +57,29 @@ public class TestHitsSearcher {
 
     
     @Test
+    public void testSearch0() throws Exception {
+        SearchResult result = index.search("searsia");
+		Assert.assertEquals(1, result.getHits().size());
+    }
+
+    @Test
     public void testSearch1() throws Exception {
-        SearchResult result = searcher.search("dolf");
+        SearchResult result = index.search("dolf");
 		Assert.assertEquals(1, result.getHits().size());
     }
 
     @Test
     public void testSearch2() throws Exception {
         SearchResult result = readFile("exampleSearchResult.json");
-        queue.offer(result);
-        writer.flush();
-        result = searcher.search("dolf");
+        index.offer(result);
+        index.flush();
+        result = index.search("dolf");
 		Assert.assertEquals(1, result.getHits().size());
     }
 
     @Test
     public void testSearch3() throws Exception {
-        SearchResult result = searcher.search("retrieval");
+        SearchResult result = index.search("retrieval");
 		Assert.assertEquals(6, result.getHits().size());
     }
     
@@ -86,7 +87,7 @@ public class TestHitsSearcher {
     public void testSearch4() throws Exception {
         SearchResult result = readFile("exampleSearchResult.json");
         Hit hit1 = result.getHits().get(0);
-		Hit hit2 = searcher.getDocument(hit1.getId());
+		Hit hit2 = index.getHit(hit1.getId());
 		Assert.assertEquals(hit1.getTitle(), hit2.getTitle());
     }
 
@@ -95,12 +96,12 @@ public class TestHitsSearcher {
      *  @param args query
      */
     public static void main(String[] args) throws Exception {  
-        HitsSearcher searcher = new HitsSearcher(PATH, INDEX);
+        SearchResultIndex index = new SearchResultIndex(PATH, INDEX, 500);
         String queryString = "campus";
         if (args.length > 0) {
             queryString = args[0];
         }
-        SearchResult result = searcher.search(queryString);
+        SearchResult result = index.search(queryString);
         System.out.println(result.toJson());
     }
 

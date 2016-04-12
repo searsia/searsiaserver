@@ -45,23 +45,23 @@ import org.apache.lucene.util.Version;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import org.searsia.engine.SearchEngine;
+import org.searsia.engine.Resource;
 
 /**
  * Stores resources in a Lucene index
  *
  * @author Djoerd Hiemstra
  */
-public class ResourceEngines {
+public class ResourceIndex {
 
-    private final static Logger LOGGER = Logger.getLogger(ResourceEngines.class.getName());
+    private final static Logger LOGGER = Logger.getLogger(ResourceIndex.class.getName());
     private final static Version version      = Version.LUCENE_4_10_4;
     private final static int MAX_SOURCE_CACHE = 10000; // TODO: breaks if we discover more than 10000 sources
     
-	private Map<String,SearchEngine> engines = new LinkedHashMap<String,SearchEngine>();
+	private Map<String,Resource> engines = new LinkedHashMap<String,Resource>();
 	private Random random   = new Random();
 	private String motherId = null;
-	private SearchEngine me = null;
+	private Resource me = null;
 	private Path meFile     = null;
 	private Path indexDir = null;
 	private IndexWriter writer = null;
@@ -72,7 +72,7 @@ public class ResourceEngines {
 	 * @param filename index file name
 	 * @throws IOException
 	 */
-	public ResourceEngines(String path, String filename) throws IOException {
+	public ResourceIndex(String path, String filename) throws IOException {
 		this.meFile   = Paths.get(path, filename + ".json");
 		this.indexDir = Paths.get(path, filename + "_sources");
 		if (meFile.toFile().exists()) {
@@ -87,16 +87,16 @@ public class ResourceEngines {
 	}
 	
 	
-	private void writeMyselfFile(SearchEngine engine) throws IOException {
+	private void writeMyselfFile(Resource engine) throws IOException {
 	    Files.write(this.meFile, engine.toJson().toString().getBytes());
 	}
 	
-	private SearchEngine readMyselfFile(Path meFile) throws IOException {
+	private Resource readMyselfFile(Path meFile) throws IOException {
 		String content = new String(Files.readAllBytes(meFile));
-		SearchEngine me = null;
+		Resource me = null;
 		try {
 			JSONObject json = new JSONObject(content);
-			me = new SearchEngine(json);
+			me = new Resource(json);
 		} catch (javax.xml.xpath.XPathExpressionException e) {
 			throw new IOException(e);
 		}
@@ -119,7 +119,7 @@ public class ResourceEngines {
             for (ScoreDoc hit: hits) {
                 Document doc = searcher.doc(hit.doc);
                 JSONObject json = new JSONObject(doc.get("json"));
-                SearchEngine engine = new SearchEngine(json);
+                Resource engine = new Resource(json);
                 this.engines.put(engine.getId(), engine);
             }
         } catch (javax.xml.xpath.XPathExpressionException e) {
@@ -145,7 +145,7 @@ public class ResourceEngines {
 	 * Gets the mother engine (the trusted engine in the network)
 	 * @return mother engine
 	 */
-	public SearchEngine getMother() {
+	public Resource getMother() {
 		if (motherId == null) {
 			return null;
 		} else {
@@ -157,7 +157,7 @@ public class ResourceEngines {
 	 * Get information about this Searsia engine	
 	 * @return engine
 	 */
-	public SearchEngine getMyself() {
+	public Resource getMyself() {
         return this.me;
 	}
 	
@@ -166,14 +166,14 @@ public class ResourceEngines {
 		return this.motherId;
 	}
 	
-	private boolean exists(SearchEngine engine) {
-		for (SearchEngine e: this.engines.values())
+	private boolean exists(Resource engine) {
+		for (Resource e: this.engines.values())
 		    if (e.equals(engine))
 		    	return true;
 		return false;
 	}
 	
-	private void updateResourceIndex(String id, SearchEngine engine) throws IOException {
+	private void updateResourceIndex(String id, Resource engine) throws IOException {
         Document doc = new Document();
         if (id != null) {
         	JSONObject json = engine.toJson();
@@ -186,7 +186,7 @@ public class ResourceEngines {
 	}
 	
 	public void delete(String id) throws IOException {
-		SearchEngine engine = get(id);
+		Resource engine = get(id);
 		if (engine == null) {
 			throw new IOException("Resouce '" + id + "' not found");
 		}
@@ -196,7 +196,7 @@ public class ResourceEngines {
 	}
 	
 	
-	public void put(SearchEngine engine) {
+	public void put(Resource engine) {
 		if (this.motherId != null && engine.getId().equals(this.motherId)) {
 			throw new RuntimeException("Mother id conflict: " + engine.getId());
 		}
@@ -219,11 +219,11 @@ public class ResourceEngines {
 		return this.engines.containsKey(id);
 	}
 	
-	public SearchEngine get(String id) {
+	public Resource get(String id) {
    		return this.engines.get(id);
 	}
 	
-	public SearchEngine getRandom() {
+	public Resource getRandom() {
 	    Object[] keys = this.engines.keySet().toArray();
 	    if (keys.length > 0) {
             int nr = random.nextInt(keys.length);
@@ -236,10 +236,10 @@ public class ResourceEngines {
 	// Efficiency can be gained here?
 	public Map<String, Float> topValues(String queryString, int max) {
         Float[] topScores = new Float[max];
-		SearchEngine[] topEngines = new SearchEngine[max];
+		Resource[] topEngines = new Resource[max];
 		int size = 0;
 		float lastScore = -99.0f;
-		for (SearchEngine engine: this.engines.values()) {
+		for (Resource engine: this.engines.values()) {
 		    float score = engine.score(queryString) + engine.getPrior(); // TODO: add bias ?
 	        if (size < max || score > lastScore) {
 	            if (size < max) size++;
@@ -261,12 +261,12 @@ public class ResourceEngines {
 		return result; 
 	}
 	
-	public void putMother(SearchEngine engine) {
+	public void putMother(Resource engine) {
 		put(engine);
 		this.motherId = engine.getId();
 	}
 	
-	public void putMyself(SearchEngine engine) {
+	public void putMyself(Resource engine) {
 		if (get(engine.getId()) != null) {
 			throw new RuntimeException("The server id '" + engine.getId() + "' already exists.");
 		}
@@ -280,7 +280,7 @@ public class ResourceEngines {
 	
 	public float maxPrior() {
 		float max = 0.0f;
-		for (SearchEngine e: this.engines.values()) {
+		for (Resource e: this.engines.values()) {
 		    if (e.getPrior() > max) {
 		        max = e.getPrior();	
 		    }
@@ -292,7 +292,7 @@ public class ResourceEngines {
 	 *  Dumps the resource index to standard output.
 	 */
 	public void dump() {
-        for (SearchEngine engine: this.engines.values()) {
+        for (Resource engine: this.engines.values()) {
             System.out.println(engine.toJson());	
         }
 	}

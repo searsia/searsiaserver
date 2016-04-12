@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.searsia</groupId>
   <artifactId>searsiaserver</artifactId>
-  <version>0.3.1</version>
+  <version>0.4.0</version>
   <prerequisites>
     <maven>3</maven>
   </prerequisites>
