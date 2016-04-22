@@ -27,11 +27,11 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
@@ -113,7 +113,6 @@ public class DOMBuilder {
    * @param out The W3C {@link Node} that receives the DOM content.
    */
   private static void createDOM(org.jsoup.nodes.Node node, Node out, Document doc, Map<String,String> ns) {
-         
     if (node instanceof org.jsoup.nodes.Document) {
       
       org.jsoup.nodes.Document d = ((org.jsoup.nodes.Document) node);
@@ -147,7 +146,11 @@ public class DOMBuilder {
             }
           }
         }
-        _e.setAttribute(attName, a.getValue());
+        try {
+            _e.setAttribute(attName, a.getValue());
+        } catch (DOMException domExcept) {
+             continue;
+        }
       }
       
       for (org.jsoup.nodes.Node n : e.childNodes()) {
