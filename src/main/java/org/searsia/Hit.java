@@ -129,10 +129,19 @@ public class Hit implements Comparable<Hit> {
 		return map.entrySet().toString();
 	}
 
+	private String noHTML(String value) {
+		value = value.replaceAll("<[^>]+>", ""); // no HTML
+		return value.replaceAll("[<>]", "");
+	}
+
 	public JSONObject toJson() {
 		JSONObject json = new JSONObject();
 		for (Entry<String,Object> e: map.entrySet()) {
-			json.put(e.getKey(), e.getValue());
+			Object value = e.getValue();
+			if (value instanceof String) {
+				value = noHTML((String) value);
+			}
+			json.put(e.getKey(), value);
 		}
 		return json;
 	}
