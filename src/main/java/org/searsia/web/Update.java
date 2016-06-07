@@ -89,7 +89,7 @@ public class Update {
 	@Produces(SearchResult.SEARSIA_MIME_ENCODING) 
 	public Response put(@PathParam("id") String id,  @Context HttpHeaders headers, String putString) {
 		if (!this.wideOpen) {
-			return SearsiaApplication.responseError(401, "Unauthorized");
+			return SearsiaApplication.responseError(401, "Unauthorized. Run Searsia server with --open");
 		}
 		Resource engine = null;
 		try {

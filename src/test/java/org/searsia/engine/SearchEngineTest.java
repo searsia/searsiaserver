@@ -38,7 +38,7 @@ public class SearchEngineTest {
 	}
 	
 	private Resource searsiaSearch() throws XPathExpressionException {
-		return new Resource("https://search.utwente.nl/searsia/search.php?q={q?}&r={r?}");
+		return new Resource("https://search.utwente.nl/searsia/search?q={q?}&r={r?}");
 	}
 	
     @BeforeClass
