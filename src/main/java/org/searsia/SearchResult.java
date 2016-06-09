@@ -40,6 +40,7 @@ public class SearchResult {
 	private Random random;
 	private Resource resource;
 	private String xmlOut;
+	private String query;
 	
 	public SearchResult() {
 		this(null);
@@ -70,15 +71,23 @@ public class SearchResult {
 	public Resource getResource() {
 		return this.resource;
 	}
-	
+
 	public void setXmlOut(String xmlOut) {
 		this.xmlOut = xmlOut;
 	}
-	
+
 	public String getXmlOut() {
 		return this.xmlOut;
 	}
-	
+
+	public void setQuery(String query) {
+		this.query = query;
+	}
+
+	public String getQuery() {
+		return this.query;
+	}
+
 	// TODO: maybe a list of query-resource pairs, if result found by multiple engines for multiple queries.
 	public void addQueryResourceRankDate(String query, String resourceID) {
 		int rank = 1;
@@ -124,9 +133,8 @@ public class SearchResult {
     			if (hitQuery != null) {
     				if (hitQuery.equals(query)) {
         			    score = max;
-    				} else {
-    				    hit.remove("query"); // for privacy reasons removed
-    				}
+    				} 
+    				hit.remove("query"); // for privacy reasons removed
     			}
                 hit.setScore(score);    				
 			}

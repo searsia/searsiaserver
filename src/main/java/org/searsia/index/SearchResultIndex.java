@@ -135,6 +135,7 @@ public class SearchResultIndex {
     
     public SearchResult search (String queryString, int hitsPerPage) throws IOException  {
     	SearchResult result = new SearchResult();
+    	result.setQuery(queryString);
         TopScoreDocCollector collector;
         ScoreDoc[] docs;
         Query query;

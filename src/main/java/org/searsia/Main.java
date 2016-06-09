@@ -75,7 +75,7 @@ public class Main {
         				result.removeResourceRank();     // only trust your mother
                 	}
                		index.offer(result);
-               		logSample(engine.getId());
+               		logSample(engine.getId(), result.getQuery());
                 }
             } catch (Exception e) { 
             	logWarning("Sampling " + engine.getId() + " failed: " + e.getMessage());
@@ -130,10 +130,11 @@ public class Main {
 	}
 
 
-	private static void logSample(String resourceid) {
+	private static void logSample(String resourceid, String query) {
 		JSONObject r = new JSONObject();
 		r.put("time", df.format(new Date()));
 		r.put("sample", resourceid);
+		r.put("query", query);
 		LOGGER.info(r.toString());
 	}
 

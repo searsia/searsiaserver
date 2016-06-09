@@ -73,7 +73,9 @@ public class TestSearchResultIndex {
         SearchResult result = readFile("exampleSearchResult.json");
         index.offer(result);
         index.flush();
-        result = index.search("dolf");
+        String query = "dolf";
+        result = index.search(query);
+        Assert.assertEquals(query, result.getQuery());
 		Assert.assertEquals(1, result.getHits().size());
     }
 

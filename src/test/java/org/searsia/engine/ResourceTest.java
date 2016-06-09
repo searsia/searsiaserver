@@ -13,7 +13,7 @@ import javax.xml.xpath.XPathExpressionException;
 import org.searsia.SearchResult;
 import org.searsia.engine.Resource;
 
-public class SearchEngineTest {
+public class ResourceTest {
 
 	private static final String SECRET_API_KEY = "a7235cdsf43d3a2dfgeda";
 	
@@ -56,7 +56,9 @@ public class SearchEngineTest {
 	@Test
 	public void testSearch2() throws XPathExpressionException, SearchException {
 		Resource se = searsiaSearch();
-		SearchResult result = se.search("test");
+		String query = "test";
+		SearchResult result = se.search(query);
+		Assert.assertEquals(query, result.getQuery());
 		Assert.assertTrue(result.getHits().size() > 0);
 	}
 

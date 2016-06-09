@@ -246,6 +246,7 @@ public class Resource implements Comparable<Resource> {
             if (this.rerank != null && query != null) {
                 result.scoreReranking(query, this.rerank);
             }
+			result.setQuery(query);
 			return result;
 		} catch (Exception e) {  // catch all, also runtime exceptions
 			throw createPrivateSearchException(e);
