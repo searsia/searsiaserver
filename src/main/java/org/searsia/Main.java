@@ -24,6 +24,7 @@ import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Random;
 
 import org.apache.log4j.Appender;
 import org.apache.log4j.DailyRollingFileAppender;
@@ -33,7 +34,6 @@ import org.apache.log4j.PatternLayout;
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.json.JSONObject;
-
 import org.searsia.index.SearchResultIndex;
 import org.searsia.index.ResourceIndex;
 import org.searsia.web.SearsiaApplication;
@@ -54,23 +54,30 @@ public class Main {
 	
 	private static final Logger LOGGER = Logger.getLogger("org.searsia");
 	private static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
+	private static Random random   = new Random();
 
+	
     private static void searsiaDaemon(SearchResultIndex index, ResourceIndex engines, 
     		int pollInterval) throws InterruptedException {
+    	Resource mother = engines.getMother();
     	Resource engine = null;
         while(true) {
             Thread.sleep(pollInterval * 1000);
             try {
                 if (!index.check()) {
-                	engine = engines.getRandom();
-                	if (engine != null) {
-                       	SearchResult result = engine.randomSearch();
-                   		index.offer(result);
-                   		logSample(engine.getId());
+                	SearchResult result = null;
+                	if (mother != null && random.nextBoolean()) { // sample mostly from mother
+                		engine = mother;
+                       	result = engine.randomSearch();
+                	} else {
+                    	engine = engines.getRandom();
+                       	result = engine.randomSearch();
+        				result.removeResourceRank();     // only trust your mother
                 	}
+               		index.offer(result);
+               		logSample(engine.getId());
                 }
-            } catch (IOException e) { 
-            } catch (SearchException e) { 
+            } catch (Exception e) { 
             	logWarning("Sampling " + engine.getId() + " failed: " + e.getMessage());
             }
         }
@@ -206,8 +213,13 @@ public class Main {
         Resource me = null;
         String myId = options.getMyName();
         if (myId == null) {
-        	me = new Resource(myTemplate);
-        	myId = me.getId();
+        	if (motherTemplate != null) { 
+        		myId = mother.getId(); // no Id and mother? Take my mother's name
+            	me = new Resource(myTemplate, myId);
+        	} else {
+            	me = new Resource(myTemplate);  
+            	myId = me.getId();  // no Id and no mother?, this will result in a random Id
+        	}
         } else {
         	me = new Resource(myTemplate, myId);
         }

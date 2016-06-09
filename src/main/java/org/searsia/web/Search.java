@@ -90,10 +90,10 @@ public class Search {
 		SearchResult result;
 		JSONObject json;
 		me = engines.getMyself();
+		mother = engines.getMother();
 		if (resourceid != null && resourceid.trim().length() > 0 && !resourceid.equals(me.getId())) {
 			engine = engines.get(resourceid);
 			if (engine == null) {  // unknown? ask your mother
-				mother = engines.getMother();
 				if (mother != null) {
 				    try {
     				    engine  = mother.searchResource(resourceid);
@@ -113,9 +113,7 @@ public class Search {
 			if (query != null && query.trim().length() > 0) {
 				try {
 					result = engine.search(query);
-					if (!resourceid.equals(engines.getMotherId())) {
-						result.removeResourceRank();     // only trust your mother
-					}
+    				result.removeResourceRank();     // only trust your mother
 					json = result.toJson();                         // first json for response, so
 					result.addQueryResourceRankDate(query, engine.getId()); // response will not have query + resource
 					index.offer(result);  //  maybe do this AFTER the http response is sent:  https://jersey.java.net/documentation/latest/async.html (11.1.1)
@@ -139,10 +137,20 @@ public class Search {
 			    	logWarning(message);
 				    return SearsiaApplication.responseError(503, message);				
 			    }
-			} else {
+		    	if (result.getHits().isEmpty() && mother != null) {  // empty? ask mother!
+				    try {
+    				    result  = mother.search(query);
+				    } catch (SearchException e) {
+				    	String message = "Mother not available";
+				    	logWarning(message);
+					}		    		
+		    	} else {  // own results? Do resource ranking.
+			        result.scoreResourceSelection(query, engines);
+		    	}
+			} else {  // no query? Return empty results
 				result = new SearchResult();
+		        result.scoreResourceSelection(query, engines);
 			}
-	        result.scoreResourceSelection(query, engines);
 		    json = result.toJson();
 		    json.put("resource", engines.getMyself().toJson());
 			return SearsiaApplication.responseOk(json);

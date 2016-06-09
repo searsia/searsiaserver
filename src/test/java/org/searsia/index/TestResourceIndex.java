@@ -65,9 +65,8 @@ public class TestResourceIndex {
     	Assert.assertTrue("No private parameters expected", e4.getJsonPrivateParameters() == null);
     	Resource e6 = engines.get(newby().getId());
     	Assert.assertTrue("Private parameters expected", e6.getJsonPrivateParameters() != null);
-    	Assert.assertTrue("Top 1", engines.topValues("", 1).size() == 1);
+    	Assert.assertTrue("Top 1", engines.topValues("anything", 1).size() == 1);
     	Assert.assertTrue("Top 2", engines.topValues(null, 2).size() == 2);
-    	Assert.assertTrue("Top 3", engines.topValues("anything", 3).size() == 3);
     }
 	
     @Test
@@ -75,7 +74,7 @@ public class TestResourceIndex {
     	Resource e1 = utwente();
     	engines.put(e1);
     	Resource e2 = engines.get(e1.getId());
-    	Assert.assertTrue("add", e1.equals(e2));
+    	Assert.assertTrue("Add", e1.equals(e2));
     }
  
     @Test
@@ -83,7 +82,15 @@ public class TestResourceIndex {
     	Resource e1 = me();
     	engines.putMyself(e1);
     	Resource e2 = engines.getMyself();
-    	Assert.assertTrue("me", e1.equals(e2));
+    	Assert.assertTrue("Me", e1.equals(e2));
     }
+
+    @Test
+    public void getMother() {
+    	Resource e1 = searsia();
+    	Resource e2 = engines.getMother();
+    	Assert.assertTrue("Mother", e1.equals(e2));
+    }
+
 
 }

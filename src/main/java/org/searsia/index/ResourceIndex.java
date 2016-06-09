@@ -60,7 +60,7 @@ public class ResourceIndex {
     
 	private Map<String,Resource> engines = new LinkedHashMap<String,Resource>();
 	private Random random   = new Random();
-	private String motherId = null;
+	private Resource mother = null;
 	private Resource me = null;
 	private Path meFile     = null;
 	private Path indexDir = null;
@@ -85,12 +85,17 @@ public class ResourceIndex {
 		}
 		initResourceIndex();
 	}
-	
-	
+
+
 	private void writeMyselfFile(Resource engine) throws IOException {
+	    JSONObject me = engine.toJson();
+	    if (this.mother != null) {
+    	    me.put("motherTemplate", this.mother.getAPIUserTemplate());
+	    }
 	    Files.write(this.meFile, engine.toJson().toString().getBytes());
 	}
-	
+
+
 	private Resource readMyselfFile(Path meFile) throws IOException {
 		String content = new String(Files.readAllBytes(meFile));
 		Resource me = null;
@@ -102,7 +107,8 @@ public class ResourceIndex {
 		}
 		return me;
 	}
-	
+
+
 	private void readResourceIndex() throws IOException {
         IndexReader reader = null;
         Directory dir = FSDirectory.open(this.indexDir.toFile());
@@ -146,11 +152,7 @@ public class ResourceIndex {
 	 * @return mother engine
 	 */
 	public Resource getMother() {
-		if (motherId == null) {
-			return null;
-		} else {
-			return this.engines.get(motherId);
-		}
+		return this.mother;
 	}
 	
 	/**
@@ -161,18 +163,15 @@ public class ResourceIndex {
         return this.me;
 	}
 	
-	
-	public String getMotherId() {
-		return this.motherId;
-	}
-	
+
 	private boolean exists(Resource engine) {
 		for (Resource e: this.engines.values())
 		    if (e.equals(engine))
 		    	return true;
 		return false;
 	}
-	
+
+
 	private void updateResourceIndex(String id, Resource engine) throws IOException {
         Document doc = new Document();
         if (id != null) {
@@ -184,7 +183,8 @@ public class ResourceIndex {
         }
         this.writer.commit();
 	}
-	
+
+
 	public void delete(String id) throws IOException {
 		Resource engine = get(id);
 		if (engine == null) {
@@ -197,7 +197,7 @@ public class ResourceIndex {
 	
 	
 	public void put(Resource engine) {
-		if (this.motherId != null && engine.getId().equals(this.motherId)) {
+		if (this.mother != null && engine.getId().equals(this.mother.getId())) {
 			throw new RuntimeException("Mother id conflict: " + engine.getId());
 		}
 		if (this.me != null && engine.getId().equals(this.me.getId())) {
@@ -261,9 +261,8 @@ public class ResourceIndex {
 		return result; 
 	}
 	
-	public void putMother(Resource engine) {
-		put(engine);
-		this.motherId = engine.getId();
+	public void putMother(Resource mother) {
+		this.mother = mother;
 	}
 	
 	public void putMyself(Resource engine) {
@@ -299,7 +298,7 @@ public class ResourceIndex {
 	
 	public void close() throws IOException {
 		this.writer.close();
-		this.motherId = null;
+		this.mother = null;
 		this.me = null;
 	}
 	
