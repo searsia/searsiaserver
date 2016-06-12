@@ -207,23 +207,24 @@ public class Resource implements Comparable<Resource> {
 		this.rerank  = rerank;
 	}
 
+
 	public void changeId(String id) {   // BEWARE, only used in Main
     	this.id = id;			
 	}	
 
+
 	public SearchResult randomSearch() throws SearchException {
 		if (nextQuery == null) {
-			nextQuery = testQuery;
+			nextQuery = this.testQuery;
 		}
 		String thisQuery = nextQuery;
-		nextQuery = null; // so, nextQuery will be null in case of an searchexception
+		nextQuery = null; // so, nextQuery will be null in case of a searchexception
 		SearchResult result = search(thisQuery);
-		result.addQueryResourceRankDate(thisQuery, getId()); // response will not have query + resource
 		nextQuery = result.randomTerm();
 		return result;
 	}
 
-	
+
 	public SearchResult search(String query) throws SearchException {
         return search(query, false);
 	}

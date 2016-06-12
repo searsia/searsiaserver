@@ -115,7 +115,7 @@ public class Search {
 					result = engine.search(query);
     				result.removeResourceRank();     // only trust your mother
 					json = result.toJson();                         // first json for response, so
-					result.addQueryResourceRankDate(query, engine.getId()); // response will not have query + resource
+					result.addQueryResourceRankDate(engine.getId()); // response will not have query + resource
 					index.offer(result);  //  maybe do this AFTER the http response is sent:  https://jersey.java.net/documentation/latest/async.html (11.1.1)
 					json.put("resource", engine.toJson());
 					return SearsiaApplication.responseOk(json);
@@ -140,6 +140,7 @@ public class Search {
 		    	if (result.getHits().isEmpty() && mother != null) {  // empty? ask mother!
 				    try {
     				    result  = mother.search(query);
+    				    index.offer(result);  // really trust mother
 				    } catch (SearchException e) {
 				    	String message = "Mother not available";
 				    	logWarning(message);

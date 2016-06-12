@@ -116,7 +116,7 @@ public class SearchResultIndex {
             String id = hit.getId();
             String terms = hit.toIndexVersion();
             Document doc = new Document();
-            if (id != null) {
+            if (id != null && hit.getTitle() != null) { // must have a title
                 doc.add(new StringField("id", id, Field.Store.YES)); // unique identifier
                 doc.add(new TextField("terms", terms, Field.Store.NO));
                 doc.add(new StoredField("result", hit.toJson().toString()));

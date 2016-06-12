@@ -50,6 +50,7 @@ public class SearchResult {
 		this.hits = new ArrayList<Hit>();
 		this.random = new Random();
 		this.resource = null;
+		this.query = null;
 		this.xmlOut = null;
 		if (hit != null) {
 			this.hits.add(hit);
@@ -89,8 +90,9 @@ public class SearchResult {
 	}
 
 	// TODO: maybe a list of query-resource pairs, if result found by multiple engines for multiple queries.
-	public void addQueryResourceRankDate(String query, String resourceID) {
+	public void addQueryResourceRankDate(String resourceID) {
 		int rank = 1;
+		String query = getQuery();
 		for (Hit hit: this.hits) {
 			hit.putIfEmpty("query", query);
 			hit.putIfEmpty("rid", resourceID);  // TODO: if unknown rid, then replace!
@@ -116,6 +118,7 @@ public class SearchResult {
 	public void scoreResourceSelection(String query, ResourceIndex engines) {
 		final float bias = 1.0f;
 		Map<String, Float> maxScore = new HashMap<String, Float>();
+		Map <String, Float> topEngines = engines.topValues(query, 20);
 		for (Hit hit: this.hits) {
 			String rid = hit.getString("rid");
 			if (rid != null) {
@@ -124,6 +127,13 @@ public class SearchResult {
     				prior = engines.get(rid).getPrior();
 				}
     			float score = hit.getScore() * bias + prior;
+				Float top = topEngines.get(rid);
+				if (top != null) { 
+					if (top > score) {
+       					score = top;
+					}
+					topEngines.remove(rid);
+				}
 				Float max = maxScore.get(rid);
 				if (max == null || max < score) {
 					maxScore.put(rid, score);
@@ -139,14 +149,11 @@ public class SearchResult {
                 hit.setScore(score);    				
 			}
 		}
-		Map <String, Float> topEngines = engines.topValues(query, 20);
     	for (String rid: topEngines.keySet()) {
-	   		if (!maxScore.containsKey(rid)) {
-	   	        Hit hit = new Hit();
-	            hit.put("rid", rid);
-	            hit.setScore(topEngines.get(rid));
-	            this.hits.add(hit);
-	   		}
+   	        Hit hit = new Hit();
+            hit.put("rid", rid);
+            hit.setScore(topEngines.get(rid));
+            this.hits.add(hit);
 		}
 	    Collections.sort(this.hits, Collections.reverseOrder());
 	}

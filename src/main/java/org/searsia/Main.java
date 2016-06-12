@@ -73,6 +73,7 @@ public class Main {
                     	engine = engines.getRandom();
                        	result = engine.randomSearch();
         				result.removeResourceRank();     // only trust your mother
+        				result.addQueryResourceRankDate(engine.getId());
                 	}
                		index.offer(result);
                		logSample(engine.getId(), result.getQuery());
