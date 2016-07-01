@@ -139,20 +139,15 @@ public class SearchResult {
 					maxScore.put(rid, score);
 					max = score;
 				} 
-        		String hitQuery = hit.getString("query"); // TODO add getQuery()
-    			if (hitQuery != null) {
-    				if (hitQuery.equals(query)) {
-        			    score = max;
-    				} 
-    				hit.remove("query"); // for privacy reasons removed
-    			}
-                hit.setScore(score);    				
+                hit.setScore(score);
+                //hit.put("rscore", max);
 			}
 		}
     	for (String rid: topEngines.keySet()) {
    	        Hit hit = new Hit();
             hit.put("rid", rid);
             hit.setScore(topEngines.get(rid));
+            //hit.put("rscore", topEngines.get(rid));
             this.hits.add(hit);
 		}
 	    Collections.sort(this.hits, Collections.reverseOrder());

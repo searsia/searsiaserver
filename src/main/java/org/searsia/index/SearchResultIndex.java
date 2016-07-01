@@ -153,6 +153,7 @@ public class SearchResultIndex {
             Document d = hitsSearcher.doc(docId);
             Hit hit = new Hit(d.get("result"));
             hit.put("score", doc.score);
+            hit.remove("query"); // remove for privacy reasons
             result.addHit(hit);
         }
         return result;
