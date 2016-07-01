@@ -314,6 +314,8 @@ public class Resource implements Comparable<Resource> {
 		Document document;
 		if (this.mimeType != null && this.mimeType.equals("application/json")) {
 		   document = parseDocumentJSON(page);
+		} else if (this.mimeType != null && this.mimeType.equals("application/x-javascript")) {
+		    document = parseDocumentJavascript(page);
 		} else if (this.mimeType != null && this.mimeType.equals("application/xml")) {
 		    document = parseDocumentXML(page);
 		} else {
@@ -353,6 +355,38 @@ public class Resource implements Comparable<Resource> {
         return DOMBuilder.jsoup2DOM(jsoupDoc);
     }
 
+	/**
+	 * From a Javascript callback result, get out all JSON objects and put them in a single object
+	 * @param scriptString 
+	 * @return Document
+	 * @throws IOException
+	 */
+	private Document parseDocumentJavascript(String scriptString) throws IOException {
+		int nrOfCurly = 0;
+		int first = -1;
+		JSONArray array = new JSONArray();
+		for (int i = 0; i < scriptString.length(); i++){
+		    char c = scriptString.charAt(i);        
+		    if (c == '{') {
+		    	if (nrOfCurly == 0) { first = i; }
+		    	nrOfCurly += 1;
+		    } else if (c == '}') {
+		    	nrOfCurly -= 1;
+		    	if (nrOfCurly == 0) {
+		    		String subString = scriptString.substring(first, i + 1);
+		        	subString = subString.replaceAll("\"([0-9]+)\":", "\"t$1\":"); // tags starting with a number are not well-formed XML
+                    try {
+                    	array.put(new JSONObject(subString));
+                    } catch (JSONException e) { }
+		    	}
+		    }	    
+		}
+		JSONObject object = new JSONObject();
+		object.put("list", array);
+		String xml = "<root>" + XML.toString(object) + "</root>";
+        return DOMBuilder.string2DOM(xml);
+	}
+	
     private Document parseDocumentJSON(String jsonString) throws IOException {
     	jsonString = jsonString.replaceAll("\"([0-9]+)\":", "\"t$1\":"); // tags starting with a number are not well-formed XML
         if (jsonString.startsWith("[")) {  // turn lists into objects
