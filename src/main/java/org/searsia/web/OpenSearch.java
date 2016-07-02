@@ -23,7 +23,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 
-import org.searsia.index.ResourceEngines;
+import org.searsia.index.ResourceIndex;
 
 /**
  * Implements the OpenSearch description document from http://opensearch.org
@@ -34,9 +34,9 @@ import org.searsia.index.ResourceEngines;
 @Path("opensearch.xml")
 public class OpenSearch {
 
-	private ResourceEngines engines;
+	private ResourceIndex engines;
 
-	public OpenSearch(ResourceEngines engines) throws IOException {
+	public OpenSearch(ResourceIndex engines) throws IOException {
 		this.engines  = engines;
 	}
 	

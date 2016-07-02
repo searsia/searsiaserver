@@ -28,8 +28,8 @@ import java.util.Random;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.searsia.index.ResourceEngines;
-import org.searsia.engine.SearchEngine;
+import org.searsia.index.ResourceIndex;
+import org.searsia.engine.Resource;
 
 public class SearchResult {
 	public  static final String SEARSIA_MIME_TYPE     = "application/searsia+json";
@@ -38,8 +38,9 @@ public class SearchResult {
 	private static final String TOKENIZER = "[^A-Za-z0-9]+";
 	private List<Hit> hits;
 	private Random random;
-	private SearchEngine resource;
+	private Resource resource;
 	private String xmlOut;
+	private String query;
 	
 	public SearchResult() {
 		this(null);
@@ -49,6 +50,7 @@ public class SearchResult {
 		this.hits = new ArrayList<Hit>();
 		this.random = new Random();
 		this.resource = null;
+		this.query = null;
 		this.xmlOut = null;
 		if (hit != null) {
 			this.hits.add(hit);
@@ -63,25 +65,34 @@ public class SearchResult {
   		this.hits.add(hit);
 	}
 	
-	public void setResource(SearchEngine resource) {
+	public void setResource(Resource resource) {
 		this.resource = resource;
 	}
 	
-	public SearchEngine getResource() {
+	public Resource getResource() {
 		return this.resource;
 	}
-	
+
 	public void setXmlOut(String xmlOut) {
 		this.xmlOut = xmlOut;
 	}
-	
+
 	public String getXmlOut() {
 		return this.xmlOut;
 	}
-	
+
+	public void setQuery(String query) {
+		this.query = query;
+	}
+
+	public String getQuery() {
+		return this.query;
+	}
+
 	// TODO: maybe a list of query-resource pairs, if result found by multiple engines for multiple queries.
-	public void addQueryResourceRankDate(String query, String resourceID) {
+	public void addQueryResourceRankDate(String resourceID) {
 		int rank = 1;
+		String query = getQuery();
 		for (Hit hit: this.hits) {
 			hit.putIfEmpty("query", query);
 			hit.putIfEmpty("rid", resourceID);  // TODO: if unknown rid, then replace!
@@ -104,9 +115,10 @@ public class SearchResult {
 	//   3. order by score (given rule 1 and rule 2)
 	//   4. TODO: not more than x (=10?) hits per resource
 	//   5. stop after 20 resources
-	public void scoreResourceSelection(String query, ResourceEngines engines) {
+	public void scoreResourceSelection(String query, ResourceIndex engines) {
 		final float bias = 1.0f;
 		Map<String, Float> maxScore = new HashMap<String, Float>();
+		Map <String, Float> topEngines = engines.topValues(query, 20);
 		for (Hit hit: this.hits) {
 			String rid = hit.getString("rid");
 			if (rid != null) {
@@ -115,30 +127,28 @@ public class SearchResult {
     				prior = engines.get(rid).getPrior();
 				}
     			float score = hit.getScore() * bias + prior;
+				Float top = topEngines.get(rid);
+				if (top != null) { 
+					if (top > score) {
+       					score = top;
+					}
+					topEngines.remove(rid);
+				}
 				Float max = maxScore.get(rid);
 				if (max == null || max < score) {
 					maxScore.put(rid, score);
 					max = score;
 				} 
-        		String hitQuery = hit.getString("query"); // TODO add getQuery()
-    			if (hitQuery != null) {
-    				if (hitQuery.equals(query)) {
-        			    score = max;
-    				} else {
-    				    hit.remove("query"); // for privacy reasons removed
-    				}
-    			}
-                hit.setScore(score);    				
+                hit.setScore(score);
+                //hit.put("rscore", max);
 			}
 		}
-		Map <String, Float> topEngines = engines.topValues(query, 20);
     	for (String rid: topEngines.keySet()) {
-	   		if (!maxScore.containsKey(rid)) {
-	   	        Hit hit = new Hit();
-	            hit.put("rid", rid);
-	            hit.setScore(topEngines.get(rid));
-	            this.hits.add(hit);
-	   		}
+   	        Hit hit = new Hit();
+            hit.put("rid", rid);
+            hit.setScore(topEngines.get(rid));
+            //hit.put("rscore", topEngines.get(rid));
+            this.hits.add(hit);
 		}
 	    Collections.sort(this.hits, Collections.reverseOrder());
 	}

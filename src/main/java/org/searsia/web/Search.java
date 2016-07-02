@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.concurrent.ArrayBlockingQueue;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.OPTIONS;
@@ -33,13 +32,13 @@ import org.apache.log4j.Logger;
 import org.json.JSONObject;
 
 import org.searsia.SearchResult;
-import org.searsia.index.HitsSearcher;
-import org.searsia.index.ResourceEngines;
-import org.searsia.engine.SearchEngine;
+import org.searsia.index.SearchResultIndex;
+import org.searsia.index.ResourceIndex;
+import org.searsia.engine.Resource;
 import org.searsia.engine.SearchException;
 
 /**
- * Generates json response for search.
+ * Generates json response for HTTP GET search.
  * 
  * @author Dolf Trieschnigg and Djoerd Hiemstra
  */
@@ -48,14 +47,12 @@ public class Search {
 
 	private final static Logger LOGGER = Logger.getLogger(Search.class);
 	
-	private ResourceEngines engines;
-    private ArrayBlockingQueue<SearchResult> queue;
-    private HitsSearcher searcher;
+	private ResourceIndex engines;
+    private SearchResultIndex index;
 
-	public Search(ArrayBlockingQueue<SearchResult> queue, HitsSearcher searcher, ResourceEngines engines) throws IOException {
+	public Search(SearchResultIndex index, ResourceIndex engines) throws IOException {
 		this.engines  = engines;
-    	this.queue    = queue;
-    	this.searcher = searcher;
+    	this.index = index;
 	}
 	
 	private static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
@@ -89,14 +86,14 @@ public class Search {
 		// TODO: also log the outcome of the query
 		logQuery(resourceid, query);
 		
-		SearchEngine me, engine, mother;
+		Resource me, engine, mother;
 		SearchResult result;
 		JSONObject json;
 		me = engines.getMyself();
+		mother = engines.getMother();
 		if (resourceid != null && resourceid.trim().length() > 0 && !resourceid.equals(me.getId())) {
 			engine = engines.get(resourceid);
 			if (engine == null) {  // unknown? ask your mother
-				mother = engines.getMother();
 				if (mother != null) {
 				    try {
     				    engine  = mother.searchResource(resourceid);
@@ -116,12 +113,10 @@ public class Search {
 			if (query != null && query.trim().length() > 0) {
 				try {
 					result = engine.search(query);
-					if (!resourceid.equals(engines.getMotherId())) {
-						result.removeResourceRank();     // only trust your mother
-					}
+    				result.removeResourceRank();     // only trust your mother
 					json = result.toJson();                         // first json for response, so
-					result.addQueryResourceRankDate(query, engine.getId()); // response will not have query + resource
-					queue.offer(result);  //  maybe do this AFTER the http response is sent:  https://jersey.java.net/documentation/latest/async.html (11.1.1)
+					result.addQueryResourceRankDate(engine.getId()); // response will not have query + resource
+					index.offer(result);  //  maybe do this AFTER the http response is sent:  https://jersey.java.net/documentation/latest/async.html (11.1.1)
 					json.put("resource", engine.toJson());
 					return SearsiaApplication.responseOk(json);
 				} catch (Exception e) {
@@ -136,16 +131,27 @@ public class Search {
 		} else {
 			if (query != null && query.trim().length() > 0) {
 		    	try {
-			        result = searcher.search(query);
+			        result = index.search(query);
 			    } catch (IOException e) {
 			    	String message = "Service unavailable: " + e.getMessage();
 			    	logWarning(message);
 				    return SearsiaApplication.responseError(503, message);				
 			    }
-			} else {
+		    	if (result.getHits().isEmpty() && mother != null) {  // empty? ask mother!
+				    try {
+    				    result  = mother.search(query);
+    				    index.offer(result);  // really trust mother
+				    } catch (SearchException e) {
+				    	String message = "Mother not available";
+				    	logWarning(message);
+					}		    		
+		    	} else {  // own results? Do resource ranking.
+			        result.scoreResourceSelection(query, engines);
+		    	}
+			} else {  // no query? Return empty results
 				result = new SearchResult();
+		        result.scoreResourceSelection(query, engines);
 			}
-	        result.scoreResourceSelection(query, engines);
 		    json = result.toJson();
 		    json.put("resource", engines.getMyself().toJson());
 			return SearsiaApplication.responseOk(json);

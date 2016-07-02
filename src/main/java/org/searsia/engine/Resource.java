@@ -50,10 +50,10 @@ import org.w3c.dom.NodeList;
 import org.searsia.Hit;
 import org.searsia.SearchResult;
 
-public class SearchEngine implements Comparable<SearchEngine> {
+public class Resource implements Comparable<Resource> {
 
     public final static String defaultTestQuery = "searsia";
-    private final static Logger LOGGER = Logger.getLogger(SearchEngine.class.getName());
+    private final static Logger LOGGER = Logger.getLogger(Resource.class.getName());
 
     // For rate limiting: Default = 1000 queries per day
     private final static int defaultRATE = 1000;    // unit: queries
@@ -85,7 +85,7 @@ public class SearchEngine implements Comparable<SearchEngine> {
 	private long lastCheck = new Date().getTime(); // Unix time
 
 
-	public SearchEngine(String urlAPITemplate, String id) {
+	public Resource(String urlAPITemplate, String id) {
 		this.urlAPITemplate = urlAPITemplate;
 		this.id = id;
 		this.name = null;
@@ -93,11 +93,11 @@ public class SearchEngine implements Comparable<SearchEngine> {
 		this.testQuery = defaultTestQuery;
 	}
 	
-	public SearchEngine(String urlAPITemplate) {
+	public Resource(String urlAPITemplate) {
 		this(urlAPITemplate, getHashString(urlAPITemplate));
 	}
 	
-	public SearchEngine(JSONObject jo) throws XPathExpressionException, JSONException {	
+	public Resource(JSONObject jo) throws XPathExpressionException, JSONException {	
 		this.mimeType = SearchResult.SEARSIA_MIME_TYPE;
 		this.testQuery = defaultTestQuery;
 		if (jo.has("id"))          this.id              = jo.getString("id");
@@ -207,23 +207,24 @@ public class SearchEngine implements Comparable<SearchEngine> {
 		this.rerank  = rerank;
 	}
 
+
 	public void changeId(String id) {   // BEWARE, only used in Main
     	this.id = id;			
 	}	
 
+
 	public SearchResult randomSearch() throws SearchException {
 		if (nextQuery == null) {
-			nextQuery = testQuery;
+			nextQuery = this.testQuery;
 		}
 		String thisQuery = nextQuery;
-		nextQuery = null; // so, nextQuery will be null in case of an searchexception
+		nextQuery = null; // so, nextQuery will be null in case of a searchexception
 		SearchResult result = search(thisQuery);
-		result.addQueryResourceRankDate(thisQuery, getId()); // response will not have query + resource
 		nextQuery = result.randomTerm();
 		return result;
 	}
 
-	
+
 	public SearchResult search(String query) throws SearchException {
         return search(query, false);
 	}
@@ -246,6 +247,7 @@ public class SearchEngine implements Comparable<SearchEngine> {
             if (this.rerank != null && query != null) {
                 result.scoreReranking(query, this.rerank);
             }
+			result.setQuery(query);
 			return result;
 		} catch (Exception e) {  // catch all, also runtime exceptions
 			throw createPrivateSearchException(e);
@@ -268,18 +270,18 @@ public class SearchEngine implements Comparable<SearchEngine> {
 	}
 
 	
-	public SearchEngine searchResource(String resourceid) throws SearchException {
+	public Resource searchResource(String resourceid) throws SearchException {
 		if (!this.mimeType.equals(SearchResult.SEARSIA_MIME_TYPE)) {
 			throw new SearchException("Resource is not a searsia engine: " + resourceid);
 		}
 		try {
-			SearchEngine engine = null;
+			Resource engine = null;
     		String url = this.urlAPITemplate.replaceAll("\\{r\\??\\}", URLEncoder.encode(resourceid, "UTF-8"));
             url = url.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", ""); // remove optional parameters 
        		String jsonPage = getCompleteWebPage(url, this.postString, this.headers);
     		JSONObject json = new JSONObject(jsonPage);
     		if (json.has("resource")) {
-        		engine = new SearchEngine(json.getJSONObject("resource"));
+        		engine = new Resource(json.getJSONObject("resource"));
     		}
             return engine;
 		} catch (Exception e) {
@@ -297,7 +299,7 @@ public class SearchEngine implements Comparable<SearchEngine> {
 		}
 		if (json.has("resource")) {
 			try {
-    		    SearchEngine engine = new SearchEngine(json.getJSONObject("resource"));
+    		    Resource engine = new Resource(json.getJSONObject("resource"));
     		    result.setResource(engine);
 			} catch (XPathExpressionException e) {
     			LOGGER.warn("Warning: " + e.getMessage());
@@ -312,6 +314,8 @@ public class SearchEngine implements Comparable<SearchEngine> {
 		Document document;
 		if (this.mimeType != null && this.mimeType.equals("application/json")) {
 		   document = parseDocumentJSON(page);
+		} else if (this.mimeType != null && this.mimeType.equals("application/x-javascript")) {
+		    document = parseDocumentJavascript(page);
 		} else if (this.mimeType != null && this.mimeType.equals("application/xml")) {
 		    document = parseDocumentXML(page);
 		} else {
@@ -351,6 +355,38 @@ public class SearchEngine implements Comparable<SearchEngine> {
         return DOMBuilder.jsoup2DOM(jsoupDoc);
     }
 
+	/**
+	 * From a Javascript callback result, get out all JSON objects and put them in a single object
+	 * @param scriptString 
+	 * @return Document
+	 * @throws IOException
+	 */
+	private Document parseDocumentJavascript(String scriptString) throws IOException {
+		int nrOfCurly = 0;
+		int first = -1;
+		JSONArray array = new JSONArray();
+		for (int i = 0; i < scriptString.length(); i++){
+		    char c = scriptString.charAt(i);        
+		    if (c == '{') {
+		    	if (nrOfCurly == 0) { first = i; }
+		    	nrOfCurly += 1;
+		    } else if (c == '}') {
+		    	nrOfCurly -= 1;
+		    	if (nrOfCurly == 0) {
+		    		String subString = scriptString.substring(first, i + 1);
+		        	subString = subString.replaceAll("\"([0-9]+)\":", "\"t$1\":"); // tags starting with a number are not well-formed XML
+                    try {
+                    	array.put(new JSONObject(subString));
+                    } catch (JSONException e) { }
+		    	}
+		    }	    
+		}
+		JSONObject object = new JSONObject();
+		object.put("list", array);
+		String xml = "<root>" + XML.toString(object) + "</root>";
+        return DOMBuilder.string2DOM(xml);
+	}
+	
     private Document parseDocumentJSON(String jsonString) throws IOException {
     	jsonString = jsonString.replaceAll("\"([0-9]+)\":", "\"t$1\":"); // tags starting with a number are not well-formed XML
         if (jsonString.startsWith("[")) {  // turn lists into objects
@@ -595,7 +631,7 @@ public class SearchEngine implements Comparable<SearchEngine> {
     @Override
     public boolean equals(Object o) {  // TODO: AARGH, can't this be done simpler?
     	if (o == null) return false;
-    	SearchEngine e = (SearchEngine) o;
+    	Resource e = (Resource) o;
     	if (!stringEquals(this.getId(), e.getId())) return false;
     	if (!stringEquals(this.getName(), e.getName())) return false;
     	if (!stringEquals(this.getMimeType(), e.getMimeType())) return false;
@@ -614,7 +650,7 @@ public class SearchEngine implements Comparable<SearchEngine> {
     }
     
     @Override
-    public int compareTo(SearchEngine e2) {
+    public int compareTo(Resource e2) {
     	Float score1 = getPrior();
     	Float score2 = e2.getPrior();
    		return score1.compareTo(score2);

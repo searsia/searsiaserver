@@ -24,7 +24,7 @@ import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.Random;
 
 import org.apache.log4j.Appender;
 import org.apache.log4j.DailyRollingFileAppender;
@@ -34,12 +34,10 @@ import org.apache.log4j.PatternLayout;
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.json.JSONObject;
-
-import org.searsia.index.HitsSearcher;
-import org.searsia.index.HitsWriter;
-import org.searsia.index.ResourceEngines;
+import org.searsia.index.SearchResultIndex;
+import org.searsia.index.ResourceIndex;
 import org.searsia.web.SearsiaApplication;
-import org.searsia.engine.SearchEngine;
+import org.searsia.engine.Resource;
 import org.searsia.engine.SearchException;
 
 
@@ -56,35 +54,43 @@ public class Main {
 	
 	private static final Logger LOGGER = Logger.getLogger("org.searsia");
 	private static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
+	private static Random random   = new Random();
 
-    private static void searsiaDaemon(HitsWriter writer, ArrayBlockingQueue<SearchResult> queue, 
-    		ResourceEngines engines, int pollInterval) throws InterruptedException {
-    	SearchEngine engine = null;
+	
+    private static void searsiaDaemon(SearchResultIndex index, ResourceIndex engines, 
+    		int pollInterval) throws InterruptedException {
+    	Resource mother = engines.getMother();
+    	Resource engine = null;
         while(true) {
             Thread.sleep(pollInterval * 1000);
             try {
-                if (!writer.check()) {
-                	engine = engines.getRandom();
-                	if (engine != null) {
-                       	SearchResult result = engine.randomSearch();
-                   		queue.offer(result);
-                   		logSample(engine.getId());
+                if (!index.check()) {
+                	SearchResult result = null;
+                	if (mother != null && random.nextBoolean()) { // sample mostly from mother
+                		engine = mother;
+                       	result = engine.randomSearch();
+                	} else {
+                    	engine = engines.getRandom();
+                       	result = engine.randomSearch();
+        				result.removeResourceRank();     // only trust your mother
+        				result.addQueryResourceRankDate(engine.getId());
                 	}
+               		index.offer(result);
+               		logSample(engine.getId(), result.getQuery());
                 }
-            } catch (IOException e) { 
-            } catch (SearchException e) { 
+            } catch (Exception e) { 
             	logWarning("Sampling " + engine.getId() + " failed: " + e.getMessage());
             }
         }
     }
 
     
-    private static void getResources(SearchEngine mother, SearchResult result, ResourceEngines engines) {
+    private static void getResources(Resource mother, SearchResult result, ResourceIndex engines) {
     	int i = 0;
     	for (Hit hit: result.getHits()) {
     	     String rid = hit.getString("rid");
     	     if (rid != null && !engines.containsKey(rid)) {
-    	    	 SearchEngine engine;
+    	    	 Resource engine;
          	     i += 1;
     	    	 try {
     	             engine = mother.searchResource(rid);
@@ -125,10 +131,11 @@ public class Main {
 	}
 
 
-	private static void logSample(String resourceid) {
+	private static void logSample(String resourceid, String query) {
 		JSONObject r = new JSONObject();
 		r.put("time", df.format(new Date()));
 		r.put("sample", resourceid);
+		r.put("query", query);
 		LOGGER.info(r.toString());
 	}
 
@@ -156,10 +163,8 @@ public class Main {
 
 
     public static void main(String[] args) {
-    	ArrayBlockingQueue<SearchResult> queue = null;
-    	ResourceEngines engines = null;
-    	HitsWriter writer       = null;
-        HitsSearcher searcher   = null;
+    	ResourceIndex engines = null;
+    	SearchResultIndex index = null;
     	SearsiaOptions options  = null; 
     	HttpServer server       = null;
 
@@ -176,17 +181,17 @@ public class Main {
 
     	// Connect to the mother engine and gather information from the mother. 
     	String motherTemplate = options.getMotherTemplate();
-    	SearchEngine mother = null;
+    	Resource mother = null;
         SearchResult result = null;
-	if (motherTemplate != null) {
-        	mother = new SearchEngine(motherTemplate);
+        if (motherTemplate != null) {
+        	mother = new Resource(motherTemplate);
     	    try {
                	result = mother.search();
          	} catch (SearchException e) {
                 System.err.println("Error: Connection failed: " + e.getMessage());
     		    System.exit(1);
          	}
-    		SearchEngine newMother = result.getResource();
+    		Resource newMother = result.getResource();
     		if (newMother != null) {
     			String id = newMother.getId();
     			if (id != null) { 
@@ -207,13 +212,18 @@ public class Main {
     	// This is about me:
         String myURI = options.getMyURI();
         String myTemplate = uriToTemplate(myURI);
-        SearchEngine me = null;
+        Resource me = null;
         String myId = options.getMyName();
         if (myId == null) {
-        	me = new SearchEngine(myTemplate);
-        	myId = me.getId();
+        	if (motherTemplate != null) { 
+        		myId = mother.getId(); // no Id and mother? Take my mother's name
+            	me = new Resource(myTemplate, myId);
+        	} else {
+            	me = new Resource(myTemplate);  
+            	myId = me.getId();  // no Id and no mother?, this will result in a random Id
+        	}
         } else {
-        	me = new SearchEngine(myTemplate, myId);
+        	me = new Resource(myTemplate, myId);
         }
         String prefix;
     	if (motherTemplate != null) {
@@ -229,10 +239,8 @@ public class Main {
     	String path     = options.getIndexPath();
         Level level     = options.getLoggerLevel();
         try {
-        	engines  = new ResourceEngines(path, fileName);
-            queue    = new ArrayBlockingQueue<SearchResult>(options.getCacheSize());
-        	writer   = new HitsWriter(path, fileName, queue);
-        	searcher = new HitsSearcher(path, fileName);
+        	engines  = new ResourceIndex(path, fileName);
+        	index    = new SearchResultIndex(path, fileName, options.getCacheSize());
     		setupQueryLogger(path, fileName, level);
     	} catch (Exception e) {
             System.err.println("Setup failed: " + e.getMessage());
@@ -252,7 +260,7 @@ public class Main {
 		}
 
     	// Myself:
-    	SearchEngine newMe = engines.getMyself();
+    	Resource newMe = engines.getMyself();
         if (newMe != null) {
 			me.setName (newMe.getName());
 			me.setFavicon(newMe.getFavicon());
@@ -277,7 +285,7 @@ public class Main {
 		Boolean openWide = options.openedWide();
     	try {
             server = GrizzlyHttpServerFactory.createHttpServer(URI.create(myURI), 
-                new SearsiaApplication(queue, searcher, engines, openWide));
+                new SearsiaApplication(index, engines, openWide));
     	} catch (Exception e) {
             System.err.println("Server failed: " + e.getMessage());
     		System.exit(1);    		
@@ -290,7 +298,7 @@ public class Main {
         // Start the update daemon
         if (!options.isExit()) {
             try {
-                searsiaDaemon(writer, queue, engines, options.getPollInterval());
+                searsiaDaemon(index, engines, options.getPollInterval());
             } catch (InterruptedException e) {  }
         }
         server.shutdownNow();

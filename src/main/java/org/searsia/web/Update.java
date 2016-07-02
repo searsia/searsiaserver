@@ -31,8 +31,8 @@ import javax.ws.rs.core.Response;
 import org.json.JSONObject;
 import org.searsia.Hit;
 import org.searsia.SearchResult;
-import org.searsia.index.ResourceEngines;
-import org.searsia.engine.SearchEngine;
+import org.searsia.index.ResourceIndex;
+import org.searsia.engine.Resource;
 
 /**
  * Enables on-line updates, only if --open set in the options.
@@ -42,11 +42,11 @@ import org.searsia.engine.SearchEngine;
 @Path("update")
 public class Update {
 
-	private ResourceEngines engines;
+	private ResourceIndex engines;
 	private Boolean wideOpen;
 
 	
-	public Update(ResourceEngines engines, Boolean wideOpen) {
+	public Update(ResourceIndex engines, Boolean wideOpen) {
 		this.engines = engines;
 		this.wideOpen = wideOpen;
 	}
@@ -89,15 +89,15 @@ public class Update {
 	@Produces(SearchResult.SEARSIA_MIME_ENCODING) 
 	public Response put(@PathParam("id") String id,  @Context HttpHeaders headers, String putString) {
 		if (!this.wideOpen) {
-			return SearsiaApplication.responseError(401, "Unauthorized");
+			return SearsiaApplication.responseError(401, "Unauthorized. Run Searsia server with --open");
 		}
-		SearchEngine engine = null;
+		Resource engine = null;
 		try {
 			JSONObject jsonResource = getJSONResource(putString, headers);
 			if (!id.equals(jsonResource.get("id"))) {
 				return SearsiaApplication.responseError(400, "Conflicting id's");
 			}
-    		engine = new SearchEngine(jsonResource);
+    		engine = new Resource(jsonResource);
 		} catch (Exception e) {
 			return SearsiaApplication.responseError(400, e.getMessage());
 		}
@@ -138,10 +138,10 @@ public class Update {
      * If Searsia engine, get several values. Will change the value of 'engine'
      * @param engine
      */
-    private void updateEngine(SearchEngine engine) {
+    private void updateEngine(Resource engine) {
 		if (engine.getMimeType().equals(SearchResult.SEARSIA_MIME_TYPE)) {
             SearchResult result = null;
-        	SearchEngine resource = null;
+        	Resource resource = null;
 	    	try {
 		    	result = engine.search();
 			    resource = result.getResource();
@@ -151,7 +151,7 @@ public class Update {
 		    		if (engine.getBanner() == null) { engine.setBanner(resource.getBanner()); }
 			    	if (engine.getFavicon() == null) { engine.setFavicon(resource.getFavicon()); }
 				    if (engine.getRerank() == null) { engine.setRerank(resource.getRerank()); }
-    				if (engine.getTestQuery().equals(SearchEngine.defaultTestQuery)) { engine.setTestQuery(resource.getTestQuery()); } // awkward if the user typed 'searsia'
+    				if (engine.getTestQuery().equals(Resource.defaultTestQuery)) { engine.setTestQuery(resource.getTestQuery()); } // awkward if the user typed 'searsia'
 	    		}
 		    } catch (Exception e) {
 			    // nothing
