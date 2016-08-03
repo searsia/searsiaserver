@@ -59,15 +59,15 @@ public class ResourceTest {
 	}
     
     private Resource javascriptSearch() throws XPathExpressionException {
-		Resource vcs = new Resource("https://vcs.utwente.nl/typeahead/class/PhabricatorSearchDatasource/?q={q}&__ajax__=true&__metablock__=2");
-		vcs.setMimeType("application/x-javascript");
-		vcs.setItemXpath("//payload");
-		vcs.addExtractor(
-			new TextExtractor("title", "./array[1]"),
-			new TextExtractor("description", "./array[6]"),
-			new TextExtractor("url", "concat('https://vcs.utwente.nl', string(./array[2]))")
+		Resource wikifull = new Resource("http://searsia.org/searsia/wiki-{q}-wikifull.js");
+		wikifull.setMimeType("application/x-javascript");
+		wikifull.setItemXpath("//hits");
+		wikifull.addExtractor(
+			new TextExtractor("title", "./title"),
+			new TextExtractor("description", "./description"),
+			new TextExtractor("url", "./url")
 		);
-		return vcs;
+		return wikifull;
 	}
     
     @BeforeClass
@@ -114,9 +114,9 @@ public class ResourceTest {
 	public void testSearchJavascript() throws XPathExpressionException, SearchException {
 		Resource se = javascriptSearch();
 		Boolean debug = true;
-		SearchResult result = se.search("k", debug);
+		SearchResult result = se.search("informat", debug);
 		Assert.assertEquals("application/x-javascript", se.getMimeType());
-		Assert.assertEquals(12, result.getHits().size());
+		Assert.assertEquals(10, result.getHits().size());
 	}
 
 	@Test
