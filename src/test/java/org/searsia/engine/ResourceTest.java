@@ -111,6 +111,13 @@ public class ResourceTest {
 	}
 
 	@Test
+	public void testSearchJson2() throws XPathExpressionException, SearchException {
+		Resource se = jsonSearch();
+		SearchResult result = se.search("json");
+		Assert.assertEquals(1, result.getHits().size());
+	}
+
+	@Test
 	public void testSearchJavascript() throws XPathExpressionException, SearchException {
 		Resource se = javascriptSearch();
 		Boolean debug = true;

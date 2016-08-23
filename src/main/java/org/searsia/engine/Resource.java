@@ -374,12 +374,12 @@ public class Resource implements Comparable<Resource> {
 		    	nrOfCurly -= 1;
 		    	if (nrOfCurly == 0) {
 		    		String subString = scriptString.substring(first, i + 1);
-		        	subString = subString.replaceAll("\"([0-9]+)\":", "\"t$1\":"); // tags starting with a number are not well-formed XML
+		        	subString = subString.replaceAll("\"([0-9][^\"]*)\":", "\"t$1\":"); // tags starting with a number are not well-formed XML
                     try {
                     	array.put(new JSONObject(subString));
                     } catch (JSONException e) { }
 		    	}
-		    }	    
+		    }
 		}
 		JSONObject object = new JSONObject();
 		object.put("list", array);
@@ -388,7 +388,7 @@ public class Resource implements Comparable<Resource> {
 	}
 	
     private Document parseDocumentJSON(String jsonString) throws IOException {
-    	jsonString = jsonString.replaceAll("\"([0-9][0-9A-Za-z]+)\":", "\"t$1\":"); // tags starting with a number are not well-formed XML
+    	jsonString = jsonString.replaceAll("\"([0-9][^\"]*)\":", "\"t$1\":"); // tags starting with a number are not well-formed XML
         if (jsonString.startsWith("[")) {  // turn lists into objects
         	jsonString = "{\"list\":" + jsonString + "}";
         }
