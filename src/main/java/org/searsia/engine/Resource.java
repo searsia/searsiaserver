@@ -68,6 +68,7 @@ public class Resource implements Comparable<Resource> {
 	private String urlUserTemplate = null;
     private String mimeType = null;
     private String postString = null;
+    private String postQueryEncode = null;
     private String favicon = null;
     private String banner = null;
 	private String itemXpath = null;
@@ -104,6 +105,7 @@ public class Resource implements Comparable<Resource> {
 		if (jo.has("apitemplate")) this.urlAPITemplate  = jo.getString("apitemplate");
 		if (jo.has("mimetype"))    this.mimeType        = jo.getString("mimetype");
 		if (jo.has("post"))        this.postString      = jo.getString("post");
+		if (jo.has("postencode"))  this.postQueryEncode = jo.getString("postencode");
 		if (jo.has("name"))        this.name            = jo.getString("name");
 		if (jo.has("testquery"))   this.testQuery       = jo.getString("testquery");
 		if (jo.has("urltemplate")) this.urlUserTemplate = jo.getString("urltemplate");
@@ -159,6 +161,10 @@ public class Resource implements Comparable<Resource> {
 	
     public void setPostString(String postString) {
         this.postString = postString;
+    }
+
+    public void setPostQueryEncode(String postQueryEncode) {
+        this.postQueryEncode = postQueryEncode;
     }
 
     public void setFavicon(String favicon) {
@@ -232,10 +238,22 @@ public class Resource implements Comparable<Resource> {
 
 	public SearchResult search(String query, boolean debug) throws SearchException {
 		try {
-			String url = createUrl(this.urlAPITemplate, query);		
+			String url = fillTemplate(this.urlAPITemplate, URLEncoder.encode(query, "UTF-8"));
 			String postString = "";
+			String postQuery;
 			if (this.postString != null && !this.postString.equals("")) {
-				postString = createUrl(this.postString, query);
+				if (this.postQueryEncode != null) {
+					if (this.postQueryEncode.equals("application/x-www-form-urlencoded")) {
+						postQuery = URLEncoder.encode(query, "UTF-8");
+					} else if (this.postQueryEncode.equals("application/json")) {
+						postQuery = query.replaceAll("\"", "\\\"");
+					} else {
+						postQuery = query;
+					}
+				} else {
+					postQuery = URLEncoder.encode(query, "UTF-8");
+				}
+				postString = fillTemplate(this.postString, postQuery);
 			}
 			String page = getCompleteWebPage(url, postString, this.headers);
 			SearchResult result;
@@ -402,12 +420,12 @@ public class Resource implements Comparable<Resource> {
         //return DOMBuilder.jsoup2DOM(jsoupDoc);
     }
 
-    private String createUrl(String template, String query) throws UnsupportedEncodingException {
+    private String fillTemplate(String template, String query) throws UnsupportedEncodingException {
   		String url = template;
    		for (String param: this.privateParameters.keySet()) {
    			url = url.replaceAll("\\{" + param + "\\??\\}", this.privateParameters.get(param));
    		}
-   		url = url.replaceAll("\\{q\\??\\}", URLEncoder.encode(query, "UTF-8"));
+   		url = url.replaceAll("\\{q\\??\\}", query);
         url = url.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", ""); // remove optional parameters
 		if (url.matches(".*\\{[0-9A-Za-z\\-_]+\\}.*")) {
 			throw new UnsupportedEncodingException("Missing url parameter"); // TODO: better error
@@ -450,7 +468,7 @@ public class Resource implements Comparable<Resource> {
         }
 		URL url = new URL(urlString);	
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestProperty("User-Agent", "Searsia/0.3");
+        connection.setRequestProperty("User-Agent", "Searsia/0.4");
         connection.setRequestProperty("Accept", this.mimeType); //TODO: "*/*"
         connection.setRequestProperty("Accept-Language", "en-US,en;q=0.5"); // TODO: from browser?
         for (Map.Entry<String, String> entry : headers.entrySet()) {
@@ -537,6 +555,10 @@ public class Resource implements Comparable<Resource> {
 		return this.postString;
 	}
 
+	public String getPostQueryEncode() {
+		return this.postQueryEncode;
+	}
+
 	public String getUrlAPITemplate() {
 		return this.urlAPITemplate;
 	}
@@ -607,6 +629,7 @@ public class Resource implements Comparable<Resource> {
 		if (mimeType != null)        engine.put("mimetype", mimeType);
 		if (rerank != null)          engine.put("rerank", rerank);
 		if (postString != null)      engine.put("post", postString);
+		if (postQueryEncode != null) engine.put("postencode", postQueryEncode);
 		if (testQuery != null)       engine.put("testquery", testQuery);
 		if (prior != null)           engine.put("prior", prior);
 		if (rate != defaultRATE)     engine.put("maxqueriesperday", rate);
@@ -638,6 +661,7 @@ public class Resource implements Comparable<Resource> {
     	if (!stringEquals(this.getFavicon(), e.getFavicon())) return false;
     	if (!stringEquals(this.getBanner(), e.getBanner())) return false;
     	if (!stringEquals(this.getPostString(), e.getPostString())) return false;
+    	if (!stringEquals(this.getPostQueryEncode(), e.getPostQueryEncode())) return false;
     	if (!stringEquals(this.getTestQuery(), e.getTestQuery())) return false;
     	if (!stringEquals(this.getItemXpath(), e.getItemXpath())) return false;
     	if (!stringEquals(this.getUrlAPITemplate(), e.getUrlAPITemplate())) return false;

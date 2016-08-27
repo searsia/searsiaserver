@@ -20,7 +20,6 @@ public class ResourceTest {
 	private Resource htmlSearch() throws XPathExpressionException {
 		Resource hiemstra = new Resource("http://wwwhome.cs.utwente.nl/~hiemstra/?s={q}&api={apikey}&p={p?}","hiemstra");
 		hiemstra.setUrlUserTemplate(hiemstra.getAPIUserTemplate());
-		hiemstra.setItemXpath("//div[./h3/a]");
 		hiemstra.addPrivateParameter("apikey", SECRET_API_KEY);
 		hiemstra.addHeader("User-Agent", "Test/1.0");
 		hiemstra.setPrior(0.3f);
@@ -28,14 +27,29 @@ public class ResourceTest {
         hiemstra.setMimeType("text/html");
         hiemstra.setRerank("lm");
         hiemstra.setFavicon("http://wwwhome.cs.utwente.nl/~hiemstra/images/ut.ico");
+		hiemstra.setItemXpath("//div[@class='post']");
 		hiemstra.addExtractor(
-			new TextExtractor("title", ".//h3"),
-			new TextExtractor("description", "."),
-			new TextExtractor("url", ".//h3/a/@href")
+			new TextExtractor("title", "./h3"),
+			new TextExtractor("description", "./h3/following-sibling::text()"),
+			new TextExtractor("url", "./h3/a/@href")
 		);
 		return hiemstra;
 	}
-	
+
+	private Resource postSearch() throws XPathExpressionException {
+		Resource hiemstra = new Resource("http://wwwhome.cs.utwente.nl/~hiemstra/","hiemstrapost");
+		hiemstra.setPostString("os={q}");
+		hiemstra.setPostQueryEncode("application/x-www-form-urlencoded");
+        hiemstra.setMimeType("application/xml");
+		hiemstra.setItemXpath("//item");
+		hiemstra.addExtractor(
+			new TextExtractor("title", "./title"),
+			new TextExtractor("description", "./description"),
+			new TextExtractor("url", "./link")
+		);
+		return hiemstra;
+	}
+
 	private Resource searsiaSearch() throws XPathExpressionException {
 		return new Resource("http://searsia.org/searsia/wiki-{q?}-{r?}.json");
 	}
@@ -87,9 +101,18 @@ public class ResourceTest {
 	@Test
 	public void testSearchHtml() throws XPathExpressionException, SearchException {
 		Resource se = htmlSearch();
-		SearchResult result = se.search("dolf");
+		SearchResult result = se.search("dolf trieschnigg", true);
 		Assert.assertEquals("text/html", se.getMimeType());
-		Assert.assertEquals(7, result.getHits().size());
+		Assert.assertEquals(7, result.getHits().size()); // not 10 but 7 because of setRerank()
+		// TODO text nodes are glues together.
+	}
+
+	@Test
+	public void testSearchPost() throws XPathExpressionException, SearchException {
+		Resource se = postSearch();
+		SearchResult result = se.search("dolf trieschnigg");
+		Assert.assertEquals("application/xml", se.getMimeType());
+		Assert.assertEquals(10, result.getHits().size());
 	}
 
 	@Test
@@ -158,6 +181,7 @@ public class ResourceTest {
 	public void testJsonRoundtrip() throws XPathExpressionException {
 		Resource se1 = htmlSearch();
 		se1.setPostString("POST");
+		se1.setPostQueryEncode("application/x-www-form-urlencoded");
 		se1.setBanner("me.png");
 		JSONObject json = se1.toJson();
 		Resource se2 = new Resource(json);
