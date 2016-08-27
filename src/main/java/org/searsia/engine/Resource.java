@@ -246,7 +246,7 @@ public class Resource implements Comparable<Resource> {
 					if (this.postQueryEncode.equals("application/x-www-form-urlencoded")) {
 						postQuery = URLEncoder.encode(query, "UTF-8");
 					} else if (this.postQueryEncode.equals("application/json")) {
-						postQuery = query.replaceAll("\"", "\\\"");
+						postQuery = query.replaceAll("\"", "\\\\\\\\\"");  // really? yes, really.
 					} else {
 						postQuery = query;
 					}
