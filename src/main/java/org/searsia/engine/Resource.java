@@ -658,6 +658,7 @@ public class Resource implements Comparable<Resource> {
     	if (!stringEquals(this.getId(), e.getId())) return false;
     	if (!stringEquals(this.getName(), e.getName())) return false;
     	if (!stringEquals(this.getMimeType(), e.getMimeType())) return false;
+        if (!stringEquals(this.getRerank(), e.getRerank())) return false;
     	if (!stringEquals(this.getFavicon(), e.getFavicon())) return false;
     	if (!stringEquals(this.getBanner(), e.getBanner())) return false;
     	if (!stringEquals(this.getPostString(), e.getPostString())) return false;
