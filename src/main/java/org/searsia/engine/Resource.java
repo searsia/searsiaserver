@@ -407,10 +407,12 @@ public class Resource implements Comparable<Resource> {
 	
     private Document parseDocumentJSON(String jsonString) throws IOException {
     	jsonString = jsonString.replaceAll("\"([0-9][^\"]*)\":", "\"t$1\":"); // tags starting with a number are not well-formed XML
-        if (jsonString.startsWith("[")) {  // turn lists into objects
+        jsonString = jsonString.replaceAll("\"content\":", "\"searsia_org_json_content\":"); // org.json.XML is broken: https://github.com/stleary/JSON-java/issues/286
+    	if (jsonString.startsWith("[")) {  // turn lists into objects
         	jsonString = "{\"list\":" + jsonString + "}";
         }
         String xml = "<root>" + XML.toString(new JSONObject(jsonString)) + "</root>";
+        xml = xml.replaceAll("searsia_org_json_content>", "content>");  // use a constant for 'searsia_org_json_content'? see 5 lines above
         return DOMBuilder.string2DOM(xml);
     }
 	

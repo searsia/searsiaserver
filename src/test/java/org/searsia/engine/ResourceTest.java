@@ -67,7 +67,8 @@ public class ResourceTest {
 		wiki.addExtractor(
 			new TextExtractor("title", "./title"),
 			new TextExtractor("description", "./description"),
-			new TextExtractor("url", "./url")
+			new TextExtractor("url", "./url"),
+			new TextExtractor("content", "./content")
 		);
 		return wiki;
 	}
@@ -104,7 +105,7 @@ public class ResourceTest {
 		SearchResult result = se.search("dolf trieschnigg", true);
 		Assert.assertEquals("text/html", se.getMimeType());
 		Assert.assertEquals(7, result.getHits().size()); // not 10 but 7 because of setRerank()
-		// TODO text nodes are glues together.
+		// TODO text nodes are glued together.
 	}
 
 	@Test
@@ -124,6 +125,17 @@ public class ResourceTest {
 	}
 
 	@Test
+	public void testSearchXml2() throws XPathExpressionException, SearchException {
+		Resource se = htmlSearch();
+		se.setMimeType("application/xml");
+		se.setRerank(null);
+		long startTime = System.currentTimeMillis();
+		SearchResult result = se.search("test");
+		Assert.assertEquals(10, result.getHits().size());
+		Assert.assertFalse("Parser timed out", System.currentTimeMillis() - startTime > 10000);
+	}
+
+	@Test
 	public void testSearchJson() throws XPathExpressionException, SearchException {
 		Resource se = jsonSearch();
 		Boolean debug = true;
@@ -138,6 +150,7 @@ public class ResourceTest {
 		Resource se = jsonSearch();
 		SearchResult result = se.search("json");
 		Assert.assertEquals(1, result.getHits().size());
+		Assert.assertEquals("extra content", result.getHits().get(0).getString("content"));
 	}
 
 	@Test

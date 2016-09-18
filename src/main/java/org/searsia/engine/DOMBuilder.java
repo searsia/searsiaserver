@@ -54,9 +54,15 @@ public class DOMBuilder {
     Document document = null;
 
     try {
-        DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
-        docBuilderFactory.setNamespaceAware(false);
-        DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(false);
+        factory.setValidating(false);
+        factory.setAttribute("http://javax.xml.XMLConstants/feature/secure-processing", true);
+        factory.setAttribute("http://xml.org/sax/features/namespaces", false);
+        factory.setAttribute("http://xml.org/sax/features/validation", false);
+        factory.setAttribute("http://apache.org/xml/features/nonvalidating/load-dtd-grammar", false);
+        factory.setAttribute("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        DocumentBuilder docBuilder = factory.newDocumentBuilder();
         document  =  docBuilder.parse(new InputSource(new StringReader(xmlString)));
     } catch (Exception e) {
         throw new IOException(e);
