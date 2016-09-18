@@ -246,7 +246,7 @@ public class Resource implements Comparable<Resource> {
 					if (this.postQueryEncode.equals("application/x-www-form-urlencoded")) {
 						postQuery = URLEncoder.encode(query, "UTF-8");
 					} else if (this.postQueryEncode.equals("application/json")) {
-						postQuery = query.replaceAll("\"", "\\\"");
+						postQuery = query.replaceAll("\"", "\\\\\\\\\"");  // really? yes, really.
 					} else {
 						postQuery = query;
 					}
@@ -660,6 +660,7 @@ public class Resource implements Comparable<Resource> {
     	if (!stringEquals(this.getId(), e.getId())) return false;
     	if (!stringEquals(this.getName(), e.getName())) return false;
     	if (!stringEquals(this.getMimeType(), e.getMimeType())) return false;
+        if (!stringEquals(this.getRerank(), e.getRerank())) return false;
     	if (!stringEquals(this.getFavicon(), e.getFavicon())) return false;
     	if (!stringEquals(this.getBanner(), e.getBanner())) return false;
     	if (!stringEquals(this.getPostString(), e.getPostString())) return false;
