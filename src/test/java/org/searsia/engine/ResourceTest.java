@@ -213,6 +213,7 @@ public class ResourceTest {
 		Assert.assertEquals("extractors", se1.getExtractors().size(), se2.getExtractors().size());
 		Assert.assertEquals("headers", se1.getHeaders().size(), se2.getHeaders().size());
 		Assert.assertEquals("post", se1.getPostString(), se2.getPostString());
+		Assert.assertEquals("postencode", se1.getPostQueryEncode(), se2.getPostQueryEncode());
 		Assert.assertFalse("secret revealed", json.toString().contains(SECRET_API_KEY));
 	}
 
