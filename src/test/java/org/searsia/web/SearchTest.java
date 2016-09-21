@@ -98,7 +98,7 @@ public class SearchTest {
 		JSONObject json = new JSONObject(entity);
 		JSONObject resource  = (JSONObject) json.get("resource");
 		Assert.assertEquals(200, status);
-		Assert.assertEquals(wrong().getAPIUserTemplate(), resource.get("apitemplate"));
+		Assert.assertEquals(wrong().getAPITemplate(), resource.get("apitemplate"));
 	}
     
     @Test // returns resource 'youtube' (from mother)

@@ -19,7 +19,7 @@ public class ResourceTest {
 	
 	private Resource htmlSearch() throws XPathExpressionException {
 		Resource hiemstra = new Resource("http://wwwhome.cs.utwente.nl/~hiemstra/?s={q}&api={apikey}&p={p?}","hiemstra");
-		hiemstra.setUrlUserTemplate(hiemstra.getAPIUserTemplate());
+		hiemstra.setUrlUserTemplate(hiemstra.getAPITemplate());
 		hiemstra.addPrivateParameter("apikey", SECRET_API_KEY);
 		hiemstra.addHeader("User-Agent", "Test/1.0");
 		hiemstra.setPrior(0.3f);
@@ -196,13 +196,15 @@ public class ResourceTest {
 		se1.setPostString("POST");
 		se1.setPostQueryEncode("application/x-www-form-urlencoded");
 		se1.setBanner("me.png");
+		se1.setUrlSuggestTemplate("http://whatever");
 		JSONObject json = se1.toJson();
 		Resource se2 = new Resource(json);
 		Assert.assertEquals("id", se1.getId(), se2.getId());
 		Assert.assertEquals("name", se1.getName(), se2.getName());
 		Assert.assertEquals("mimetype", se1.getMimeType(), se2.getMimeType());
-		Assert.assertEquals("urltemplate", se1.getUrlUserTemplate(), se2.getUrlUserTemplate());
-		Assert.assertEquals("apitemplate", se1.getUrlAPITemplate(), se2.getUrlAPITemplate());
+		Assert.assertEquals("urltemplate", se1.getUserTemplate(), se2.getUserTemplate());
+		Assert.assertEquals("apitemplate", se1.getAPITemplate(), se2.getAPITemplate());
+		Assert.assertEquals("suggesttemplate", se1.getSuggestTemplate(), se2.getSuggestTemplate());
 		Assert.assertEquals("favicon", se1.getFavicon(), se2.getFavicon());
 		Assert.assertEquals("rerank", se1.getRerank(), se2.getRerank());
 		Assert.assertEquals("banner", se1.getBanner(), se2.getBanner());

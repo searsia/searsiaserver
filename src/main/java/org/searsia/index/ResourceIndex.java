@@ -90,7 +90,7 @@ public class ResourceIndex {
 	private void writeMyselfFile(Resource engine) throws IOException {
 	    JSONObject me = engine.toJson();
 	    if (this.mother != null) {
-    	    me.put("motherTemplate", this.mother.getAPIUserTemplate());
+    	    me.put("motherTemplate", this.mother.getAPITemplate());
 	    }
 	    Files.write(this.meFile, engine.toJson().toString().getBytes());
 	}

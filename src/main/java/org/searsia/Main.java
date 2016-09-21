@@ -202,7 +202,7 @@ public class Main {
     			mother.setFavicon(newMother.getFavicon());
     			mother.setBanner(newMother.getBanner());
     			mother.setTestQuery(newMother.getTestQuery());
-    			mother.setUrlUserTemplate(newMother.getUrlUserTemplate());
+    			mother.setUrlUserTemplate(newMother.getUserTemplate());
     		}
             if (!options.isQuiet()) {
                 System.err.println("Connected to: " + mother.getId());	
@@ -266,7 +266,7 @@ public class Main {
 			me.setFavicon(newMe.getFavicon());
 			me.setBanner(newMe.getBanner());
 			me.setTestQuery(newMe.getTestQuery());
-			me.setUrlUserTemplate(newMe.getUrlUserTemplate());
+			me.setUrlUserTemplate(newMe.getUserTemplate());
         } else if (mother != null) {
         	me.setName(mother.getName());
             me.setFavicon(mother.getFavicon());  // first time? get images from mother.

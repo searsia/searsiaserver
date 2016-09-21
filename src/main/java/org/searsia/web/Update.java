@@ -146,7 +146,7 @@ public class Update {
 		    	result = engine.search();
 			    resource = result.getResource();
     			if (resource != null) {
-    				engine.setUrlAPITemplate(resource.getAPIUserTemplate());
+    				engine.setUrlAPITemplate(resource.getAPITemplate());
 	    			if (engine.getName() == null) { engine.setName(resource.getName()); }
 		    		if (engine.getBanner() == null) { engine.setBanner(resource.getBanner()); }
 			    	if (engine.getFavicon() == null) { engine.setFavicon(resource.getFavicon()); }

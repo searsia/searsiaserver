@@ -46,8 +46,8 @@ public class OpenSearch {
 		String response = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
 		String shortName    = engines.getMyself().getName();
 		String favicon      = engines.getMyself().getFavicon();
-		String userTemplate = engines.getMyself().getUrlUserTemplate();
-		String apiTemplate  = engines.getMyself().getAPIUserTemplate();
+		String userTemplate = engines.getMyself().getUserTemplate();
+		String apiTemplate  = engines.getMyself().getAPITemplate();
 		String testQuery    = engines.getMyself().getTestQuery();
 		if (shortName == null) shortName = "Searsia";
 		response += "<OpenSearchDescription xmlns=\"http://a9.com/-/spec/opensearch/1.1/\" xmlns:searsia=\"http://searsia.org/1.0/\">\n";

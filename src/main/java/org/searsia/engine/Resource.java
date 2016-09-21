@@ -66,6 +66,7 @@ public class Resource implements Comparable<Resource> {
 	private String name = null;
 	private String urlAPITemplate = null;
 	private String urlUserTemplate = null;
+	private String urlSuggestTemplate = null;
     private String mimeType = null;
     private String postString = null;
     private String postQueryEncode = null;
@@ -101,20 +102,21 @@ public class Resource implements Comparable<Resource> {
 	public Resource(JSONObject jo) throws XPathExpressionException, JSONException {	
 		this.mimeType = SearchResult.SEARSIA_MIME_TYPE;
 		this.testQuery = defaultTestQuery;
-		if (jo.has("id"))          this.id              = jo.getString("id");
-		if (jo.has("apitemplate")) this.urlAPITemplate  = jo.getString("apitemplate");
-		if (jo.has("mimetype"))    this.mimeType        = jo.getString("mimetype");
-		if (jo.has("post"))        this.postString      = jo.getString("post");
-		if (jo.has("postencode"))  this.postQueryEncode = jo.getString("postencode");
-		if (jo.has("name"))        this.name            = jo.getString("name");
-		if (jo.has("testquery"))   this.testQuery       = jo.getString("testquery");
-		if (jo.has("urltemplate")) this.urlUserTemplate = jo.getString("urltemplate");
-		if (jo.has("favicon"))     this.favicon         = jo.getString("favicon");
-		if (jo.has("rerank"))      this.rerank          = jo.getString("rerank");
-		if (jo.has("banner"))      this.banner          = jo.getString("banner");
-		if (jo.has("itempath"))    this.itemXpath       = jo.getString("itempath");
-		if (jo.has("prior"))       this.prior           = new Float(jo.getDouble("prior"));
-		if (jo.has("maxqueriesperday")) this.rate       = jo.getInt("maxqueriesperday");
+		if (jo.has("id"))              this.id              = jo.getString("id");
+		if (jo.has("apitemplate"))     this.urlAPITemplate  = jo.getString("apitemplate");
+		if (jo.has("mimetype"))        this.mimeType        = jo.getString("mimetype");
+		if (jo.has("post"))            this.postString      = jo.getString("post");
+		if (jo.has("postencode"))      this.postQueryEncode = jo.getString("postencode");
+		if (jo.has("name"))            this.name            = jo.getString("name");
+		if (jo.has("testquery"))       this.testQuery       = jo.getString("testquery");
+		if (jo.has("urltemplate"))     this.urlUserTemplate = jo.getString("urltemplate");
+		if (jo.has("suggesttemplate")) this.urlSuggestTemplate = jo.getString("suggesttemplate");
+		if (jo.has("favicon"))         this.favicon         = jo.getString("favicon");
+		if (jo.has("rerank"))          this.rerank          = jo.getString("rerank");
+		if (jo.has("banner"))          this.banner          = jo.getString("banner");
+		if (jo.has("itempath"))        this.itemXpath       = jo.getString("itempath");
+		if (jo.has("prior"))           this.prior           = new Float(jo.getDouble("prior"));
+		if (jo.has("maxqueriesperday")) this.rate           = jo.getInt("maxqueriesperday");
 		if (jo.has("extractors")) {
 			JSONObject json = (JSONObject) jo.get("extractors");
 			Iterator<?> keys = json.keys();
@@ -153,6 +155,10 @@ public class Resource implements Comparable<Resource> {
    
 	public void setUrlUserTemplate(String urlTemplate) {
 		this.urlUserTemplate = urlTemplate;
+	}
+   
+	public void setUrlSuggestTemplate(String suggestTemplate) {
+		this.urlSuggestTemplate = suggestTemplate;
 	}
    
     public void setMimeType(String mimeType) {
@@ -417,9 +423,7 @@ public class Resource implements Comparable<Resource> {
     }
 	
     private Document parseDocumentXML(String xmlString) throws IOException {
-        return DOMBuilder.string2DOM(xmlString); //May hang if not well-formed
-    	//org.jsoup.nodes.Document jsoupDoc = Jsoup.parse(xmlString, "", Parser.xmlParser());
-        //return DOMBuilder.jsoup2DOM(jsoupDoc);
+        return DOMBuilder.string2DOM(xmlString);
     }
 
     private String fillTemplate(String template, String query) throws UnsupportedEncodingException {
@@ -525,12 +529,16 @@ public class Resource implements Comparable<Resource> {
 		return this.name;
 	}
 	
-	public String getUrlUserTemplate() {
+	public String getUserTemplate() {
 		return this.urlUserTemplate;
 	}	
 
-	public String getAPIUserTemplate() {
+	public String getAPITemplate() {
 		return this.urlAPITemplate;
+	}	
+
+	public String getSuggestTemplate() {
+		return this.urlSuggestTemplate;
 	}	
 
 	public String getMimeType() {
@@ -561,10 +569,6 @@ public class Resource implements Comparable<Resource> {
 		return this.postQueryEncode;
 	}
 
-	public String getUrlAPITemplate() {
-		return this.urlAPITemplate;
-	}
-	
 	public String getItemXpath() {
 		return this.itemXpath;
 	}
@@ -622,20 +626,21 @@ public class Resource implements Comparable<Resource> {
 
 	public JSONObject toJson() {
 		JSONObject engine = new JSONObject();
-		if (id != null)              engine.put("id", id);
-		if (name != null)            engine.put("name", name);
-		if (urlUserTemplate != null) engine.put("urltemplate", urlUserTemplate);
-		if (favicon != null)         engine.put("favicon", favicon);
-		if (banner != null)          engine.put("banner", banner);
-		if (urlAPITemplate != null)  engine.put("apitemplate", urlAPITemplate);
-		if (mimeType != null)        engine.put("mimetype", mimeType);
-		if (rerank != null)          engine.put("rerank", rerank);
-		if (postString != null)      engine.put("post", postString);
-		if (postQueryEncode != null) engine.put("postencode", postQueryEncode);
-		if (testQuery != null)       engine.put("testquery", testQuery);
-		if (prior != null)           engine.put("prior", prior);
-		if (rate != defaultRATE)     engine.put("maxqueriesperday", rate);
-		if (itemXpath != null)       engine.put("itempath", itemXpath);
+		if (id != null)                  engine.put("id", id);
+		if (name != null)                engine.put("name", name);
+		if (urlUserTemplate != null)     engine.put("urltemplate", urlUserTemplate);
+		if (favicon != null)             engine.put("favicon", favicon);
+		if (banner != null)              engine.put("banner", banner);
+		if (urlAPITemplate != null)      engine.put("apitemplate", urlAPITemplate);
+		if (urlSuggestTemplate != null)  engine.put("suggesttemplate", urlSuggestTemplate);
+		if (mimeType != null)            engine.put("mimetype", mimeType);
+		if (rerank != null)              engine.put("rerank", rerank);
+		if (postString != null)          engine.put("post", postString);
+		if (postQueryEncode != null)     engine.put("postencode", postQueryEncode);
+		if (testQuery != null)           engine.put("testquery", testQuery);
+		if (prior != null)               engine.put("prior", prior);
+		if (rate != defaultRATE)         engine.put("maxqueriesperday", rate);
+		if (itemXpath != null)           engine.put("itempath", itemXpath);
 		if (extractors != null && extractors.size() > 0) {
 			JSONObject json = new JSONObject();
 			for (TextExtractor e: extractors) {
@@ -667,8 +672,9 @@ public class Resource implements Comparable<Resource> {
     	if (!stringEquals(this.getPostQueryEncode(), e.getPostQueryEncode())) return false;
     	if (!stringEquals(this.getTestQuery(), e.getTestQuery())) return false;
     	if (!stringEquals(this.getItemXpath(), e.getItemXpath())) return false;
-    	if (!stringEquals(this.getUrlAPITemplate(), e.getUrlAPITemplate())) return false;
-    	if (!stringEquals(this.getUrlUserTemplate(), e.getUrlUserTemplate())) return false;
+    	if (!stringEquals(this.getAPITemplate(), e.getAPITemplate())) return false;
+    	if (!stringEquals(this.getUserTemplate(), e.getUserTemplate())) return false;
+    	if (!stringEquals(this.getSuggestTemplate(), e.getSuggestTemplate())) return false;
     	if (this.getRate() != e.getRate()) return false;
         if (Math.abs(this.getPrior() - e.getPrior()) > 0.0001f) return false;
     	if (!listEquals(this.getExtractors(), e.getExtractors())) return false; 
