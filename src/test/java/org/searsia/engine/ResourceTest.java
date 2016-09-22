@@ -25,7 +25,6 @@ public class ResourceTest {
 		hiemstra.setPrior(0.3f);
 		hiemstra.setRate(133);
         hiemstra.setMimeType("text/html");
-        hiemstra.setRerank("lm");
         hiemstra.setFavicon("http://wwwhome.cs.utwente.nl/~hiemstra/images/ut.ico");
 		hiemstra.setItemXpath("//div[@class='post']");
 		hiemstra.addExtractor(
@@ -104,7 +103,7 @@ public class ResourceTest {
 		Resource se = htmlSearch();
 		SearchResult result = se.search("dolf trieschnigg", true);
 		Assert.assertEquals("text/html", se.getMimeType());
-		Assert.assertEquals(7, result.getHits().size()); // not 10 but 7 because of setRerank()
+		Assert.assertEquals(10, result.getHits().size());
 		// TODO text nodes are glued together.
 	}
 
@@ -195,6 +194,7 @@ public class ResourceTest {
 		Resource se1 = htmlSearch();
 		se1.setPostString("POST");
 		se1.setPostQueryEncode("application/x-www-form-urlencoded");
+        se1.setRerank("lm");
 		se1.setBanner("me.png");
 		se1.setUrlSuggestTemplate("http://whatever");
 		JSONObject json = se1.toJson();
