@@ -267,6 +267,7 @@ public class Main {
 			me.setBanner(newMe.getBanner());
 			me.setTestQuery(newMe.getTestQuery());
 			me.setUrlUserTemplate(newMe.getUserTemplate());
+			me.setUrlSuggestTemplate(newMe.getSuggestTemplate());
         } else if (mother != null) {
         	me.setName(mother.getName());
             me.setFavicon(mother.getFavicon());  // first time? get images from mother.
