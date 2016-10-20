@@ -152,6 +152,13 @@ public class ResourceTest {
 		Assert.assertEquals("extra content", result.getHits().get(0).getString("content"));
 	}
 
+    @Test
+    public void testSearchJson3() throws XPathExpressionException, SearchException {
+        Resource se = jsonSearch();
+        SearchResult result = se.search("strange keys");
+        Assert.assertEquals(1, result.getHits().size());
+    }
+
 	@Test
 	public void testSearchJavascript() throws XPathExpressionException, SearchException {
 		Resource se = javascriptSearch();
