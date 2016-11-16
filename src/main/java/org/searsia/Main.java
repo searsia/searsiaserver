@@ -203,6 +203,7 @@ public class Main {
     			mother.setBanner(newMother.getBanner());
     			mother.setTestQuery(newMother.getTestQuery());
     			mother.setUrlUserTemplate(newMother.getUserTemplate());
+    			mother.setUrlSuggestTemplate(newMother.getSuggestTemplate());
     		}
             if (!options.isQuiet()) {
                 System.err.println("Connected to: " + mother.getId());	
@@ -272,6 +273,7 @@ public class Main {
         	me.setName(mother.getName());
             me.setFavicon(mother.getFavicon());  // first time? get images from mother.
             me.setBanner(mother.getBanner());
+			me.setUrlSuggestTemplate(mother.getSuggestTemplate());
         }
     	me.setPrior(engines.maxPrior());
     	try {

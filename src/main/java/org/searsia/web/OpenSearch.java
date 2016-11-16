@@ -47,6 +47,7 @@ public class OpenSearch {
 		String shortName    = engines.getMyself().getName();
 		String favicon      = engines.getMyself().getFavicon();
 		String userTemplate = engines.getMyself().getUserTemplate();
+		String suggestTemplate = engines.getMyself().getSuggestTemplate();
 		String apiTemplate  = engines.getMyself().getAPITemplate();
 		String testQuery    = engines.getMyself().getTestQuery();
 		if (shortName == null) shortName = "Searsia";
@@ -55,6 +56,7 @@ public class OpenSearch {
 		response += " <Description>Search the web with " + xmlEncode(shortName) + "</Description>\n";
 		response += " <Url type=\"application/searsia+json\" method=\"GET\" template=\"" + templateEncode(apiTemplate) + "\"/>\n";
 		if (userTemplate != null) response += " <Url type=\"text/html\" method=\"GET\" template=\"" + templateEncode(userTemplate) + "\"/>\n";
+		if (suggestTemplate != null) response += " <Url type=\"application/x-suggestions+json\" method=\"GET\" template=\"" + templateEncode(suggestTemplate) + "\"/>\n";
 		if (testQuery != null) response += " <Query role=\"example\" searchTerms=\"" + xmlEncode(testQuery) + "\"/>\n";
 		if (favicon != null) response += " <Image>" + xmlEncode(favicon) + "</Image>\n";
 		response += " <InputEncoding>UTF-8</InputEncoding>\n";
