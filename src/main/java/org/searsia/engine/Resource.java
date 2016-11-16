@@ -18,13 +18,16 @@ package org.searsia.engine;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.URLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -93,10 +96,6 @@ public class Resource implements Comparable<Resource> {
 		this.name = null;
 		this.mimeType = SearchResult.SEARSIA_MIME_TYPE;
 		this.testQuery = defaultTestQuery;
-	}
-	
-	public Resource(String urlAPITemplate) {
-		this(urlAPITemplate, getHashString(urlAPITemplate));
 	}
 	
 	public Resource(JSONObject jo) throws XPathExpressionException, JSONException {	
@@ -261,7 +260,7 @@ public class Resource implements Comparable<Resource> {
 				}
 				postString = fillTemplate(this.postString, postQuery);
 			}
-			String page = getCompleteWebPage(url, postString, this.headers);
+			String page = getCompletePage(url, postString, this.headers);
 			SearchResult result;
             if (this.mimeType != null && this.mimeType.equals(SearchResult.SEARSIA_MIME_TYPE)) {
             	result = searsiaSearch(page);
@@ -286,7 +285,7 @@ public class Resource implements Comparable<Resource> {
 		try {
 			String url = this.urlAPITemplate;
             url = url.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", ""); // remove optional parameters 
-			String page = getCompleteWebPage(url, this.postString, this.headers);
+			String page = getCompletePage(url, this.postString, this.headers);
 			return searsiaSearch(page);
 		} catch (Exception e) {  // catch all, also runtime exceptions
 			throw createPrivateSearchException(e);
@@ -302,7 +301,7 @@ public class Resource implements Comparable<Resource> {
 			Resource engine = null;
     		String url = this.urlAPITemplate.replaceAll("\\{r\\??\\}", URLEncoder.encode(resourceid, "UTF-8"));
             url = url.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", ""); // remove optional parameters 
-       		String jsonPage = getCompleteWebPage(url, this.postString, this.headers);
+       		String jsonPage = getCompletePage(url, this.postString, this.headers);
     		JSONObject json = new JSONObject(jsonPage);
     		if (json.has("resource")) {
         		engine = new Resource(json.getJSONObject("resource"));
@@ -468,14 +467,10 @@ public class Resource implements Comparable<Resource> {
         }
     }
 
-    // TODO refactor, waaay too big:
-	private String getCompleteWebPage(String urlString, String postString, Map<String, String> headers) throws IOException {
-        if (rateLimitReached()) {
-        	throw new IOException("Rate limited");
-        }
-		URL url = new URL(urlString);	
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestProperty("User-Agent", "Searsia/0.4");
+
+    private URLConnection setConnectionProperties(URL url, Map<String, String> headers) throws IOException {
+        URLConnection connection = url.openConnection();
+        connection.setRequestProperty("User-Agent", "Searsia/1.0");
         connection.setRequestProperty("Accept", this.mimeType); //TODO: "*/*"
         connection.setRequestProperty("Accept-Language", "en-US,en;q=0.5"); // TODO: from browser?
         for (Map.Entry<String, String> entry : headers.entrySet()) {
@@ -490,23 +485,47 @@ public class Resource implements Comparable<Resource> {
     	}
         connection.setReadTimeout(9000);
         connection.setConnectTimeout(9000);
-        connection.setInstanceFollowRedirects(true);
+        return connection;
+    }
+    
+    private InputStream httpConnect(URLConnection connection, String postString) throws IOException {
+    	HttpURLConnection http = (HttpURLConnection) connection;
+        http.setInstanceFollowRedirects(true);
         if (postString != null && !postString.equals("")) {
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Length", "" + Integer.toString(postString.getBytes().length));
-            connection.setDoOutput(true);
-    		DataOutputStream wr = new DataOutputStream(connection.getOutputStream());
+            http.setRequestMethod("POST");
+            http.setRequestProperty("Content-Length", "" + Integer.toString(postString.getBytes().length));
+            http.setDoOutput(true);
+    		DataOutputStream wr = new DataOutputStream(http.getOutputStream());
     		wr.writeBytes(postString);
     		wr.flush();
     		wr.close();
         } else {
-            connection.setRequestMethod("GET");
-            connection.connect();
+            http.setRequestMethod("GET");
+            http.connect();
         }
-        //int responseCode = connection.getResponseCode();
-        BufferedReader in = null;
+        //int responseCode = http.getResponseCode();
+        return http.getInputStream();
+    }
+    
+    private InputStream fileConnect(URLConnection connection) throws IOException {
+    	String fileName = connection.getURL().getFile();
+    	return new FileInputStream(new File(fileName));
+    }
+
+    private String getCompletePage(String urlString, String postString, Map<String, String> headers) throws IOException {
+        if (rateLimitReached()) {
+        	throw new IOException("Rate limited");
+        }
+    	URL url = new URL(urlString);	
+        URLConnection connection = setConnectionProperties(url, headers);
+        InputStream stream;
+        if (url.getProtocol().equals("file")) {
+        	stream = fileConnect(connection);
+        } else {
+        	stream = httpConnect(connection, postString);
+        }
+        BufferedReader in = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
         StringBuilder page = new StringBuilder();
-        in = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
         if (in != null) {
             String inputLine; 
             while ((inputLine = in.readLine()) != null) {
@@ -520,10 +539,6 @@ public class Resource implements Comparable<Resource> {
 
 	public String getId() {
 		return this.id;
-	}
-	
-	public String getMD5() {
-		return getHashString(this.urlAPITemplate);
 	}
 	
 	public String getName() {
@@ -624,6 +639,15 @@ public class Resource implements Comparable<Resource> {
 		return score;
 	}
 	
+	
+	public Resource deepcopy() {
+		try {
+			return new Resource(this.toJson());
+		} catch (XPathExpressionException | JSONException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
 
 	public JSONObject toJson() {
 		JSONObject engine = new JSONObject();
@@ -720,27 +744,6 @@ public class Resource implements Comparable<Resource> {
         if (a == null || b == null)
      	   return false;
     	return a.equals(b);
-    }
-
-    // for 'random' ids, if not provided   
-    private static String getHashString(String inputString) {
-        MessageDigest md;
-        byte[] hash;
-        try {
-            md = MessageDigest.getInstance("MD5");
-        } catch (java.security.NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-        try {
-            hash = md.digest(inputString.getBytes("UTF-8"));
-        } catch (java.io.UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
-        StringBuilder sb = new StringBuilder();
-        for(byte b : hash){
-            sb.append(String.format("%02x", b & 0xff));
-        }
-        return sb.toString();
     }
 
 }

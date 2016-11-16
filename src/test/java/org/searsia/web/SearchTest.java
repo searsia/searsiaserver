@@ -36,7 +36,7 @@ public class SearchTest {
     }
     
     private static Resource me() {
-    	return new Resource("http://me.org?q={q}");
+    	return new Resource("http://me.org?q={q}", "me");
     }
     
     
@@ -65,7 +65,7 @@ public class SearchTest {
 		JSONObject json = new JSONObject(entity);
 		JSONObject resource  = (JSONObject) json.get("resource");
         Assert.assertEquals(200, status);
-		Assert.assertEquals("708addc213e3daf4b9742883d18d0c45", resource.get("id"));
+		Assert.assertEquals("me", resource.get("id"));
 	}
     
     @Test // returns local search results for 'searsia'

@@ -50,17 +50,17 @@ public class ResourceTest {
 	}
 
 	private Resource searsiaSearch() throws XPathExpressionException {
-		return new Resource("http://searsia.org/searsia/wiki-{q?}-{r?}.json");
+		return new Resource("http://searsia.org/searsia/wiki-{q?}-{r?}.json", "wiki");
 	}
 	
     private Resource xmlSearch() throws XPathExpressionException, SearchException { 	
-		Resource wiki = new Resource("http://searsia.org/searsia/wiki-{q?}-{r?}.json");
+		Resource wiki = new Resource("http://searsia.org/searsia/wiki-{q?}-{r?}.json", "wiki");
 		Resource wikifull = wiki.searchResource("wikifull");
         return wikifull;
 	}
 
     private Resource jsonSearch() throws XPathExpressionException {
-		Resource wiki = new Resource("http://searsia.org/searsia/wiki-{q?}-wikifull.json");
+		Resource wiki = new Resource("http://searsia.org/searsia/wiki-{q?}-wikifull.json", "wikifull");
 		wiki.setMimeType("application/json");
 		wiki.setItemXpath("//hits");
 		wiki.addExtractor(
@@ -73,7 +73,7 @@ public class ResourceTest {
 	}
     
     private Resource javascriptSearch() throws XPathExpressionException {
-		Resource wikifull = new Resource("http://searsia.org/searsia/wiki-{q}-wikifull.js");
+		Resource wikifull = new Resource("http://searsia.org/searsia/wiki-{q}-wikifull.js", "wikifull");
 		wikifull.setMimeType("application/x-javascript");
 		wikifull.setItemXpath("//hits");
 		wikifull.addExtractor(

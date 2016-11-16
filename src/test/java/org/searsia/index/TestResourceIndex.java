@@ -42,14 +42,14 @@ public class TestResourceIndex {
     }
     
     private static Resource newby() {
-    	Resource e = new Resource("http://new.com/?q={q}");
+    	Resource e = new Resource("http://new.com/?q={q}", "new");
     	e.changeId("890");
     	e.addPrivateParameter("apikey", "secret");
     	return e;
     }
     
     private static Resource me() {
-    	Resource e = new Resource("http://me.org");
+    	Resource e = new Resource("http://me.org", "me");
     	e.setName("Me");
     	return e;
     }

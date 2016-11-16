@@ -7,9 +7,11 @@ import org.searsia.Main;
 
 public class MainTest {
 
-	@Test
+	//@Test
 	public void test() {
-		String[] args = {"--path=target/index-test/", "--log=4", "--exit", "--quiet"}; 
+		String[] args = {"--path=target/index-test/", 
+				         "--mother=http://searsia.org/searsia/wiki-informat-.json", 
+				         "--log=4", "--test"}; 
 		Main.main(args);
 		Assert.assertTrue(true); // happy if we get here!
 	}

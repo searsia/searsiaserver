@@ -34,7 +34,7 @@ import org.searsia.index.ResourceIndex;
  */
 public class SearsiaApplication extends ResourceConfig {
 
-	public static final String VERSION = "v0.4.1";
+	public static final String VERSION = "v1.0.0";
 
 	protected static Response responseOk(JSONObject json) {
 		json.put("searsia", VERSION);
@@ -66,11 +66,10 @@ public class SearsiaApplication extends ResourceConfig {
 				.build();
 	}
 
-	public SearsiaApplication(SearchResultIndex index, ResourceIndex engines, Boolean openWide) throws IOException {
+	public SearsiaApplication(SearchResultIndex index, ResourceIndex engines) throws IOException {
 		super();
     	Logger.getLogger("org.glassfish.grizzly").setLevel(Level.WARNING);
 		register(new Search(index, engines));
-		register(new Update(engines, openWide));
 		register(new OpenSearch(engines));
 	}
 	

@@ -34,8 +34,7 @@ import org.apache.commons.cli.ParseException;
 public class SearsiaOptions {
 		
     /* See setDefaults() below */
-    private Boolean openWide;
-    private Boolean exit;
+    private Boolean test;
     private Boolean quiet;
 	private int cacheSize;
     private int pollInterval;
@@ -43,7 +42,6 @@ public class SearsiaOptions {
     private String myURI;
     private String motherTemplate;
     private String indexPath; 
-    private String myName;
 
     /**
      * Takes command line options and sensible defaults
@@ -52,14 +50,12 @@ public class SearsiaOptions {
     public SearsiaOptions(String[] args) throws IllegalArgumentException {
     	Options options = new Options();
         options.addOption("c", "cache",    true,  "Set cache size (integer: number of result pages).");
-        options.addOption("e", "exit",     false, "Exit immediately after startup.");
+        options.addOption("t", "test",     false, "Test and exit.");
         options.addOption("h", "help",     false, "Show help.");
         options.addOption("i", "interval", true,  "Set poll interval (integer: in seconds).");
         options.addOption("l", "log",      true,  "Set log level (0=off, 1=error, 2=warn=default, 3=info, 4=debug).");
-        options.addOption("m", "mother",   true,  "Set api template of the mother. ('none' for standalone)");
-        options.addOption("n", "name",     true,  "Set my id (name).");
-        options.addOption("o", "open",     false, "Open the system for on-line updates (be careful!)");
-        options.addOption("p", "path",     true,  "Set index path.");
+        options.addOption("m", "mother",   true,  "Set url of mother's web service end point.");
+        options.addOption("p", "path",     true,  "Set directory path to store the index.");
         options.addOption("q", "quiet",    false, "No output on console.");
         options.addOption("u", "url",      true,  "Set url of my web service endpoint.");
         setDefaults();
@@ -68,16 +64,14 @@ public class SearsiaOptions {
 
     
     private void setDefaults() {
-        openWide       = false;
-        exit           = false;
+        test           = false;
         quiet          = false;
         cacheSize      = 500;
         pollInterval   = 120;
         logLevel       = 2;
         myURI          = "http://localhost:16842/searsia/";
-        motherTemplate = "https://search.utwente.nl/searsia/search?q={q?}&r={r?}";
+        motherTemplate = null;
         indexPath      = friendlyIndexPath();
-        myName         = null;
     }
     
     
@@ -124,6 +118,7 @@ public class SearsiaOptions {
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
+        	System.out.println(e.getMessage());
             help(options);
             throw new IllegalArgumentException(e);
         }
@@ -134,8 +129,8 @@ public class SearsiaOptions {
             	cacheSize = 30;
             }
         }
-        if (cmd.hasOption("e")) {
-            exit =  true;
+        if (cmd.hasOption("t")) {
+            test =  true;
         }
         if (cmd.hasOption("h") || cmd.getArgs().length > 0) {
           	help(options);
@@ -158,16 +153,6 @@ public class SearsiaOptions {
             help(options);
             throw new IllegalArgumentException(e);        	
         }
-        if (cmd.hasOption("m")) {
-            motherTemplate = cmd.getOptionValue("m");
-            if (motherTemplate.equals("none")) motherTemplate = null;
-        }
-        if (cmd.hasOption("n")) {
-            myName    = cmd.getOptionValue("n");
-        }
-        if (cmd.hasOption("o")) {
-            openWide =  true;
-        }
         if (cmd.hasOption("p")) {
             indexPath = cmd.getOptionValue("p");
         }
@@ -176,6 +161,14 @@ public class SearsiaOptions {
         }
         if (cmd.hasOption("u")) {
             myURI  = cmd.getOptionValue("u");
+        }
+        if (cmd.hasOption("m")) {
+            motherTemplate = cmd.getOptionValue("m");
+        } else {
+            help(options);
+            String message = "Please provide url of mother's web service end point";
+        	System.out.println(message);
+            throw new IllegalArgumentException(message);
         }
     }
     
@@ -189,8 +182,8 @@ public class SearsiaOptions {
     	return cacheSize;
     }
 
-    public Boolean isExit() {
-    	return exit;
+    public Boolean isTest() {
+    	return test;
     }
     
     public int getLogLevel() {
@@ -225,14 +218,6 @@ public class SearsiaOptions {
     	return indexPath;
     }
     
-    public String getMyName() {
-    	return myName;
-    }
-    
-    public Boolean openedWide() {
-    	return openWide;
-    }
-
     public Boolean isQuiet() {
     	return quiet;
     }
@@ -243,10 +228,8 @@ public class SearsiaOptions {
     	result += "\n  Log Level     = " + getLoggerLevel();
     	result += "\n  Base Url      = " + getMyURI();
     	result += "\n  Mother        = " + getMotherTemplate();
-    	result += "\n  Index Name    = " + getMyName();
     	result += "\n  Index Path    = " + getIndexPath();
     	result += "\n  Poll Interval = " + getPollInterval();
-    	result += "\n  Allows update = " + openedWide();
     	result += "\n  Cache Size    = " + getCacheSize();
     	return result;
     }

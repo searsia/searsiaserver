@@ -195,7 +195,7 @@ public class ResourceIndex {
         this.writer.commit();
 	}
 	
-	
+		
 	public void put(Resource engine) {
 		if (this.mother != null && engine.getId().equals(this.mother.getId())) {
 			throw new RuntimeException("Mother id conflict: " + engine.getId());
