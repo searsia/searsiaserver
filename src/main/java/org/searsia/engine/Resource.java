@@ -237,11 +237,11 @@ public class Resource implements Comparable<Resource> {
 
 
 	public SearchResult search(String query) throws SearchException {
-        return search(query, false);
+        return search(query, null);
 	}
 
 
-	public SearchResult search(String query, boolean debug) throws SearchException {
+	public SearchResult search(String query, String debug) throws SearchException {
 		try {
 			String url = fillTemplate(this.urlAPITemplate, URLEncoder.encode(query, "UTF-8"));
 			String postString = "";
@@ -263,7 +263,7 @@ public class Resource implements Comparable<Resource> {
 			String page = getCompletePage(url, postString, this.headers);
 			SearchResult result;
             if (this.mimeType != null && this.mimeType.equals(SearchResult.SEARSIA_MIME_TYPE)) {
-            	result = searsiaSearch(page);
+            	result = searsiaSearch(page, debug);
             } else {
             	result = xpathSearch(url, page, debug);
             }
@@ -286,7 +286,7 @@ public class Resource implements Comparable<Resource> {
 			String url = this.urlAPITemplate;
             url = url.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", ""); // remove optional parameters 
 			String page = getCompletePage(url, this.postString, this.headers);
-			return searsiaSearch(page);
+			return searsiaSearch(page, null);
 		} catch (Exception e) {  // catch all, also runtime exceptions
 			throw createPrivateSearchException(e);
 		} 
@@ -313,8 +313,11 @@ public class Resource implements Comparable<Resource> {
 	}
 
 
-	private SearchResult searsiaSearch(String jsonPage) {
+	private SearchResult searsiaSearch(String jsonPage, String debug) {
 		SearchResult result = new SearchResult();
+		if (debug != null && debug.equals("response")) {
+			result.setDebugOut(jsonPage);
+		}
 		JSONObject json = new JSONObject(jsonPage);
 		JSONArray hits  = json.getJSONArray("hits");
 		for (int i = 0; i < hits.length(); i += 1) {
@@ -332,7 +335,7 @@ public class Resource implements Comparable<Resource> {
 	}
 	
 
-	private SearchResult xpathSearch(String url, String page, boolean debug)
+	private SearchResult xpathSearch(String url, String page, String debug)
 			throws IOException, XPathExpressionException {
 		Document document;
 		if (this.mimeType != null && this.mimeType.equals("application/json")) {
@@ -348,8 +351,12 @@ public class Resource implements Comparable<Resource> {
 			throw new IOException("Error parsing document. Wrong mimetype?");
 		}
 		SearchResult result = new SearchResult();
-		if (debug) {
-			result.setXmlOut(DOMBuilder.DOM2String(document));
+		if (debug != null) {
+			if (debug.equals("xml")) {
+    			result.setDebugOut(DOMBuilder.DOM2String(document));
+			} else if (debug.equals("response")) {
+				result.setDebugOut(page);
+			}
 		}
 		XPathFactory xFactory = XPathFactory.newInstance();
 		XPath xpath = xFactory.newXPath();

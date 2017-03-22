@@ -39,7 +39,7 @@ public class SearchResult {
 	private List<Hit> hits;
 	private Random random;
 	private Resource resource;
-	private String xmlOut;
+	private String debugOut;
 	private String query;
 	
 	public SearchResult() {
@@ -51,7 +51,7 @@ public class SearchResult {
 		this.random = new Random();
 		this.resource = null;
 		this.query = null;
-		this.xmlOut = null;
+		this.debugOut = null;
 		if (hit != null) {
 			this.hits.add(hit);
 		}
@@ -73,12 +73,12 @@ public class SearchResult {
 		return this.resource;
 	}
 
-	public void setXmlOut(String xmlOut) {
-		this.xmlOut = xmlOut;
+	public void setDebugOut(String debugOut) {
+		this.debugOut = debugOut;
 	}
 
-	public String getXmlOut() {
-		return this.xmlOut;
+	public String getDebugOut() {
+		return this.debugOut;
 	}
 
 	public void setQuery(String query) {

@@ -101,7 +101,7 @@ public class ResourceTest {
 	@Test
 	public void testSearchHtml() throws XPathExpressionException, SearchException {
 		Resource se = htmlSearch();
-		SearchResult result = se.search("dolf trieschnigg", true);
+		SearchResult result = se.search("dolf trieschnigg", "xml");
 		Assert.assertEquals("text/html", se.getMimeType());
 		Assert.assertEquals(10, result.getHits().size());
 		// TODO text nodes are glued together.
@@ -137,9 +137,8 @@ public class ResourceTest {
 	@Test
 	public void testSearchJson() throws XPathExpressionException, SearchException {
 		Resource se = jsonSearch();
-		Boolean debug = true;
-		SearchResult result = se.search("informat", debug);
-		Assert.assertNotNull(result.getXmlOut());
+		SearchResult result = se.search("informat", "xml");
+		Assert.assertNotNull(result.getDebugOut());
 		Assert.assertEquals("application/json", se.getMimeType());
 		Assert.assertEquals(10, result.getHits().size());
 	}
@@ -162,7 +161,7 @@ public class ResourceTest {
 	@Test
 	public void testSearchJavascript() throws XPathExpressionException, SearchException {
 		Resource se = javascriptSearch();
-		Boolean debug = true;
+		String debug = "xml";
 		SearchResult result = se.search("informat", debug);
 		Assert.assertEquals("application/x-javascript", se.getMimeType());
 		Assert.assertEquals(10, result.getHits().size());

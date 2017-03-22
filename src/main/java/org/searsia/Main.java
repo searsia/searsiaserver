@@ -230,28 +230,40 @@ public class Main {
        		myself = mother.deepcopy();
        		myself.setUrlAPITemplate(options.getMyURI());
       	} catch (SearchException e) {
-            System.err.println("Warning: Connection failed: " + e.getMessage());
+            System.err.println("ERROR: Connection failed: " + e.getMessage());
+            System.exit(1);
       	}
 
-  	    
-  	    if (options.isTest()) {
+  	    // If test is set, test the mother
+  	    String test = options.getTestOutput();
+  	    if (test != null) {
         	printMessage("Testing: " + myself.getId(), options.isQuiet());
   	        try {
-  	        	
-  	    	    result = mother.search(mother.getTestQuery());
-  	    	    if (!options.isQuiet()) {
-  	    	    	//System.out.println(result.toJson());
-  	    	    	if (result.getHits().isEmpty()) {
-  	    	    		System.err.println("Test failed.");
-  	    	  	        System.exit(1);
-  	    	    	} else {
-  	    	    		System.err.println("Ok.");
-  	    	  	        System.exit(0);
-  	    	    	}
-  	    	    }
+  	    	    result = mother.search(mother.getTestQuery(), test);
   	        } catch (SearchException e) {
-  	        	printMessage("Error: " + e.getMessage(), options.isQuiet());
+  	        	System.err.println("ERROR: No output: " + e.getMessage());
+  	        	System.exit(1);
   	        }
+  	        if (!options.isQuiet()) {
+    	    	if (test.equals("json")) {
+	        		System.out.println(result.toJson());
+	        	} else if (test.equals("xml") || test.equals("response")) {
+	        		String debugOut = result.getDebugOut();
+	        		if (debugOut == null) {
+	        			System.out.println ("No '" + test + "' output.");
+	        		} else {
+    	    	    	System.out.println(debugOut);
+	        		}
+	    	    }
+  	        }
+	    	System.out.flush();
+	    	if (result.getHits().isEmpty()) {
+	    	  	System.err.println("ERROR: No results for test query.");
+	    	    System.exit(1);
+	    	} else {
+	        	printMessage("Ok.", options.isQuiet());
+	  	        System.exit(0);
+	    	}
         } else {
         	printMessage("Starting: " + myself.getId(), options.isQuiet());
         }
@@ -259,20 +271,20 @@ public class Main {
   	    
         // Create or open indexes. The index is the MD5 of the mother     	
         String fileName = getHashString(options.getMotherTemplate());
-    	String path     = options.getIndexPath();
+        String path     = options.getIndexPath();
         Level level     = options.getLoggerLevel();
         try {
-        	engines  = new ResourceIndex(path, fileName);
-        	index    = new SearchResultIndex(path, fileName, options.getCacheSize());
-    		setupQueryLogger(path, fileName, level);
-    	} catch (Exception e) {
+            engines  = new ResourceIndex(path, fileName);
+            index    = new SearchResultIndex(path, fileName, options.getCacheSize());
+            setupQueryLogger(path, fileName, level);
+        } catch (Exception e) {
             printMessage("Setup failed: " + e.getMessage(), options.isQuiet());
             System.exit(1);
     	}
 
         if (mother == null || myself == null) {
-        	mother = engines.getMother();
-        	myself = engines.getMyself();
+            mother = engines.getMother();
+            myself = engines.getMyself();
         } else {
    		    engines.putMother(mother);
    		    engines.putMyself(myself);
@@ -291,8 +303,9 @@ public class Main {
         printMessage("API end point: " + uriToTemplate(myURI), options.isQuiet());
         printMessage("Use Ctrl+c to stop.", options.isQuiet());
 
+        
         // Start the update daemon
-        if (!options.isTest()) {
+        if (options.getTestOutput() != null) {
             try {
                 searsiaDaemon(index, engines, options.getPollInterval());
             } catch (InterruptedException e) {  }

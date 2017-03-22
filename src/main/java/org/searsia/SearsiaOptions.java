@@ -34,7 +34,7 @@ import org.apache.commons.cli.ParseException;
 public class SearsiaOptions {
 		
     /* See setDefaults() below */
-    private Boolean test;
+    private String test;
     private Boolean quiet;
 	private int cacheSize;
     private int pollInterval;
@@ -50,13 +50,13 @@ public class SearsiaOptions {
     public SearsiaOptions(String[] args) throws IllegalArgumentException {
     	Options options = new Options();
         options.addOption("c", "cache",    true,  "Set cache size (integer: number of result pages).");
-        options.addOption("t", "test",     false, "Test and exit.");
+        options.addOption("t", "test",     true,  "Print test output and exit (string: 'json', 'xml', 'response').");
         options.addOption("h", "help",     false, "Show help.");
         options.addOption("i", "interval", true,  "Set poll interval (integer: in seconds).");
         options.addOption("l", "log",      true,  "Set log level (0=off, 1=error, 2=warn=default, 3=info, 4=debug).");
         options.addOption("m", "mother",   true,  "Set url of mother's web service end point.");
         options.addOption("p", "path",     true,  "Set directory path to store the index.");
-        options.addOption("q", "quiet",    false, "No output on console.");
+        options.addOption("q", "quiet",    false, "No output to console.");
         options.addOption("u", "url",      true,  "Set url of my web service endpoint.");
         setDefaults();
         parse(options, args);
@@ -64,7 +64,7 @@ public class SearsiaOptions {
 
     
     private void setDefaults() {
-        test           = false;
+        test           = null; // no test 
         quiet          = false;
         cacheSize      = 500;
         pollInterval   = 120;
@@ -118,7 +118,7 @@ public class SearsiaOptions {
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
-        	System.out.println(e.getMessage());
+        	System.err.println(e.getMessage());
             help(options);
             throw new IllegalArgumentException(e);
         }
@@ -130,7 +130,12 @@ public class SearsiaOptions {
             }
         }
         if (cmd.hasOption("t")) {
-            test =  true;
+            test = cmd.getOptionValue("t").toLowerCase();
+            if (!(test.equals("json") || test.equals("xml") || test.equals("response"))) {
+            	String message = "Test output must be one of 'json', 'xml', or 'response'.";
+            	System.err.println(message);
+                throw new IllegalArgumentException(message);        	            	
+            }
         }
         if (cmd.hasOption("h") || cmd.getArgs().length > 0) {
           	help(options);
@@ -165,9 +170,9 @@ public class SearsiaOptions {
         if (cmd.hasOption("m")) {
             motherTemplate = cmd.getOptionValue("m");
         } else {
-            help(options);
             String message = "Please provide url of mother's web service end point";
-        	System.out.println(message);
+        	System.err.println(message);
+            help(options);
             throw new IllegalArgumentException(message);
         }
     }
@@ -182,7 +187,7 @@ public class SearsiaOptions {
     	return cacheSize;
     }
 
-    public Boolean isTest() {
+    public String getTestOutput() {
     	return test;
     }
     
@@ -231,6 +236,7 @@ public class SearsiaOptions {
     	result += "\n  Index Path    = " + getIndexPath();
     	result += "\n  Poll Interval = " + getPollInterval();
     	result += "\n  Cache Size    = " + getCacheSize();
+    	result += "\n  Test Output   = " + getTestOutput();
     	return result;
     }
 
