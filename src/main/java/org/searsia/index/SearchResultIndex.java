@@ -188,7 +188,7 @@ public class SearchResultIndex {
         } 
         this.hitsWriter.commit();
         closeReader();
-        LOGGER.info("{\"message\":\"Flushed cache to index.\"}");
+        LOGGER.info("Flushed cache to index.");
     }
     
     /**
@@ -197,7 +197,7 @@ public class SearchResultIndex {
      * @return true is queue was flushed.
      * @throws IOException
      */
-    public boolean check() throws IOException {
+    public boolean checkFlush() throws IOException {
     	boolean full = queue.size() > limit;
         if (full) {
             flush();

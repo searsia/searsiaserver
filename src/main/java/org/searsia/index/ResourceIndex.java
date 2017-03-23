@@ -23,8 +23,8 @@ import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.logging.Logger;
 
+import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -55,6 +55,7 @@ import org.searsia.engine.Resource;
 public class ResourceIndex {
 
     private final static Logger LOGGER = Logger.getLogger(ResourceIndex.class.getName());
+
     private final static Version version      = Version.LUCENE_4_10_4;
     private final static int MAX_SOURCE_CACHE = 10000; // TODO: breaks if we discover more than 10000 sources
     
@@ -116,7 +117,7 @@ public class ResourceIndex {
             reader = DirectoryReader.open(dir); 
         }
         catch (org.apache.lucene.index.IndexNotFoundException e) { 
-            LOGGER.warning("No resources in index.");
+            LOGGER.warn("No resources in index.");
             return;
         }
         try {
@@ -205,10 +206,9 @@ public class ResourceIndex {
 		}
 		if (!exists(engine)) {
 			try {
-				// TODO: keepPrivateParameters(engine); do not overwrite own parameters, ugh
 	            updateResourceIndex(engine.getId(), engine);
 			} catch (IOException e) {
-				LOGGER.warning("Update of resource " + engine.getId() + " failed");
+				LOGGER.warn("Update of resource " + engine.getId() + " failed");
 				// TODO Oh crap, what to do?
 			}
 		}
@@ -229,7 +229,7 @@ public class ResourceIndex {
             int nr = random.nextInt(keys.length);
 	        return this.engines.get(keys[nr]);
 	    } else {
-	    	return null;
+	    	return getMother();
 	    }
 	}
 	
@@ -272,7 +272,7 @@ public class ResourceIndex {
 		try {
 			writeMyselfFile(engine);
 		} catch (IOException e) {
-			LOGGER.warning("Could not write index file");
+			LOGGER.error("Could not write index file");
 		}
 		this.me = engine;
 	}

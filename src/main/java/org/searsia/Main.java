@@ -22,9 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Random;
 
 import org.apache.log4j.Appender;
@@ -34,7 +31,6 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
-import org.json.JSONObject;
 import org.searsia.index.SearchResultIndex;
 import org.searsia.index.ResourceIndex;
 import org.searsia.web.SearsiaApplication;
@@ -54,8 +50,7 @@ import org.searsia.engine.SearchException;
 public class Main {
 	
 	private static final Logger LOGGER = Logger.getLogger("org.searsia");
-	private static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
-	private static Random random   = new Random();
+	private static Random random = new Random();
 
 	
     private static void searsiaDaemon(SearchResultIndex index, ResourceIndex engines, 
@@ -65,7 +60,7 @@ public class Main {
         while(true) {
             Thread.sleep(pollInterval * 1000);
             try {
-                if (!index.check()) {
+                if (!index.checkFlush()) {
                 	SearchResult result = null;
                 	if (mother != null && random.nextBoolean()) { // sample mostly from mother
                 		engine = mother;
@@ -77,16 +72,16 @@ public class Main {
         				result.addQueryResourceRankDate(engine.getId());
                 	}
                		index.offer(result);
-               		logSample(engine.getId(), result.getQuery());
+               		LOGGER.info("Sample " + engine.getId() + ": " + result.getQuery());
                 }
             } catch (Exception e) { 
-            	logWarning("Sampling " + engine.getId() + " failed: " + e.getMessage());
+            	LOGGER.warn("Sampling " + engine.getId() + " failed: " + e.getMessage());
             }
         }
     }
 
     
-    private static void testResources(Resource mother, SearchResult result, ResourceIndex engines) {
+    private static void getResources(Resource mother, SearchResult result, ResourceIndex engines) {
     	int i = 0;
     	for (Hit hit: result.getHits()) {
     	     String rid = hit.getString("rid");
@@ -96,68 +91,56 @@ public class Main {
     	    	 try {
     	             engine = mother.searchResource(rid);
     	    	 } catch (SearchException e) {
-    	    		 System.err.println("Warning: Unable to get resources from " + mother.getId());
+    	    		 System.err.println("Warning: " + e.getMessage());
     	    		 break;
     	    	 }
     	    	 try {
     	    	     engines.put(engine);
     	    	 } catch(Exception e) {
-    	    		 System.err.println("Error: " + e.getMessage());
-    	    		 System.exit(1);
+    	    		 fatalError(e.getMessage());
     	    	 }
      	     } 
     	     if (i > 10) {
-    	    	 break; // not more than the first 10.
+    	         break; // not more than the first 10.
     	     }
     	}
     }
+ 
     
-
-    private static void getResources(SearchResult result, ResourceIndex index) {
-    	for (Hit hit: result.getHits()) {
-    	     String rid = hit.getString("rid");
-    	     if (rid != null && !index.containsKey(rid)) {
-    	    	 //index.reserve(rid);
-    	     }
-    	}
+    private static String uriNormalize(String uri, String myId) {
+        if (uri != null) {
+            uri = uri.replaceAll("\\?.*$", "");
+            uri = uri.replaceAll("\\/?search\\/?", "");
+            if (uri.endsWith(myId)) {
+                uri = uri.replace(myId, "");
+            }
+        }
+        return uri;
     }
-    
 
-    private static String uriToTemplate(String uri) {
+    private static String uriToTemplate(String uri, String myId) {
       	if (!(uri == null) && !(uri.contains("{q"))) {
        		if (!uri.endsWith("/")) {
    	    		uri += "/";
    		    }
-   		    uri += "search?q={q}";
+   		    uri += myId + "/search?q={q}";
     	}
     	return uri;
     }
 
 
-	private static void logWarning(String message) {
-		JSONObject r = new JSONObject();
-		r.put("time", df.format(new Date()));
-		r.put("message", message);
-		LOGGER.warn(r.toString());
-	}
-
-
-	private static void logSample(String resourceid, String query) {
-		JSONObject r = new JSONObject();
-		r.put("time", df.format(new Date()));
-		r.put("sample", resourceid);
-		r.put("query", query);
-		LOGGER.info(r.toString());
-	}
-	
 	private static void printMessage(String message, Boolean isQuiet) {
         if (!isQuiet) {
             System.err.println(message);
         }
 	}
-
 	
-    // for 'random' ids, if not provided   
+	private static void fatalError(String message) {
+	    System.err.println("ERROR: " + message);
+	    System.exit(1);
+	}
+
+    // for unique filename
     private static String getHashString(String inputString) {
         MessageDigest md;
         byte[] hash;
@@ -178,6 +161,34 @@ public class Main {
         return sb.toString();
     }
 
+    
+    private static void testMother(Resource mother, String debugInfo, Boolean isQuiet) {
+        printMessage("Testing: " + mother.getId(), isQuiet);
+        SearchResult result = null;
+        try {
+            result = mother.search(mother.getTestQuery(), debugInfo);
+        } catch (SearchException e) {
+            fatalError("No output: " + e.getMessage());
+        }
+        if (!isQuiet) {
+            if (debugInfo.equals("json")) {
+                System.out.println(result.toJson());
+            } else if (debugInfo.equals("xml") || debugInfo.equals("response")) {
+                String debugOut = result.getDebugOut();
+                if (debugOut == null) {
+                    System.out.println ("No '" + debugInfo + "' output.");
+                } else {
+                    System.out.println(debugOut);
+                }
+            }
+        }
+        System.out.flush();
+        if (result.getHits().isEmpty()) {
+            fatalError("No results for test query.");
+        } else {
+            printMessage("Ok.", isQuiet);
+        }
+    }
 
     /**
      * Attaches a rolling file logger for search queries
@@ -186,18 +197,18 @@ public class Main {
      * @param filename
      * @throws IOException
      */
-	private static void setupQueryLogger(String path, String filename, Level level) throws IOException {
-        Path querylogDir = Paths.get(path, filename + "_log");
-		if (!Files.exists(querylogDir)) {
-			Files.createDirectories(querylogDir);
+	private static void setupLogger(String path, String filename, Level level) throws IOException {
+        Path logDir = Paths.get(path, filename + "_log");
+		if (!Files.exists(logDir)) {
+			Files.createDirectories(logDir);
 		}
 		Appender appender = new DailyRollingFileAppender(
-				new PatternLayout("%m%n"),
-				querylogDir.resolve("queries.log").toString(),
+				new PatternLayout("%p %d{ISO8601} %m%n"),
+				logDir.resolve("searsia.log").toString(),
 				"'.'yyyy-MM-dd");
 		LOGGER.addAppender(appender);
 		LOGGER.setLevel(level);
-		logWarning("Searsia restart");
+		LOGGER.warn("Searsia restart");
 	}
 
 
@@ -211,8 +222,11 @@ public class Main {
     	try {
     	    options = new SearsiaOptions(args);
         } catch (IllegalArgumentException e) {
-        	System.exit(1);
+            fatalError(e.getMessage());
         }
+    	if (options.isHelp()) { 
+    	    System.exit(0); 
+    	}
         printMessage("Searsia server " + SearsiaApplication.VERSION, options.isQuiet());
 
         
@@ -222,94 +236,64 @@ public class Main {
     	Resource connect =  new Resource(options.getMotherTemplate(), null);
     	SearchResult result = null;
   	    try {
-           	result = connect.search();
+           	result = connect.search();	
            	mother = result.getResource();
+           	if (mother == null) {
+           	    fatalError("Initialization failed: JSONObject[\"resource\"] not found.");
+           	}
            	if (mother.getAPITemplate() == null) {
            		mother.setUrlAPITemplate(options.getMotherTemplate());
            	}
        		myself = mother.deepcopy();
        		myself.setUrlAPITemplate(options.getMyURI());
       	} catch (SearchException e) {
-            System.err.println("ERROR: Connection failed: " + e.getMessage());
-            System.exit(1);
+            fatalError("Connection failed: " + e.getMessage());
       	}
+  	    
 
   	    // If test is set, test the mother
-  	    String test = options.getTestOutput();
-  	    if (test != null) {
-        	printMessage("Testing: " + myself.getId(), options.isQuiet());
-  	        try {
-  	    	    result = mother.search(mother.getTestQuery(), test);
-  	        } catch (SearchException e) {
-  	        	System.err.println("ERROR: No output: " + e.getMessage());
-  	        	System.exit(1);
-  	        }
-  	        if (!options.isQuiet()) {
-    	    	if (test.equals("json")) {
-	        		System.out.println(result.toJson());
-	        	} else if (test.equals("xml") || test.equals("response")) {
-	        		String debugOut = result.getDebugOut();
-	        		if (debugOut == null) {
-	        			System.out.println ("No '" + test + "' output.");
-	        		} else {
-    	    	    	System.out.println(debugOut);
-	        		}
-	    	    }
-  	        }
-	    	System.out.flush();
-	    	if (result.getHits().isEmpty()) {
-	    	  	System.err.println("ERROR: No results for test query.");
-	    	    System.exit(1);
-	    	} else {
-	        	printMessage("Ok.", options.isQuiet());
-	  	        System.exit(0);
-	    	}
+  	    if (options.getTestOutput() != null) {
+  	        testMother(mother, options.getTestOutput(), options.isQuiet());
         } else {
         	printMessage("Starting: " + myself.getId(), options.isQuiet());
         }
 
-  	    
+
         // Create or open indexes. The index is the MD5 of the mother     	
         String fileName = getHashString(options.getMotherTemplate());
         String path     = options.getIndexPath();
         Level level     = options.getLoggerLevel();
         try {
+            setupLogger(path, fileName, level);
             engines  = new ResourceIndex(path, fileName);
             index    = new SearchResultIndex(path, fileName, options.getCacheSize());
-            setupQueryLogger(path, fileName, level);
         } catch (Exception e) {
-            printMessage("Setup failed: " + e.getMessage(), options.isQuiet());
-            System.exit(1);
+            fatalError("Setup failed: " + e.getMessage());
     	}
-
-        if (mother == null || myself == null) {
-            mother = engines.getMother();
-            myself = engines.getMyself();
-        } else {
-   		    engines.putMother(mother);
-   		    engines.putMyself(myself);
-        }
+	    engines.putMother(mother);
+	    engines.putMyself(myself);
         
+	    getResources(mother, result, engines);
+
 
     	// Start the web server
-		String myURI = options.getMyURI();
+		String myURI = uriNormalize(options.getMyURI(), myself.getId());
     	try {
             server = GrizzlyHttpServerFactory.createHttpServer(URI.create(myURI), 
                 new SearsiaApplication(index, engines));
     	} catch (Exception e) {
-            System.err.println("Server failed: " + e.getMessage());
-    		System.exit(1);    		
+            fatalError("Server failed: " + e.getMessage());
     	}
-        printMessage("API end point: " + uriToTemplate(myURI), options.isQuiet());
-        printMessage("Use Ctrl+c to stop.", options.isQuiet());
 
         
-        // Start the update daemon
-        if (options.getTestOutput() != null) {
+        // Start the update daemon if not testing
+        if (options.getTestOutput() == null) {
+            printMessage("API end point: " + uriToTemplate(myURI, myself.getId()), options.isQuiet());
+            printMessage("Use Ctrl+c to stop.", options.isQuiet());
             try {
                 searsiaDaemon(index, engines, options.getPollInterval());
             } catch (InterruptedException e) {  }
         }
         server.shutdownNow();
     }
-}
+} 

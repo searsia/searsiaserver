@@ -36,7 +36,7 @@ public class SearchTest {
     }
     
     private static Resource me() {
-    	return new Resource("http://me.org?q={q}", "me");
+    	return new Resource("http://me.org?q={q}", "utwente");
     }
     
     
@@ -59,19 +59,19 @@ public class SearchTest {
     @Test // returns 'my' resource description
 	public void test() throws IOException {
 		Search search = new Search(index, engines);
-		Response response = search.query("", "");
+		Response response = search.query("utwente", "");
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
 		JSONObject json = new JSONObject(entity);
 		JSONObject resource  = (JSONObject) json.get("resource");
         Assert.assertEquals(200, status);
-		Assert.assertEquals("me", resource.get("id"));
+		Assert.assertEquals("utwente", resource.get("id"));
 	}
     
     @Test // returns local search results for 'searsia'
 	public void testQuery() throws IOException {
 		Search search = new Search(index, engines);
-		Response response = search.query("", "searsia search for noobs");
+		Response response = search.query("utwente", "searsia search for noobs");
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
 		JSONObject json = new JSONObject(entity);

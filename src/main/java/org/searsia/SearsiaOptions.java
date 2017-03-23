@@ -36,6 +36,7 @@ public class SearsiaOptions {
     /* See setDefaults() below */
     private String test;
     private Boolean quiet;
+    private Boolean help;
 	private int cacheSize;
     private int pollInterval;
     private int logLevel;
@@ -65,6 +66,7 @@ public class SearsiaOptions {
     
     private void setDefaults() {
         test           = null; // no test 
+        help           = false;
         quiet          = false;
         cacheSize      = 500;
         pollInterval   = 120;
@@ -118,9 +120,7 @@ public class SearsiaOptions {
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
-        	System.err.println(e.getMessage());
-            help(options);
-            throw new IllegalArgumentException(e);
+            throw new IllegalArgumentException(e.getMessage() + " (use '-h' for help)");
         }
         
         if (cmd.hasOption("c")) {
@@ -132,14 +132,12 @@ public class SearsiaOptions {
         if (cmd.hasOption("t")) {
             test = cmd.getOptionValue("t").toLowerCase();
             if (!(test.equals("json") || test.equals("xml") || test.equals("response"))) {
-            	String message = "Test output must be one of 'json', 'xml', or 'response'.";
-            	System.err.println(message);
-                throw new IllegalArgumentException(message);        	            	
+                throw new IllegalArgumentException("Test output must be one of 'json', 'xml' or 'response'.");        	            	
             }
         }
         if (cmd.hasOption("h") || cmd.getArgs().length > 0) {
           	help(options);
-            throw new IllegalArgumentException("Help!"); // misusing exceptions :-(
+          	help = true;
         }
         try {
             if (cmd.hasOption("i")) {
@@ -155,8 +153,7 @@ public class SearsiaOptions {
                 }
             }
         } catch (IllegalArgumentException e) {
-            help(options);
-            throw new IllegalArgumentException(e);        	
+            throw new IllegalArgumentException(e.getMessage());
         }
         if (cmd.hasOption("p")) {
             indexPath = cmd.getOptionValue("p");
@@ -170,10 +167,7 @@ public class SearsiaOptions {
         if (cmd.hasOption("m")) {
             motherTemplate = cmd.getOptionValue("m");
         } else {
-            String message = "Please provide url of mother's web service end point";
-        	System.err.println(message);
-            help(options);
-            throw new IllegalArgumentException(message);
+            throw new IllegalArgumentException("Please provide mother's url template (use '-h' for help)");
         }
     }
     
@@ -227,6 +221,10 @@ public class SearsiaOptions {
     	return quiet;
     }
     
+    public Boolean isHelp() {
+        return help;
+    }
+
     @Override
     public String toString() {
     	String result = "SearsiaOptions:";

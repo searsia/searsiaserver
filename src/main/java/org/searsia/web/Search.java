@@ -17,14 +17,12 @@
 package org.searsia.web;
 
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.OPTIONS;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
@@ -42,7 +40,7 @@ import org.searsia.engine.SearchException;
  * 
  * @author Dolf Trieschnigg and Djoerd Hiemstra
  */
-@Path("search")
+@Path("{resourceid}/search")
 public class Search {
 
 	private final static Logger LOGGER = Logger.getLogger(Search.class);
@@ -54,24 +52,7 @@ public class Search {
 		this.engines  = engines;
     	this.index = index;
 	}
-	
-	private static final DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.S");
-	
-	private void logQuery(String resourceid, String query) {
-		JSONObject r = new JSONObject();
-		r.put("time", df.format(new Date()));
-		if (resourceid != null) r.put("resourceid", resourceid);
-		r.put("query", query);
-		LOGGER.info(r.toString());		
-	}
-
-	private void logWarning(String message) {
-		JSONObject r = new JSONObject();
-		r.put("time", df.format(new Date()));
-		r.put("warning", message);
-		LOGGER.warn(r.toString());		
-	}
-
+		
 	@OPTIONS
 	public Response options() {
 	    return Response.status(Response.Status.NO_CONTENT)
@@ -79,19 +60,18 @@ public class Search {
 				.header("Access-Control-Allow-Methods", "GET")
         		.build();
 	}
-	
+
 	@GET
 	@Produces(SearchResult.SEARSIA_MIME_ENCODING)
-	public Response query(@QueryParam("r") String resourceid, @QueryParam("q") String query) {
-		// TODO: also log the outcome of the query
-		logQuery(resourceid, query);
+	public Response query(@PathParam("resourceid") String resourceid, @QueryParam("q") String query) {
+		LOGGER.info("Query " + resourceid + ": " + query);
 		
 		Resource me, engine, mother;
 		SearchResult result;
 		JSONObject json;
 		me = engines.getMyself();
 		mother = engines.getMother();
-		if (resourceid != null && resourceid.trim().length() > 0 && !resourceid.equals(me.getId())) {
+		if (!resourceid.equals(me.getId())) {
 			engine = engines.get(resourceid);
 			if (engine == null) {  // unknown? ask your mother
 				if (mother != null) {
@@ -99,13 +79,13 @@ public class Search {
     				    engine  = mother.searchResource(resourceid);
 				    } catch (SearchException e) {
 				    	String message = "Resource not found: @" + resourceid;
-				    	logWarning(message);
+				    	LOGGER.warn(message);
 					    return SearsiaApplication.responseError(404, message);
 				    }
 				}
 				if (engine == null) {
 					String message = "Unknown resource identifier: @" + resourceid;
-			    	logWarning(message);
+			    	LOGGER.warn(message);
     				return SearsiaApplication.responseError(404, message);
 				} 
     		    engines.put(engine);
@@ -121,7 +101,7 @@ public class Search {
 					return SearsiaApplication.responseOk(json);
 				} catch (Exception e) {
 					String message = "Resource @" + resourceid + " unavailable: " + e.getMessage();
-					logWarning(message);
+					LOGGER.warn(message);
 					return SearsiaApplication.responseError(503, message);
 				} 
 			} else {
@@ -134,7 +114,7 @@ public class Search {
 			        result = index.search(query);
 			    } catch (IOException e) {
 			    	String message = "Service unavailable: " + e.getMessage();
-			    	logWarning(message);
+			    	LOGGER.warn(message);
 				    return SearsiaApplication.responseError(503, message);				
 			    }
 		    	if (result.getHits().isEmpty() && mother != null) {  // empty? ask mother!
@@ -142,8 +122,7 @@ public class Search {
     				    result  = mother.search(query);
     				    index.offer(result);  // really trust mother
 				    } catch (SearchException e) {
-				    	String message = "Mother not available";
-				    	logWarning(message);
+				    	LOGGER.warn("Mother not available");
 					}		    		
 		    	} else {  // own results? Do resource ranking.
 			        result.scoreResourceSelection(query, engines);

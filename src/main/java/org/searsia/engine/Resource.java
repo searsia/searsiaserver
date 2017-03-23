@@ -295,11 +295,18 @@ public class Resource implements Comparable<Resource> {
 	
 	public Resource searchResource(String resourceid) throws SearchException {
 		if (!this.mimeType.equals(SearchResult.SEARSIA_MIME_TYPE)) {
-			throw new SearchException("Resource is not a searsia engine: " + resourceid);
+			throw new SearchException("Resource is not a searsia engine: " + this.getId());
 		}
-		try {
-			Resource engine = null;
-    		String url = this.urlAPITemplate.replaceAll("\\{r\\??\\}", URLEncoder.encode(resourceid, "UTF-8"));
+		Resource engine = null;
+   		String url = this.urlAPITemplate;
+   		String rid = this.getId();
+   		int lastIndex = url.lastIndexOf(rid); // replace last occurrence of resourceId
+   		if (lastIndex < 0) { 
+   		    throw new SearchException("No resources available"); 
+   		}
+        try {
+            String newRid = URLEncoder.encode(resourceid, "UTF-8");
+            url = url.substring(0, lastIndex) + url.substring(lastIndex).replaceFirst(rid, newRid);
             url = url.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", ""); // remove optional parameters 
        		String jsonPage = getCompletePage(url, this.postString, this.headers);
     		JSONObject json = new JSONObject(jsonPage);
@@ -328,7 +335,7 @@ public class Resource implements Comparable<Resource> {
     		    Resource engine = new Resource(json.getJSONObject("resource"));
     		    result.setResource(engine);
 			} catch (XPathExpressionException e) {
-    			LOGGER.warn("Warning: " + e.getMessage());
+    			LOGGER.warn("Resource error: " + e.getMessage());
     		}
 		}
 		return result;

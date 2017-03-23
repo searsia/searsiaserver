@@ -48,19 +48,23 @@ public class ResourceTest {
 		);
 		return hiemstra;
 	}
+	
+    private Resource searsiaMimeOnlySearch() throws XPathExpressionException {
+        return new Resource("http://searsia.org/searsia/v1-wikididyoumean-{q?}.json", "randomid");
+    }	
 
 	private Resource searsiaSearch() throws XPathExpressionException {
-		return new Resource("http://searsia.org/searsia/wiki-{q?}-{r?}.json", "wiki");
+		return new Resource("http://searsia.org/searsia/v1-wiki-{q?}.json", "wiki");
 	}
 	
     private Resource xmlSearch() throws XPathExpressionException, SearchException { 	
-		Resource wiki = new Resource("http://searsia.org/searsia/wiki-{q?}-{r?}.json", "wiki");
+		Resource wiki = new Resource("http://searsia.org/searsia/v1-wiki-{q?}.json", "wiki");
 		Resource wikifull = wiki.searchResource("wikifull");
         return wikifull;
 	}
 
     private Resource jsonSearch() throws XPathExpressionException {
-		Resource wiki = new Resource("http://searsia.org/searsia/wiki-{q?}-wikifull.json", "wikifull");
+		Resource wiki = new Resource("http://searsia.org/searsia/v1-wikifull-{q?}.json", "wikifull");
 		wiki.setMimeType("application/json");
 		wiki.setItemXpath("//hits");
 		wiki.addExtractor(
@@ -73,7 +77,7 @@ public class ResourceTest {
 	}
     
     private Resource javascriptSearch() throws XPathExpressionException {
-		Resource wikifull = new Resource("http://searsia.org/searsia/wiki-{q}-wikifull.js", "wikifull");
+		Resource wikifull = new Resource("http://searsia.org/searsia/v1-wikifull-{q}.js", "wikifull");
 		wikifull.setMimeType("application/x-javascript");
 		wikifull.setItemXpath("//hits");
 		wikifull.addExtractor(
@@ -137,7 +141,8 @@ public class ResourceTest {
 	@Test
 	public void testSearchJson() throws XPathExpressionException, SearchException {
 		Resource se = jsonSearch();
-		SearchResult result = se.search("informat", "xml");
+		String debug = "xml";
+		SearchResult result = se.search("informat", debug);
 		Assert.assertNotNull(result.getDebugOut());
 		Assert.assertEquals("application/json", se.getMimeType());
 		Assert.assertEquals(10, result.getHits().size());
@@ -180,6 +185,30 @@ public class ResourceTest {
 		Resource engine = se.searchResource("wikifull");
 		Assert.assertTrue(engine != null);
 	}
+
+    @Test
+    public void testSearchNoResource1() throws XPathExpressionException, SearchException {
+        Resource se = htmlSearch();
+        Boolean exception = false;
+        try {
+            Resource engine = se.searchResource("wikifull");
+        } catch (SearchException e) {
+            exception = true;
+        }
+        Assert.assertTrue("Non-Searsia engine throws exception", exception);
+    }
+
+    @Test
+    public void testSearchNoResource2() throws XPathExpressionException, SearchException {
+        Resource se = searsiaMimeOnlySearch();
+        Boolean exception = false;
+        try {
+            Resource engine = se.searchResource("wikifull");
+        } catch (SearchException e) {
+            exception = true;
+        }
+        Assert.assertTrue("No resources exception", exception);
+    }
 
 	@Test
 	public void testSearchError() throws XPathExpressionException  {
