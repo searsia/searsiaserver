@@ -175,7 +175,7 @@ public class ResourceTest {
 	@Test
 	public void testSearchSearsiaEmpty() throws XPathExpressionException, SearchException {
 		Resource se = searsiaSearch();
-		SearchResult result = se.search();
+		SearchResult result = se.searchWithoutQuery();
 		Assert.assertTrue(result.getHits().size() > 0);
 	}
 

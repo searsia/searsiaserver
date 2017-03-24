@@ -140,8 +140,8 @@ public class Resource implements Comparable<Resource> {
 				addPrivateParameter((String) key, (String) json.get(key));
 			}
 		}
-		if (this.urlAPITemplate == null) {
-			throw new IllegalArgumentException("Missing API Template");
+		if (this.urlAPITemplate != null && this.urlAPITemplate.startsWith("file")) {
+			throw new IllegalArgumentException("Illegal 'file' API Template");
 		}
 		if (this.id == null) {
 			throw new IllegalArgumentException("Missing Identifier");
@@ -277,14 +277,12 @@ public class Resource implements Comparable<Resource> {
 		} 
 	}
 
-	
-	public SearchResult search() throws SearchException {
+	public SearchResult searchWithoutQuery() throws SearchException {
 		if (!this.mimeType.equals(SearchResult.SEARSIA_MIME_TYPE)) {
 			throw new SearchException("Engine is not a searsia engine: " + this.id);
 		}
 		try {
-			String url = this.urlAPITemplate;
-            url = url.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", ""); // remove optional parameters 
+			String url = fillTemplate(this.urlAPITemplate, "");
 			String page = getCompletePage(url, this.postString, this.headers);
 			return searsiaSearch(page, null);
 		} catch (Exception e) {  // catch all, also runtime exceptions
@@ -307,7 +305,7 @@ public class Resource implements Comparable<Resource> {
         try {
             String newRid = URLEncoder.encode(resourceid, "UTF-8");
             url = url.substring(0, lastIndex) + url.substring(lastIndex).replaceFirst(rid, newRid);
-            url = url.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", ""); // remove optional parameters 
+            url = url.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}|\\{q\\}", ""); // remove optional parameters and query 
        		String jsonPage = getCompletePage(url, this.postString, this.headers);
     		JSONObject json = new JSONObject(jsonPage);
     		if (json.has("resource")) {
@@ -326,7 +324,10 @@ public class Resource implements Comparable<Resource> {
 			result.setDebugOut(jsonPage);
 		}
 		JSONObject json = new JSONObject(jsonPage);
-		JSONArray hits  = json.getJSONArray("hits");
+		JSONArray hits  = new JSONArray();
+		try {
+            hits  = json.getJSONArray("hits");
+		} catch (JSONException e) { }
 		for (int i = 0; i < hits.length(); i += 1) {
 			result.addHit(new Hit((JSONObject) hits.get(i)));
 		}
@@ -337,6 +338,9 @@ public class Resource implements Comparable<Resource> {
 			} catch (XPathExpressionException e) {
     			LOGGER.warn("Resource error: " + e.getMessage());
     		}
+		}
+		if (json.has("searsia")) {
+		    result.setVersion(json.getString("searsia"));
 		}
 		return result;
 	}
@@ -440,7 +444,7 @@ public class Resource implements Comparable<Resource> {
         return DOMBuilder.string2DOM(xmlString);
     }
 
-    private String fillTemplate(String template, String query) throws UnsupportedEncodingException {
+    private String fillTemplate(String template, String query) throws IOException {
   		String url = template;
    		for (String param: this.privateParameters.keySet()) {
    			url = url.replaceAll("\\{" + param + "\\??\\}", this.privateParameters.get(param));
@@ -448,7 +452,8 @@ public class Resource implements Comparable<Resource> {
    		url = url.replaceAll("\\{q\\??\\}", query);
         url = url.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", ""); // remove optional parameters
 		if (url.matches(".*\\{[0-9A-Za-z\\-_]+\\}.*")) {
-			throw new UnsupportedEncodingException("Missing url parameter"); // TODO: better error
+		    String param = url.substring(url.indexOf("{"), url.indexOf("}") + 1);
+			throw new IOException("Missing url parameter " + param);
 		}        
         return url;
 	}
@@ -489,11 +494,14 @@ public class Resource implements Comparable<Resource> {
         connection.setRequestProperty("Accept-Language", "en-US,en;q=0.5"); // TODO: from browser?
         for (Map.Entry<String, String> entry : headers.entrySet()) {
         	String value = entry.getValue();
-    		for (String param: this.privateParameters.keySet()) {
-    			value = value.replace("{" + param + "}", this.privateParameters.get(param));
-    		}
-			if (value.contains("{")) {
-				throw new IOException("Missing header parameter"); // TODO: better error
+            if (value.contains("{")) {
+        		for (String param: this.privateParameters.keySet()) {
+    	    		value = value.replace("{" + param + "}", this.privateParameters.get(param));
+    		    }
+        		if (value.contains("{")) {
+    	            String param = value.substring(value.indexOf("{"), value.indexOf("}") + 1);
+	    			throw new IOException("Missing header parameter " + param);
+        		}
 			}
         	connection.setRequestProperty(entry.getKey(), value);
     	}

@@ -77,6 +77,9 @@ public class DOMBuilder {
       try {
           transformer = tf.newTransformer();
           transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+          transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+          transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+          transformer.setOutputProperty(OutputKeys.INDENT, "yes");
           StringWriter writer = new StringWriter();
           transformer.transform(new DOMSource(document), new StreamResult(writer));
           String output = writer.getBuffer().toString();

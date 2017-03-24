@@ -41,6 +41,7 @@ public class SearchResult {
 	private Resource resource;
 	private String debugOut;
 	private String query;
+	private String version;
 	
 	public SearchResult() {
 		this(null);
@@ -51,6 +52,7 @@ public class SearchResult {
 		this.random = new Random();
 		this.resource = null;
 		this.query = null;
+		this.version = null;
 		this.debugOut = null;
 		if (hit != null) {
 			this.hits.add(hit);
@@ -72,6 +74,14 @@ public class SearchResult {
 	public Resource getResource() {
 		return this.resource;
 	}
+	
+	public String getVersion() {
+	    return this.version;
+	}
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
 
 	public void setDebugOut(String debugOut) {
 		this.debugOut = debugOut;

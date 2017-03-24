@@ -62,9 +62,9 @@ public class ResourceIndex {
 	private Map<String,Resource> engines = new LinkedHashMap<String,Resource>();
 	private Random random   = new Random();
 	private Resource mother = null;
-	private Resource me = null;
+	private Resource me     = null;
 	private Path meFile     = null;
-	private Path indexDir = null;
+	private Path indexDir   = null;
 	private IndexWriter writer = null;
 
 	/**

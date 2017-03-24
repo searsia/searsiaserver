@@ -91,7 +91,7 @@ public class Main {
     	    	 try {
     	             engine = mother.searchResource(rid);
     	    	 } catch (SearchException e) {
-    	    		 System.err.println("Warning: " + e.getMessage());
+    	    		 System.err.println("Warning: Not found: " + rid + ": " + e.getMessage());
     	    		 break;
     	    	 }
     	    	 try {
@@ -101,11 +101,18 @@ public class Main {
     	    	 }
      	     } 
     	     if (i > 10) {
-    	         break; // not more than the first 10.
+    	         break; // not more than the first 10. Rest will follow when needed
     	     }
     	}
     }
- 
+
+    private static boolean sameTemplates(String uri1, String uri2, String myId) {
+        if (uri1 == null) {
+            return (uri2 == null);
+        } else {
+            return  uriNormalize(uri1, myId).equals(uriNormalize(uri2, myId));      
+        }
+    } 
     
     private static String uriNormalize(String uri, String myId) {
         if (uri != null) {
@@ -163,12 +170,11 @@ public class Main {
 
     
     private static void testMother(Resource mother, String debugInfo, Boolean isQuiet) {
-        printMessage("Testing: " + mother.getId(), isQuiet);
         SearchResult result = null;
         try {
             result = mother.search(mother.getTestQuery(), debugInfo);
         } catch (SearchException e) {
-            fatalError("No output: " + e.getMessage());
+            fatalError("Test failed: " + e.getMessage());
         }
         if (!isQuiet) {
             if (debugInfo.equals("json")) {
@@ -176,7 +182,7 @@ public class Main {
             } else if (debugInfo.equals("xml") || debugInfo.equals("response")) {
                 String debugOut = result.getDebugOut();
                 if (debugOut == null) {
-                    System.out.println ("No '" + debugInfo + "' output.");
+                    System.out.println ("Warning: No " + debugInfo + " output.");
                 } else {
                     System.out.println(debugOut);
                 }
@@ -184,9 +190,12 @@ public class Main {
         }
         System.out.flush();
         if (result.getHits().isEmpty()) {
-            fatalError("No results for test query.");
+            fatalError("Test failed: No results for test query.");
         } else {
-            printMessage("Ok.", isQuiet);
+            if (result.getHits().size() < 10) {
+                printMessage("Warning: less than 10 results; see \"testquery\" or \"rerank\".", isQuiet);
+            }
+            printMessage("Test succeeded.", isQuiet);
         }
     }
 
@@ -233,34 +242,42 @@ public class Main {
     	// Connect to the mother engine and gather information from the mother. 
    		Resource myself = null;
     	Resource mother = null;
-    	Resource connect =  new Resource(options.getMotherTemplate(), null);
+    	Resource connect = new Resource(options.getMotherTemplate(), null);
+    	String version  = null;
     	SearchResult result = null;
   	    try {
-           	result = connect.search();	
+           	result = connect.searchWithoutQuery();	
            	mother = result.getResource();
-           	if (mother == null) {
-           	    fatalError("Initialization failed: JSONObject[\"resource\"] not found.");
-           	}
-           	if (mother.getAPITemplate() == null) {
-           		mother.setUrlAPITemplate(options.getMotherTemplate());
-           	}
-       		myself = mother.deepcopy();
-       		myself.setUrlAPITemplate(options.getMyURI());
+           	version = result.getVersion();
       	} catch (SearchException e) {
             fatalError("Connection failed: " + e.getMessage());
       	}
+        if (mother == null) {
+            fatalError("Initialization failed: JSONObject[\"resource\"] not found.");
+        }
+        if (version != null && !version.startsWith("v1")) {
+            printMessage("Warning: Wrong major Searsia version " + version, options.isQuiet());
+        }
+        myself = mother.deepcopy();
+        myself.setUrlAPITemplate(options.getMyURI());
+        if (mother.getAPITemplate() == null) {
+            mother.setUrlAPITemplate(options.getMotherTemplate());
+        } else if (!sameTemplates(mother.getAPITemplate(), options.getMotherTemplate(), mother.getId())) {
+            printMessage("Warning: Mother changed to " + mother.getAPITemplate(), options.isQuiet()); 
+        }
   	    
 
   	    // If test is set, test the mother
   	    if (options.getTestOutput() != null) {
+  	        printMessage("Testing: " + mother.getId(), options.isQuiet());
   	        testMother(mother, options.getTestOutput(), options.isQuiet());
         } else {
         	printMessage("Starting: " + myself.getId(), options.isQuiet());
         }
 
 
-        // Create or open indexes. The index is the MD5 of the mother     	
-        String fileName = getHashString(options.getMotherTemplate());
+        // Create or open indexes. The filename appends the MD5 of the id so we don't confuse indexes
+        String fileName = myself.getId() + "_" + getHashString(options.getMotherTemplate());
         String path     = options.getIndexPath();
         Level level     = options.getLoggerLevel();
         try {
