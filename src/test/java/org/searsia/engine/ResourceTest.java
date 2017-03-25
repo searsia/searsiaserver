@@ -28,7 +28,7 @@ public class ResourceTest {
         hiemstra.setFavicon("http://wwwhome.cs.utwente.nl/~hiemstra/images/ut.ico");
 		hiemstra.setItemXpath("//div[@class='post']");
 		hiemstra.addExtractor(
-			new TextExtractor("title", "./h3"),
+		    new TextExtractor("title", "./h3"),
 			new TextExtractor("description", "./h3/following-sibling::text()"),
 			new TextExtractor("url", "./h3/a/@href")
 		);

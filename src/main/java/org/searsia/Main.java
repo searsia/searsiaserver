@@ -237,7 +237,9 @@ public class Main {
     	    System.exit(0); 
     	}
         printMessage("Searsia server " + SearsiaApplication.VERSION, options.isQuiet());
-
+        
+        
+        
         
     	// Connect to the mother engine and gather information from the mother. 
    		Resource myself = null;

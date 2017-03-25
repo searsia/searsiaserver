@@ -46,12 +46,15 @@ public class TextExtractor {
 
 
 	public void extract(Node item, Hit hit) throws XPathExpressionException {
-        String resultString = "";
+        String resultString = ""; // TODO: StringBuilder
 		try {
             NodeList nodeList = (NodeList) this.compiledXpath.evaluate(item, XPathConstants.NODESET);
             if (nodeList != null) {
                 for (int i=0; i < nodeList.getLength(); i++) {
                     Node node = nodeList.item(i);
+                    if (!resultString.equals("")) {
+                        resultString += " ";
+                    }
                     resultString += node.getTextContent();
                 }
             }

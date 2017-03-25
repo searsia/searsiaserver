@@ -135,10 +135,6 @@ public class SearsiaOptions {
                 throw new IllegalArgumentException("Test output must be one of 'json', 'xml' or 'response'.");        	            	
             }
         }
-        if (cmd.hasOption("h") || cmd.getArgs().length > 0) {
-          	help(options);
-          	help = true;
-        }
         try {
             if (cmd.hasOption("i")) {
                 pollInterval = new Integer(cmd.getOptionValue("i"));
@@ -166,8 +162,13 @@ public class SearsiaOptions {
         }
         if (cmd.hasOption("m")) {
             motherTemplate = cmd.getOptionValue("m");
-        } else {
-            throw new IllegalArgumentException("Please provide mother's url template (use '-h' for help)");
+        }
+        if (cmd.hasOption("h") || cmd.getArgs().length < 0 || !cmd.hasOption("m")) {
+            if (!cmd.hasOption("m")) {
+                System.out.println("Please provide mother's url template (use '-m').");
+            }
+            help(options);
+            help = true;
         }
     }
     

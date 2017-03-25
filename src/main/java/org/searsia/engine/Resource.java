@@ -41,7 +41,6 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.apache.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -56,7 +55,6 @@ import org.searsia.SearchResult;
 public class Resource implements Comparable<Resource> {
 
     public final static String defaultTestQuery = "searsia";
-    private final static Logger LOGGER = Logger.getLogger(Resource.class.getName());
 
     // For rate limiting: Default = 1000 queries per day
     private final static int defaultRATE = 1000;    // unit: queries
@@ -318,7 +316,7 @@ public class Resource implements Comparable<Resource> {
 	}
 
 
-	private SearchResult searsiaSearch(String jsonPage, String debug) {
+	private SearchResult searsiaSearch(String jsonPage, String debug) throws XPathExpressionException, JSONException {
 		SearchResult result = new SearchResult();
 		if (debug != null && debug.equals("response")) {
 			result.setDebugOut(jsonPage);
@@ -332,12 +330,8 @@ public class Resource implements Comparable<Resource> {
 			result.addHit(new Hit((JSONObject) hits.get(i)));
 		}
 		if (json.has("resource")) {
-			try {
-    		    Resource engine = new Resource(json.getJSONObject("resource"));
-    		    result.setResource(engine);
-			} catch (XPathExpressionException e) {
-    			LOGGER.warn("Resource error: " + e.getMessage());
-    		}
+ 		    Resource engine = new Resource(json.getJSONObject("resource"));
+   		    result.setResource(engine);
 		}
 		if (json.has("searsia")) {
 		    result.setVersion(json.getString("searsia"));
@@ -379,14 +373,10 @@ public class Resource implements Comparable<Resource> {
 		return result;
 	}
 	
-    private Hit extractHit(Node item) {
+    private Hit extractHit(Node item) throws XPathExpressionException {
     	Hit hit = new Hit();
     	for(TextExtractor extractor: this.extractors) {
-    		try {
-				extractor.extract(item, hit);
-			} catch (XPathExpressionException e) {
-				LOGGER.warn(e.getMessage()); // TODO: handle this gracefully :-)
-			}
+			extractor.extract(item, hit);
     	}
 		return hit;
 	}
