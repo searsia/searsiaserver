@@ -23,7 +23,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URLConnection;
 import java.net.URL;
@@ -342,15 +341,20 @@ public class Resource implements Comparable<Resource> {
 
 	private SearchResult xpathSearch(String url, String page, String debug)
 			throws IOException, XPathExpressionException {
-		Document document;
-		if (this.mimeType != null && this.mimeType.equals("application/json")) {
+		Document document = null;
+		if (this.mimeType == null) {
+		    throw new IOException("No MIME Type provided.");
+		}
+		if (this.mimeType.equals("application/json")) {
 		   document = parseDocumentJSON(page);
-		} else if (this.mimeType != null && this.mimeType.equals("application/x-javascript")) {
+		} else if (this.mimeType.equals("application/x-javascript")) {
 		    document = parseDocumentJavascript(page);
-		} else if (this.mimeType != null && this.mimeType.equals("application/xml")) {
+		} else if (this.mimeType.equals("application/xml")) {
 		    document = parseDocumentXML(page);
-		} else {
+		} else if (this.mimeType.equals("text/html")){
 		    document = parseDocumentHTML(page, url);
+		} else {
+		    throw new IOException("MIME Type not supported: " + this.mimeType);
 		}
 		if (document == null) {
 			throw new IOException("Error parsing document. Wrong mimetype?");
@@ -542,6 +546,7 @@ public class Resource implements Comparable<Resource> {
             String inputLine; 
             while ((inputLine = in.readLine()) != null) {
                 page.append(inputLine);
+                page.append("\n");
             }
             in.close();
         }

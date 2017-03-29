@@ -257,8 +257,11 @@ public class Main {
         if (mother == null) {
             fatalError("Initialization failed: JSONObject[\"resource\"] not found.");
         }
+        if (!options.getMotherTemplate().contains(mother.getId())) {
+            fatalError("API Template (" + options.getMotherTemplate() + ") does not contain the id (" + mother.getId() +")");
+        }
         if (version != null && !version.startsWith("v1")) {
-            printMessage("Warning: Wrong major Searsia version " + version, options.isQuiet());
+            fatalError("Wrong major Searsia version " + version + ": Must be v1.0.0 or higher.");
         }
         myself = mother.deepcopy();
         myself.setUrlAPITemplate(options.getMyURI());
@@ -311,7 +314,7 @@ public class Main {
             printMessage("Use Ctrl+c to stop.", options.isQuiet());
             try {
                 searsiaDaemon(index, engines, options.getPollInterval());
-            } catch (InterruptedException e) {  }
+            } catch (InterruptedException e) { }
         }
         server.shutdownNow();
     }

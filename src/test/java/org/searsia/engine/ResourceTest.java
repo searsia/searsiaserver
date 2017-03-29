@@ -108,7 +108,6 @@ public class ResourceTest {
 		SearchResult result = se.search("dolf trieschnigg", "xml");
 		Assert.assertEquals("text/html", se.getMimeType());
 		Assert.assertEquals(10, result.getHits().size());
-		// TODO text nodes are glued together.
 	}
 
 	@Test
@@ -191,7 +190,7 @@ public class ResourceTest {
         Resource se = htmlSearch();
         Boolean exception = false;
         try {
-            Resource engine = se.searchResource("wikifull");
+            se.searchResource("wikifull");
         } catch (SearchException e) {
             exception = true;
         }
@@ -203,7 +202,7 @@ public class ResourceTest {
         Resource se = searsiaMimeOnlySearch();
         Boolean exception = false;
         try {
-            Resource engine = se.searchResource("wikifull");
+            se.searchResource("wikifull");
         } catch (SearchException e) {
             exception = true;
         }

@@ -77,7 +77,7 @@ public class TextExtractor {
 	 */
 	private String processMatch(String s) {
 		s = s.replaceAll("(?i)</?span[^>]*>|</?b>|</?i>|</?em>|</?strong>", "");  // No HTML, please: spans removed 
-		s = s.replaceAll("<[^>]+>", " ");  // all other tags replaced by a space 
+		s = s.replaceAll("<[^>]+>|\ufffd", " ");  // all other tags or unicode replace character replaced by a space 
 		if (trim) {
 			s = s.trim();
 		}
