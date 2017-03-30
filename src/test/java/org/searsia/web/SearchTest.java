@@ -27,8 +27,8 @@ public class SearchTest {
     private static ResourceIndex engines;
     
     
-    private static Resource utwente() {
-    	return new Resource("https://search.utwente.nl/searsia/search.php?q={q?}&r={r?}", "utwente");
+    private static Resource wiki() {
+    	return new Resource("http://searsia.org/searsia/v1-wiki-{q}.json", "wiki");
     }
  
     private static Resource wrong() {
@@ -36,7 +36,7 @@ public class SearchTest {
     }
     
     private static Resource me() {
-    	return new Resource("http://me.org?q={q}", "utwente");
+    	return new Resource("http://me.org?q={q}", "wiki");
     }
     
     
@@ -46,7 +46,7 @@ public class SearchTest {
     	LOGGER.addAppender(new NullAppender()); // thou shall not log
     	index = new SearchResultIndex(PATH, INDEX, 2);
     	engines = new ResourceIndex(PATH, INDEX);
-    	engines.putMother(utwente());
+    	engines.putMother(wiki());
     	engines.put(wrong());   	
     	engines.putMyself(me());
     }
@@ -59,19 +59,19 @@ public class SearchTest {
     @Test // returns 'my' resource description
 	public void test() throws IOException {
 		Search search = new Search(index, engines);
-		Response response = search.query("utwente", "");
+		Response response = search.query("wiki", "");
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
 		JSONObject json = new JSONObject(entity);
 		JSONObject resource  = (JSONObject) json.get("resource");
         Assert.assertEquals(200, status);
-		Assert.assertEquals("utwente", resource.get("id"));
+		Assert.assertEquals("wiki", resource.get("id"));
 	}
     
     @Test // returns local search results for 'searsia'
 	public void testQuery() throws IOException {
 		Search search = new Search(index, engines);
-		Response response = search.query("utwente", "searsia search for noobs");
+		Response response = search.query("wiki", "searsia search for noobs");
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
 		JSONObject json = new JSONObject(entity);
@@ -101,16 +101,16 @@ public class SearchTest {
 		Assert.assertEquals(wrong().getAPITemplate(), resource.get("apitemplate"));
 	}
     
-    @Test // returns resource 'youtube' (from mother)
+    @Test // returns resource 'wikididyoumean' (from mother)
 	public void testResourceUnknown() throws IOException {
 		Search search = new Search(index, engines);
-		Response response = search.query("youtube", "");
+		Response response = search.query("wikididyoumean", "");
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
 		JSONObject json = new JSONObject(entity);
 		JSONObject resource  = (JSONObject) json.get("resource");
 		Assert.assertEquals(200, status);
-		Assert.assertEquals("Youtube", resource.get("name"));
+		Assert.assertEquals("Did you mean:", resource.get("name"));
 	}
     
     @Test // returns results for the engine 'wrong' (which does not exist)

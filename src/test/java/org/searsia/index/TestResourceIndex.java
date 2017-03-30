@@ -43,7 +43,6 @@ public class TestResourceIndex {
     
     private static Resource newby() {
     	Resource e = new Resource("http://new.com/?q={q}", "new");
-    	e.changeId("890");
     	e.addPrivateParameter("apikey", "secret");
     	return e;
     }

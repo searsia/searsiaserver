@@ -209,15 +209,16 @@ public class ResourceIndex {
 	            updateResourceIndex(engine.getId(), engine);
 			} catch (IOException e) {
 				LOGGER.warn("Update of resource " + engine.getId() + " failed");
-				// TODO Oh crap, what to do?
 			}
 		}
-   		engines.put(engine.getId(), engine);
+		engine.setLastUpdatedToNow();
+   		this.engines.put(engine.getId(), engine);
 	}
 	
 	public boolean containsKey(String id) {
 		return this.engines.containsKey(id);
 	}
+	
 	
 	public Resource get(String id) {
    		return this.engines.get(id);

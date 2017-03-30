@@ -17,8 +17,6 @@
 package org.searsia.web;
 
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.ws.rs.core.Response;
 
@@ -68,7 +66,7 @@ public class SearsiaApplication extends ResourceConfig {
 
 	public SearsiaApplication(SearchResultIndex index, ResourceIndex engines) throws IOException {
 		super();
-    	Logger.getLogger("org.glassfish.grizzly").setLevel(Level.WARNING);
+		java.util.logging.Logger.getLogger("").setLevel(java.util.logging.Level.WARNING);
 		register(new Search(index, engines));
 		register(new OpenSearch(engines));
 	}

@@ -34,6 +34,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
@@ -84,7 +85,8 @@ public class Resource implements Comparable<Resource> {
 	// internal data not to be shared
 	private String nextQuery = null;
 	private double allowance = defaultRATE / 2;
-	private long lastCheck = new Date().getTime(); // Unix time
+	private Long lastUsedCheck = new Date().getTime(); // Unix time
+    private Long lastUpdatedCheck = new Date().getTime(); // Unix time
 
 
 	public Resource(String urlAPITemplate, String id) {
@@ -129,8 +131,8 @@ public class Resource implements Comparable<Resource> {
 				addHeader((String) key, (String) json.get(key));
 			}
 		}
-		if (jo.has("parameters")) {
-			JSONObject json = (JSONObject) jo.get("parameters");
+		if (jo.has("privateparameters")) {
+			JSONObject json = (JSONObject) jo.get("privateparameters");
 			Iterator<?> keys = json.keys();
 			while (keys.hasNext()) {
 				String key = (String) keys.next();
@@ -215,10 +217,9 @@ public class Resource implements Comparable<Resource> {
 		this.rerank  = rerank;
 	}
 
-
-	public void changeId(String id) {   // BEWARE, only used in Main
-    	this.id = id;			
-	}	
+	public void setLastUpdatedToNow() {
+	    this.lastUpdatedCheck = new Date().getTime();
+	}
 
 
 	public SearchResult randomSearch() throws SearchException {
@@ -440,8 +441,8 @@ public class Resource implements Comparable<Resource> {
 
     private String fillTemplate(String template, String query) throws IOException {
   		String url = template;
-   		for (String param: this.privateParameters.keySet()) {
-   			url = url.replaceAll("\\{" + param + "\\??\\}", this.privateParameters.get(param));
+   		for (String param: getPrivateParameterKeys()) {
+   			url = url.replaceAll("\\{" + param + "\\??\\}", getPrivateParameter(param));
    		}
    		url = url.replaceAll("\\{q\\??\\}", query);
         url = url.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", ""); // remove optional parameters
@@ -454,8 +455,8 @@ public class Resource implements Comparable<Resource> {
 
     private SearchException createPrivateSearchException(Exception e) {
   		String message = e.toString();
-   		for (String param: this.privateParameters.keySet()) {
-   			message = message.replaceAll(this.privateParameters.get(param), "{" + param + "}");
+   		for (String param: getPrivateParameterKeys()) {
+   			message = message.replaceAll(getPrivateParameter(param), "{" + param + "}");
    		}
         return new SearchException(message);
 	}
@@ -466,8 +467,8 @@ public class Resource implements Comparable<Resource> {
      */
     private boolean rateLimitReached() {
         Long now = new Date().getTime();
-        Long timePassed = now - this.lastCheck;
-        this.lastCheck = now;
+        Long timePassed = now - this.lastUsedCheck;
+        this.lastUsedCheck = now;
         this.allowance += (((double) timePassed / defaultPER)) * this.rate;
         if (this.allowance > this.rate) { 
         	this.allowance = this.rate;
@@ -489,8 +490,8 @@ public class Resource implements Comparable<Resource> {
         for (Map.Entry<String, String> entry : headers.entrySet()) {
         	String value = entry.getValue();
             if (value.contains("{")) {
-        		for (String param: this.privateParameters.keySet()) {
-    	    		value = value.replace("{" + param + "}", this.privateParameters.get(param));
+        		for (String param: getPrivateParameterKeys()) {
+    	    		value = value.replace("{" + param + "}", getPrivateParameter(param));
     		    }
         		if (value.contains("{")) {
     	            String param = value.substring(value.indexOf("{"), value.indexOf("}") + 1);
@@ -532,7 +533,7 @@ public class Resource implements Comparable<Resource> {
         if (rateLimitReached()) {
         	throw new IOException("Rate limited");
         }
-    	URL url = new URL(urlString);	
+        URL url = new URL(urlString);
         URLConnection connection = setConnectionProperties(url, headers);
         InputStream stream;
         if (url.getProtocol().equals("file")) {
@@ -605,7 +606,16 @@ public class Resource implements Comparable<Resource> {
 	public String getItemXpath() {
 		return this.itemXpath;
 	}
+	
+	public String getPrivateParameter(String param) {
+	    return this.privateParameters.get(param);
+	}
 
+    public Set<String> getPrivateParameterKeys() {
+	    return this.privateParameters.keySet();
+	}
+
+	
 	public List<TextExtractor> getExtractors() {
 		return this.extractors;
 	}
@@ -638,7 +648,32 @@ public class Resource implements Comparable<Resource> {
 		}
 	}
 
-	public float score(String query) {
+	
+	private Long secondsAgo(Long last) {
+	    if (last == null) { 
+	        return null;
+	    } else {
+    	    Long now = new Date().getTime();
+            Long ago = 1 + (now - last) / 1000;
+            if (ago < 0 || ago > 8640000l) { // 100 days...
+                ago = 8640000l;
+            }
+            return  ago;
+	    }
+	}
+
+
+	public Long getLastUpdatedSecondsAgo() {
+        return secondsAgo(this.lastUpdatedCheck);
+	}
+
+
+    public Long getLastUsedSecondsAgo() {
+        return secondsAgo(this.lastUsedCheck);
+    }
+
+    
+    public float score(String query) {
 		float score = 0.0f;
 		Map<String, Boolean> nameTerm = new HashMap<String, Boolean>();
 		String name = getName();
@@ -697,6 +732,10 @@ public class Resource implements Comparable<Resource> {
 			}
 			engine.put("headers", json); 
 		}
+		Long ago = this.getLastUpdatedSecondsAgo();
+		if (ago != null) engine.put("updatedsecondsago", ago);
+        ago = this.getLastUsedSecondsAgo();
+        if (ago != null) engine.put("usedsecondsago", this.getLastUsedSecondsAgo());
 		return engine;
 	}
 

@@ -26,7 +26,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
-import org.apache.log4j.Logger;
 import org.json.JSONObject;
 
 import org.searsia.SearchResult;
@@ -43,7 +42,7 @@ import org.searsia.engine.SearchException;
 @Path("{resourceid}/search")
 public class Search {
 
-	private final static Logger LOGGER = Logger.getLogger(Search.class);
+	private final static org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(Search.class);
 	
 	private ResourceIndex engines;
     private SearchResultIndex index;
@@ -73,7 +72,7 @@ public class Search {
 		mother = engines.getMother();
 		if (!resourceid.equals(me.getId())) {
 			engine = engines.get(resourceid);
-			if (engine == null) {  // unknown? ask your mother
+			if (engine == null || engine.getLastUpdatedSecondsAgo() == null || engine.getLastUpdatedSecondsAgo() > 3600) {  // unknown or old? ask your mother
 				if (mother != null) {
 				    try {
     				    engine  = mother.searchResource(resourceid);
@@ -112,7 +111,7 @@ public class Search {
 			if (query != null && query.trim().length() > 0) {
 		    	try {
 			        result = index.search(query);
-			    } catch (IOException e) {
+			    } catch (Exception e) {
 			    	String message = "Service unavailable: " + e.getMessage();
 			    	LOGGER.warn(message);
 				    return SearsiaApplication.responseError(503, message);				
@@ -123,7 +122,9 @@ public class Search {
     				    index.offer(result);  // really trust mother
 				    } catch (SearchException e) {
 				    	LOGGER.warn("Mother not available");
-					}		    		
+				    } catch (Exception e) {
+				        LOGGER.warn(e.getMessage());
+				    }
 		    	} else {  // own results? Do resource ranking.
 			        result.scoreResourceSelection(query, engines);
 		    	}

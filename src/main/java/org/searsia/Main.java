@@ -65,6 +65,13 @@ public class Main {
                 	if (mother != null && random.nextBoolean()) { // sample mostly from mother
                 		engine = mother;
                        	result = engine.randomSearch();
+                        Resource newmother = result.getResource();
+                        if (newmother != null && newmother.getId().equals(mother.getId())) {
+                            engines.putMother(newmother);  // TODO myself!
+                        } else {
+                            LOGGER.warn("Unable to update mother: Did ids change?");
+                        }
+                        getResources(mother, result, engines);
                 	} else {
                     	engine = engines.getRandom();
                        	result = engine.randomSearch();
@@ -81,29 +88,32 @@ public class Main {
     }
 
     
-    private static void getResources(Resource mother, SearchResult result, ResourceIndex engines) {
+    private static int getResources(Resource mother, SearchResult result, ResourceIndex engines) {
     	int i = 0;
     	for (Hit hit: result.getHits()) {
     	     String rid = hit.getString("rid");
-    	     if (rid != null && !engines.containsKey(rid)) {
-    	    	 Resource engine;
-         	     i += 1;
-    	    	 try {
-    	             engine = mother.searchResource(rid);
-    	    	 } catch (SearchException e) {
-    	    		 System.err.println("Warning: Not found: " + rid + ": " + e.getMessage());
-    	    		 break;
-    	    	 }
-    	    	 try {
-    	    	     engines.put(engine);
-    	    	 } catch(Exception e) {
-    	    		 fatalError(e.getMessage());
-    	    	 }
+    	     if (rid != null ) {
+    	         Resource engine = engines.get(rid);
+    	         if (engine == null || engine.getLastUpdatedSecondsAgo() > 3600) {
+    	     	     i += 1;
+    	    	     try {
+    	    	         engine = mother.searchResource(rid);
+    	    	     } catch (SearchException e) {
+    	    	         LOGGER.warn("Warning: Not found: " + rid + ": " + e.getMessage());
+    	    	     }
+    	    	     try {
+    	    	         engines.put(engine);
+    	    	         LOGGER.info("Updated resource: " + rid);
+    	    	     } catch(Exception e) {
+    	    	         LOGGER.warn(e.getMessage());
+    	    	     }
+    	         }
      	     } 
     	     if (i > 10) {
-    	         break; // not more than the first 10. Rest will follow when needed
+    	         break; // not more than the first 10 per check
     	     }
     	}
+    	return i;
     }
 
     private static boolean sameTemplates(String uri1, String uri2, String myId) {
@@ -215,6 +225,7 @@ public class Main {
 				new PatternLayout("%p %d{ISO8601} %m%n"),
 				logDir.resolve("searsia.log").toString(),
 				"'.'yyyy-MM-dd");
+		// Appender appender = new ConsoleAppender(new PatternLayout("%m%n"), ConsoleAppender.SYSTEM_ERR);	       
 		LOGGER.addAppender(appender);
 		LOGGER.setLevel(level);
 		LOGGER.warn("Searsia restart");
@@ -248,7 +259,7 @@ public class Main {
     	String version  = null;
     	SearchResult result = null;
   	    try {
-           	result = connect.searchWithoutQuery();	
+           	result = connect.searchWithoutQuery();
            	mother = result.getResource();
            	version = result.getVersion();
       	} catch (SearchException e) {
@@ -301,8 +312,9 @@ public class Main {
     	// Start the web server
 		String myURI = uriNormalize(options.getMyURI(), myself.getId());
     	try {
-            server = GrizzlyHttpServerFactory.createHttpServer(URI.create(myURI), 
-                new SearsiaApplication(index, engines));
+    	    
+    	    SearsiaApplication app = new SearsiaApplication(index, engines);
+            server = GrizzlyHttpServerFactory.createHttpServer(URI.create(myURI), app); 
     	} catch (Exception e) {
             fatalError("Server failed: " + e.getMessage());
     	}

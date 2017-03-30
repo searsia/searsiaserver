@@ -252,6 +252,13 @@ public class ResourceTest {
 		Assert.assertEquals("postencode", se1.getPostQueryEncode(), se2.getPostQueryEncode());
 		Assert.assertFalse("secret revealed", json.toString().contains(SECRET_API_KEY));
 	}
+	
+	@Test
+	public void testJsonPrivateParameter() throws XPathExpressionException {
+	    JSONObject json = new JSONObject("{\"id\":\"test\", \"privateparameters\":{\"apikey\":\"secret\"}}");
+	    Resource se = new Resource(json);
+	    Assert.assertEquals("private parameters", se.getPrivateParameter("apikey"), "secret");
+	}
 
 	@Test
 	public void equalEngines1() throws XPathExpressionException {
