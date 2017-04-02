@@ -54,7 +54,6 @@ public class TestResourceIndex {
     }
     
     
-    @Test
     public static void checkFiles() throws IOException {
     	Resource e1 = me();
     	Resource e2 = engines.getMyself();
