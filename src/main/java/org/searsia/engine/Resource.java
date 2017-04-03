@@ -27,12 +27,16 @@ import java.net.HttpURLConnection;
 import java.net.URLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -59,6 +63,7 @@ public class Resource implements Comparable<Resource> {
     // For rate limiting: Default = 1000 queries per day
     private final static int defaultRATE = 1000;    // unit: queries
     private final static int defaultPER = 86400000; // unit: miliseconds (86400000 miliseconds is one day)
+    private final static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
     
 	// TODO: private static final Pattern queryPattern = Pattern.compile("\\{q\\??\\}");
 
@@ -221,6 +226,11 @@ public class Resource implements Comparable<Resource> {
 	    this.lastUpdatedCheck = new Date().getTime();
 	}
 
+    public void setLastUpdatedToDateString(String date) {
+        try {
+            this.lastUpdatedCheck = dateFormat.parse(date).getTime();
+        } catch (ParseException e) { }
+    }
 
 	public SearchResult randomSearch() throws SearchException {
 		if (nextQuery == null) {
@@ -520,7 +530,6 @@ public class Resource implements Comparable<Resource> {
             http.setRequestMethod("GET");
             http.connect();
         }
-        //int responseCode = http.getResponseCode();
         return http.getInputStream();
     }
     
@@ -663,8 +672,12 @@ public class Resource implements Comparable<Resource> {
 	}
 
 
-	public Long getLastUpdatedSecondsAgo() {
-        return secondsAgo(this.lastUpdatedCheck);
+	public String getLastUpdatedString() {
+        return dateFormat.format(new Date(this.lastUpdatedCheck));
+	}
+
+    public long getLastUpdatedSecondsAgo() {
+	    return secondsAgo(this.lastUpdatedCheck);
 	}
 
 
@@ -732,10 +745,7 @@ public class Resource implements Comparable<Resource> {
 			}
 			engine.put("headers", json); 
 		}
-		Long ago = this.getLastUpdatedSecondsAgo();
-		if (ago != null) engine.put("updatedsecondsago", ago);
-        ago = this.getLastUsedSecondsAgo();
-        if (ago != null) engine.put("usedsecondsago", this.getLastUsedSecondsAgo());
+        engine.put("lastupdated", this.getLastUpdatedString());
 		return engine;
 	}
 

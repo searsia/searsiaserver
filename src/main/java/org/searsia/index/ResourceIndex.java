@@ -44,7 +44,6 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import org.searsia.engine.Resource;
 
 /**
@@ -72,8 +71,9 @@ public class ResourceIndex {
 	 * @param path path where the Searsia index resides
 	 * @param filename index file name
 	 * @throws IOException
+	 * @throws JSONException 
 	 */
-	public ResourceIndex(String path, String filename) throws IOException {
+	public ResourceIndex(String path, String filename) throws IOException, JSONException {
 		this.meFile   = Paths.get(path, filename + ".json");
 		this.indexDir = Paths.get(path, filename + "_sources");
 		if (meFile.toFile().exists()) {
@@ -97,7 +97,7 @@ public class ResourceIndex {
 	}
 
 
-	private Resource readMyselfFile(Path meFile) throws IOException {
+	private Resource readMyselfFile(Path meFile) throws IOException, JSONException {
 		String content = new String(Files.readAllBytes(meFile));
 		Resource me = null;
 		try {
@@ -127,6 +127,9 @@ public class ResourceIndex {
                 Document doc = searcher.doc(hit.doc);
                 JSONObject json = new JSONObject(doc.get("json"));
                 Resource engine = new Resource(json);
+                if (json.has("lastupdated")) {
+                    engine.setLastUpdatedToDateString(json.getString("lastupdated"));
+                }
                 this.engines.put(engine.getId(), engine);
             }
         } catch (javax.xml.xpath.XPathExpressionException e) {
@@ -174,7 +177,7 @@ public class ResourceIndex {
 
 
 	private void updateResourceIndex(String id, Resource engine) throws IOException {
-        Document doc = new Document();
+	    Document doc = new Document();
         if (id != null) {
         	JSONObject json = engine.toJson();
         	json.put("parameters", engine.getJsonPrivateParameters());  // we need to remember those
@@ -205,13 +208,13 @@ public class ResourceIndex {
 			throw new RuntimeException("Local id conflict: " + engine.getId());
 		}
 		if (!exists(engine)) {
+	        engine.setLastUpdatedToNow();
 			try {
 	            updateResourceIndex(engine.getId(), engine);
 			} catch (IOException e) {
 				LOGGER.warn("Update of resource " + engine.getId() + " failed");
 			}
 		}
-		engine.setLastUpdatedToNow();
    		this.engines.put(engine.getId(), engine);
 	}
 	
@@ -263,6 +266,7 @@ public class ResourceIndex {
 	}
 	
 	public void putMother(Resource mother) {
+        mother.setLastUpdatedToNow();
 		this.mother = mother;
 	}
 	
@@ -270,6 +274,7 @@ public class ResourceIndex {
 		if (get(engine.getId()) != null) {
 			throw new RuntimeException("The server id '" + engine.getId() + "' already exists.");
 		}
+        engine.setLastUpdatedToNow();
 		try {
 			writeMyselfFile(engine);
 		} catch (IOException e) {

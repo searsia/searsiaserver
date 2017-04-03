@@ -72,7 +72,7 @@ public class Search {
 		mother = engines.getMother();
 		if (!resourceid.equals(me.getId())) {
 			engine = engines.get(resourceid);
-			if (engine == null || engine.getLastUpdatedSecondsAgo() == null || engine.getLastUpdatedSecondsAgo() > 3600) {  // unknown or old? ask your mother
+			if (engine == null || engine.getLastUpdatedSecondsAgo() > 3600) {  // unknown or old? ask your mother
 				if (mother != null) {
 				    try {
     				    engine  = mother.searchResource(resourceid);
