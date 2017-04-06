@@ -65,6 +65,7 @@ public class ResourceIndex {
 	private Path meFile     = null;
 	private Path indexDir   = null;
 	private IndexWriter writer = null;
+	private String lastFlushed = null;
 
 	/**
 	 * Reads resources from index (if they exist)
@@ -128,13 +129,15 @@ public class ResourceIndex {
                 JSONObject json = new JSONObject(doc.get("json"));
                 Resource engine = new Resource(json);
                 if (json.has("lastupdated")) {
-                    engine.setLastUpdatedToDateString(json.getString("lastupdated"));
+                    String lastUpdated = json.getString("lastupdated");
+                    if (this.lastFlushed == null || this.lastFlushed.compareTo(lastUpdated) < 0) {
+                        this.lastFlushed = lastUpdated;
+                    }
+                    engine.setLastUpdatedToDateString(lastUpdated);
                 }
                 this.engines.put(engine.getId(), engine);
             }
-        } catch (javax.xml.xpath.XPathExpressionException e) {
-        	throw new IOException(e);
-        } catch (JSONException e) {
+        } catch (javax.xml.xpath.XPathExpressionException | JSONException e) {
         	throw new IOException(e);
         }
         finally {
@@ -168,24 +171,9 @@ public class ResourceIndex {
 	}
 	
 
-	private boolean exists(Resource engine) {
-		for (Resource e: this.engines.values())
-		    if (e.equals(engine))
-		    	return true;
-		return false;
-	}
-
-
-	private void updateResourceIndex(String id, Resource engine) throws IOException {
-	    Document doc = new Document();
-        if (id != null) {
-        	JSONObject json = engine.toJson();
-        	json.put("parameters", engine.getJsonPrivateParameters());  // we need to remember those
-            doc.add(new StringField("id", id, Field.Store.YES)); // unique identifier
-            doc.add(new StoredField("json", json.toString()));
-            this.writer.updateDocument(new Term("id", id), doc);
-        }
-        this.writer.commit();
+	private boolean equalExists(Resource engine) {
+	    Resource old = this.engines.get(engine.getId());
+        return (old != null && old.equals(engine));
 	}
 
 
@@ -207,13 +195,9 @@ public class ResourceIndex {
 		if (this.me != null && engine.getId().equals(this.me.getId())) {
 			throw new RuntimeException("Local id conflict: " + engine.getId());
 		}
-		if (!exists(engine)) {
-	        engine.setLastUpdatedToNow();
-			try {
-	            updateResourceIndex(engine.getId(), engine);
-			} catch (IOException e) {
-				LOGGER.warn("Update of resource " + engine.getId() + " failed");
-			}
+	    engine.setLastUpdatedToNow();
+		if (!equalExists(engine)) {
+		    // TODO: engine.setLastUpdatedToNow();
 		}
    		this.engines.put(engine.getId(), engine);
 	}
@@ -302,6 +286,45 @@ public class ResourceIndex {
         }
 	}
 	
+	private Document luceneDocument(Resource engine) {
+        Document doc = new Document();
+        String id = engine.getId();
+        JSONObject json = engine.toJson();
+        json.put("parameters", engine.getJsonPrivateParameters());  // we need to remember those
+        doc.add(new StringField("id", id, Field.Store.YES)); // unique identifier
+        doc.add(new StoredField("json", json.toString()));
+        return doc;	    
+	}
+	
+	/**
+	 * Flush the index updates to disk
+	 */
+	public void flush() {
+	    try {
+	        String lastDate = this.lastFlushed;
+	        for (Resource engine: this.engines.values()) {
+	            String lastUpdated = engine.getLastUpdatedString();
+	            if (this.lastFlushed == null || this.lastFlushed.compareTo(lastUpdated) < 0) {
+	                if (lastDate == null || lastDate.compareTo(lastUpdated) < 0) {
+	                    lastDate = lastUpdated;
+	                }
+                    this.writer.updateDocument(new Term("id", engine.getId()), luceneDocument(engine));
+	            }
+	        }
+	        if (this.lastFlushed == null || this.lastFlushed.compareTo(lastDate) < 0) {
+        	    this.writer.commit();
+        	    this.lastFlushed = lastDate;
+        	    LOGGER.info("Flushed resources to disk.");
+	        }
+	    } catch (Exception e) {
+	        LOGGER.warn("Flushing resource index failed.");
+	    }
+	}
+	
+	/**
+	 * Close the index
+	 * @throws IOException
+	 */
 	public void close() throws IOException {
 		this.writer.close();
 		this.mother = null;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Searsia
+ * Copyright 2016-2017 Searsia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,14 @@ import org.searsia.engine.SearchException;
 
 
 /**
- * Searsia Main class
+ * Searsia Main class does the following actions:
+ * 
+ *  1. Connect to mother peer
+ *  2. If it runs in test mode, test the mother, print results and exit.
+ *  3. Open/create Lucene indexes
+ *  4. Get the 10 top resources if older than one hour
+ *  5. Run the web server
+ *  6. Run the daemon to periodically poll the mother and resources
  * 
  * Start as:  java -jar target/searsiaserver.jar
  * More info: java -jar target/searsiaserver.jar --help
@@ -79,7 +86,7 @@ public class Main {
         				result.addQueryResourceRankDate(engine.getId());
                 	}
                		index.offer(result);
-               		LOGGER.info("Sample " + engine.getId() + ": " + result.getQuery());
+               		LOGGER.info("Sampled " + engine.getId() + ": " + result.getQuery());
                 }
             } catch (Exception e) { 
             	LOGGER.warn("Sampling " + engine.getId() + " failed: " + e.getMessage());
@@ -98,20 +105,23 @@ public class Main {
     	     	     i += 1;
     	    	     try {
     	    	         engine = mother.searchResource(rid);
-    	    	     } catch (SearchException e) {
-    	    	         LOGGER.warn("Warning: Not found: " + rid + ": " + e.getMessage());
+    	    	     } catch (Exception e) {
+    	    	         LOGGER.warn("Warning: Update failed: " + e.getMessage());
     	    	     }
-    	    	     try {
-    	    	         engines.put(engine);
-    	    	         LOGGER.info("Updated resource: " + rid);
-    	    	     } catch(Exception e) {
-    	    	         LOGGER.warn(e.getMessage());
-    	    	     }
+                     if (engine != null && rid.equals(engine.getId())) { 
+                         engines.put(engine);
+                         LOGGER.info("Updated " + rid);
+                     } else {
+                         LOGGER.warn("Warning: Resource not found: " + rid);
+                     }
     	         }
      	     } 
     	     if (i > 10) {
     	         break; // not more than the first 10 per check
     	     }
+    	}
+    	if (i > 0) {
+            engines.flush();
     	}
     	return i;
     }
