@@ -81,7 +81,7 @@ public class Resource implements Comparable<Resource> {
 	private String itemXpath = null;
 	private String testQuery = defaultTestQuery;
 	private List<TextExtractor> extractors = new ArrayList<>();
-	private Map<String, String> headers     = new LinkedHashMap<>();
+	private Map<String, String> headers    = new LinkedHashMap<>();
 	private Map<String, String> privateParameters = new LinkedHashMap<>();
 	private Float prior = null;
 	private String rerank = null;
@@ -90,8 +90,11 @@ public class Resource implements Comparable<Resource> {
 	// internal data not to be shared
 	private String nextQuery = null;
 	private double allowance = defaultRATE / 2;
-	private Long lastUsedCheck = new Date().getTime(); // Unix time
-    private Long lastUpdatedCheck = new Date().getTime(); // Unix time
+	private Long lastUsed = new Date().getTime(); // Unix time
+    private Long lastUpdated = new Date().getTime(); // Unix time
+    private Long lastChanged = null;
+    private Integer nrOfRequests = 0; 
+    private Integer nrOfSuccess = 0; 
 
 
 	public Resource(String urlAPITemplate, String id) {
@@ -223,12 +226,22 @@ public class Resource implements Comparable<Resource> {
 	}
 
 	public void setLastUpdatedToNow() {
-	    this.lastUpdatedCheck = new Date().getTime();
+	    this.lastUpdated = new Date().getTime();
 	}
 
     public void setLastUpdatedToDateString(String date) {
         try {
-            this.lastUpdatedCheck = dateFormat.parse(date).getTime();
+            this.lastUpdated = dateFormat.parse(date).getTime();
+        } catch (ParseException e) { }
+    }
+
+    public void setLastChangedToNow() {
+        this.lastChanged = new Date().getTime();
+    }
+
+    public void setLastChangedToDateString(String date) {
+        try {
+            this.lastChanged = dateFormat.parse(date).getTime();
         } catch (ParseException e) { }
     }
 
@@ -478,8 +491,8 @@ public class Resource implements Comparable<Resource> {
      */
     private boolean rateLimitReached() {
         Long now = new Date().getTime();
-        Long timePassed = now - this.lastUsedCheck;
-        this.lastUsedCheck = now;
+        Long timePassed = now - this.lastUsed;
+        this.lastUsed = now;
         this.allowance += (((double) timePassed / defaultPER)) * this.rate;
         if (this.allowance > this.rate) { 
         	this.allowance = this.rate;
@@ -675,16 +688,20 @@ public class Resource implements Comparable<Resource> {
 
 
 	public String getLastUpdatedString() {
-        return dateFormat.format(new Date(this.lastUpdatedCheck));
+        return dateFormat.format(new Date(this.lastUpdated));
 	}
 
+    public String getLastChangedString() {
+        return dateFormat.format(new Date(this.lastChanged));
+    }
+
     public long getLastUpdatedSecondsAgo() {
-	    return secondsAgo(this.lastUpdatedCheck);
+	    return secondsAgo(this.lastUpdated);
 	}
 
 
     public Long getLastUsedSecondsAgo() {
-        return secondsAgo(this.lastUsedCheck);
+        return secondsAgo(this.lastUsed);
     }
 
     
@@ -748,6 +765,9 @@ public class Resource implements Comparable<Resource> {
 			engine.put("headers", json); 
 		}
         engine.put("lastupdated", this.getLastUpdatedString());
+        if (this.lastChanged != null) {
+            engine.put("lastchanged", this.getLastChangedString());            
+        }
 		return engine;
 	}
 

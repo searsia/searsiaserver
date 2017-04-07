@@ -78,6 +78,7 @@ public class DOMBuilder {
           transformer = tf.newTransformer();
           transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
           transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+          transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
           transformer.setOutputProperty(OutputKeys.METHOD, "xml");
           transformer.setOutputProperty(OutputKeys.INDENT, "yes");
           StringWriter writer = new StringWriter();

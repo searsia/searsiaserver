@@ -120,9 +120,7 @@ public class Main {
     	         break; // not more than the first 10 per check
     	     }
     	}
-    	if (i > 0) {
-            engines.flush();
-    	}
+        engines.flush();
     	return i;
     }
 
@@ -198,7 +196,7 @@ public class Main {
         }
         if (!isQuiet) {
             if (debugInfo.equals("json")) {
-                System.out.println(result.toJson());
+                System.out.println(result.toJson().toString(2));
             } else if (debugInfo.equals("xml") || debugInfo.equals("response")) {
                 String debugOut = result.getDebugOut();
                 if (debugOut == null) {

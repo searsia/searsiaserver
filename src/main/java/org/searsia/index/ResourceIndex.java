@@ -135,6 +135,9 @@ public class ResourceIndex {
                     }
                     engine.setLastUpdatedToDateString(lastUpdated);
                 }
+                if (json.has("lastupdated")) {
+                    engine.setLastUpdatedToDateString(json.getString("lastupdated"));
+                }                
                 this.engines.put(engine.getId(), engine);
             }
         } catch (javax.xml.xpath.XPathExpressionException | JSONException e) {
@@ -197,7 +200,7 @@ public class ResourceIndex {
 		}
 	    engine.setLastUpdatedToNow();
 		if (!equalExists(engine)) {
-		    // TODO: engine.setLastUpdatedToNow();
+		    engine.setLastChangedToNow();
 		}
    		this.engines.put(engine.getId(), engine);
 	}
