@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Searsia
+ * Copyright 2016-2017 Searsia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
 import org.json.JSONObject;
-
 import org.searsia.SearchResult;
 import org.searsia.index.SearchResultIndex;
 import org.searsia.index.ResourceIndex;
@@ -63,8 +62,7 @@ public class Search {
 	@GET
 	@Produces(SearchResult.SEARSIA_MIME_ENCODING)
 	public Response query(@PathParam("resourceid") String resourceid, @QueryParam("q") String query) {
-		LOGGER.info("Query " + resourceid + ": " + query);
-		
+
 		Resource me, engine, mother;
 		SearchResult result;
 		JSONObject json;
@@ -90,21 +88,32 @@ public class Search {
     		    engines.put(engine);
  			}
 			if (query != null && query.trim().length() > 0) {
-				try {
-					result = engine.search(query);
-    				result.removeResourceRank();     // only trust your mother
-					json = result.toJson();                         // first json for response, so
-					result.addQueryResourceRankDate(engine.getId()); // response will not have query + resource
-					index.offer(result);  //  maybe do this AFTER the http response is sent:  https://jersey.java.net/documentation/latest/async.html (11.1.1)
-					json.put("resource", engine.toJson());
-					return SearsiaApplication.responseOk(json);
-				} catch (Exception e) {
-					String message = "Resource @" + resourceid + " unavailable: " + e.getMessage();
-					LOGGER.warn(message);
-					return SearsiaApplication.responseError(503, message);
-				} 
+			    result = index.cacheSearch(query, engine.getId());
+			    if (result != null) {
+			        result.removeResourceRank();
+			        json = result.toJson();
+			        json.put("resource", engine.toJson());
+			        LOGGER.info("Cache " + resourceid + ": " + query);
+			        return SearsiaApplication.responseOk(json);
+			    } else {
+			        try {
+                        result = engine.search(query);
+                        result.removeResourceRank();     // only trust your mother
+                        json = result.toJson();                         // first json for response, so
+                        result.addQueryResourceRankDate(engine.getId()); // response will not have query + resource
+                        index.offer(result);  //  maybe do this AFTER the http response is sent:  https://jersey.java.net/documentation/latest/async.html (11.1.1)
+                        json.put("resource", engine.toJson());
+                        LOGGER.info("Query " + resourceid + ": " + query);
+                        return SearsiaApplication.responseOk(json);
+                    } catch (Exception e) {
+                        String message = "Resource @" + resourceid + " unavailable: " + e.getMessage();
+                        LOGGER.warn(message);
+                        return SearsiaApplication.responseError(503, message);
+                    }
+			    }
 			} else {
 				json = new JSONObject().put("resource", engine.toJson());
+		        LOGGER.info("Resource " + resourceid + ".");
 				return SearsiaApplication.responseOk(json);
 			}
 		} else {
@@ -134,6 +143,7 @@ public class Search {
 			}
 		    json = result.toJson();
 		    json.put("resource", engines.getMyself().toJson());
+		    LOGGER.info("Local " + resourceid + ": " + query);
 			return SearsiaApplication.responseOk(json);
 		}
 	}

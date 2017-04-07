@@ -48,10 +48,13 @@ public class TestSearchResultIndex {
         finally {
             reader.close();
         }
-        JSONArray hits = (new JSONObject(jsonString).getJSONArray("hits"));
+        JSONObject json = new JSONObject(jsonString);
+        JSONArray hits = json.getJSONArray("hits");
         for(int i = 0; i < hits.length(); i++) {
         	result.addHit(new Hit(hits.getJSONObject(i)));
         }
+        JSONObject resource = json.getJSONObject("resource");
+        result.setResourceId(resource.getString("id"));
         return result;
     }
 
@@ -72,7 +75,7 @@ public class TestSearchResultIndex {
     public void testSearch2() throws Exception {
         SearchResult result = readFile("exampleSearchResult.json");
         index.offer(result);
-        index.flush();
+        index.flush();  // add it again
         String query = "dolf";
         result = index.search(query);
         Assert.assertEquals(query, result.getQuery());
@@ -85,12 +88,27 @@ public class TestSearchResultIndex {
 		Assert.assertEquals(6, result.getHits().size());
     }
     
-    @Test
+    @Test  // test hit lookup (not used currently)
     public void testSearch4() throws Exception {
         SearchResult result = readFile("exampleSearchResult.json");
         Hit hit1 = result.getHits().get(0);
 		Hit hit2 = index.getHit(hit1.getId());
 		Assert.assertEquals(hit1.getTitle(), hit2.getTitle());
+    }
+
+    @Test  // test the cache
+    public void testSearch5() throws Exception {
+        SearchResult result = readFile("exampleSearchResult.json");
+        String query = "information";
+        result.setQuery(query);
+        String resourceId = result.getResourceId();
+        index.offer(result);
+        result = index.cacheSearch(query, resourceId);
+        Assert.assertEquals(10, result.getHits().size());
+        result = index.cacheSearch(query, "nothing");
+        Assert.assertTrue(result == null);
+        result = index.cacheSearch("nope", resourceId);
+        Assert.assertTrue(result == null);
     }
 
     /** 

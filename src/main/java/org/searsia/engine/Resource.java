@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Searsia
+ * Copyright 2016-2017 Searsia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -279,6 +279,7 @@ public class Resource implements Comparable<Resource> {
                 result.scoreReranking(query, this.rerank);
             }
 			result.setQuery(query);
+			result.setResourceId(this.getId());
 			return result;
 		} catch (Exception e) {  // catch all, also runtime exceptions
 			throw createPrivateSearchException(e);
@@ -550,6 +551,7 @@ public class Resource implements Comparable<Resource> {
         } else {
         	stream = httpConnect(connection, postString);
         }
+        //int responseCode = connection.getResponseCode();  Something with "410 Gone"?
         BufferedReader in = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
         StringBuilder page = new StringBuilder();
         if (in != null) {

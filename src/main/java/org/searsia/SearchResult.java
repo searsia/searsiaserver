@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Searsia
+ * Copyright 2016-2017 Searsia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ public class SearchResult {
 	private Resource resource;
 	private String debugOut;
 	private String query;
+    private String resourceId;
 	private String version;
 	
 	public SearchResult() {
@@ -75,6 +76,14 @@ public class SearchResult {
 		return this.resource;
 	}
 	
+    public void setResourceId(String resourceId) {
+        this.resourceId = resourceId;
+    }
+
+    public String getResourceId() {
+        return this.resourceId;
+    }
+
 	public String getVersion() {
 	    return this.version;
 	}
