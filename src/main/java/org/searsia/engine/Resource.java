@@ -246,13 +246,13 @@ public class Resource implements Comparable<Resource> {
     }
 
 	public SearchResult randomSearch() throws SearchException {
-		if (nextQuery == null) {
-			nextQuery = this.testQuery;
+		if (this.nextQuery == null) {
+			this.nextQuery = this.testQuery;
 		}
-		String thisQuery = nextQuery;
-		nextQuery = null; // so, nextQuery will be null in case of a searchexception
+		String thisQuery = this.nextQuery;
+		this.nextQuery = null; // so, nextQuery will be null in case of a searchexception
 		SearchResult result = search(thisQuery);
-		nextQuery = result.randomTerm();
+		this.nextQuery = result.randomTerm(thisQuery);
 		return result;
 	}
 

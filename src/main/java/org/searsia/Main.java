@@ -82,8 +82,8 @@ public class Main {
                 	} else {
                     	engine = engines.getRandom();
                        	result = engine.randomSearch();
-        				result.removeResourceRank();     // only trust your mother
-        				result.addQueryResourceRankDate(engine.getId());
+        				result.removeResourceQuery();     // only trust your mother
+        				result.addQueryResourceDate(engine.getId());
                 	}
                		index.offer(result);
                		LOGGER.info("Sampled " + engine.getId() + ": " + result.getQuery());
@@ -165,8 +165,12 @@ public class Main {
 	    System.exit(1);
 	}
 
-    // for unique filename
-    private static String getHashString(String inputString) {
+    /**
+     * For a unique filename (public because used in searsiafedweb)
+     * @param inputString
+     * @return
+     */
+	public static String getHashString(String inputString) {
         MessageDigest md;
         byte[] hash;
         try {

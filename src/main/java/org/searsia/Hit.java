@@ -71,10 +71,10 @@ public class Hit implements Comparable<Hit> {
 		map.put("score", score);
 	}
 	
-	public void setRank(int rank) {
-		map.put("rank", rank);
-	}
-	
+    public void setResourceScore(float score) {
+        map.put("rscore", score);
+    }
+    
 	public void setTitle(String title) {
 		map.put("title", title);
 	}
@@ -87,12 +87,24 @@ public class Hit implements Comparable<Hit> {
 		map.put("url", url);
 	}
 	
+	/**
+	 * This id of will be used the Lucene index.
+	 * So one url may be indexed multiple times, 
+	 * once for each resource id (rid).
+	 * @return
+	 */
 	public String getId() {
 		String result = (String) map.get("url");
+		String rid = "";
 		if (result == null) {
 			result = (String) map.get("title");
+		} else {
+            rid = (String) map.get("rid");
+            if (rid == null) {
+                rid = "";
+            }
 		}
-		return result;
+		return rid + "@" + result;
 	}
 	
 	public float getScore() {
@@ -104,10 +116,15 @@ public class Hit implements Comparable<Hit> {
 		}
 	}
 	
-	public Integer getRank() {
-		return (Integer) map.get("rank");
-	}
-	
+    public float getResourceScore() {
+        Float score = (Float) map.get("rscore");
+        if (score == null) {
+            return 0.0f;
+        } else {
+            return score;
+        }
+    }
+    
 	public Object get(String field) {
 		return map.get(field);
 	}
@@ -158,13 +175,13 @@ public class Hit implements Comparable<Hit> {
     
     @Override
     public int compareTo(Hit hit2) {
-    	Float score1 = getScore();
-    	Float score2 = hit2.getScore();
+    	Float score1 = getResourceScore();
+    	Float score2 = hit2.getResourceScore();
     	if (score1.compareTo(score2) == 0) {
-    		Integer rank1 = getRank();
-    		Integer rank2 = hit2.getRank();
-    		if (rank1 != null && rank2 != null) {
-        		return rank2.compareTo(rank1); // yes reversed!
+    		score1 = getScore();
+    		score2 = hit2.getScore();
+    		if (score1 != null && score2 != null) {
+        		return score1.compareTo(score2);
     		} else {
     			return 0;
     		}

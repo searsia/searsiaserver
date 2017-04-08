@@ -29,8 +29,10 @@ public class SearchResultTest {
 		Hit h = new Hit("The ultimate test", "Oh yeah", "http://searsia.org", 
 				"http://searsia.org/images/search.png");
 		sr.addHit(h);
-		String term = sr.randomTerm();
-		String terms = h.toIndexVersion();
+		String notThis = "test";
+		String term = sr.randomTerm(notThis);
+		String terms = h.toIndexVersion().toLowerCase();
+        Assert.assertFalse(term.equals(notThis));
 		Assert.assertTrue(terms.contains(term));
 		Assert.assertTrue(sr.getHits().size() > 0);
 		sr.scoreReranking("doesnotmatch", "or");

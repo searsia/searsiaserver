@@ -137,11 +137,11 @@ public class ResourceIndex {
                 }
                 if (json.has("lastupdated")) {
                     engine.setLastUpdatedToDateString(json.getString("lastupdated"));
-                }                
+                }
                 this.engines.put(engine.getId(), engine);
             }
         } catch (javax.xml.xpath.XPathExpressionException | JSONException e) {
-        	throw new IOException(e);
+        	throw new IOException(e.getMessage());
         }
         finally {
             reader.close(); 
@@ -174,12 +174,6 @@ public class ResourceIndex {
 	}
 	
 
-	private boolean equalExists(Resource engine) {
-	    Resource old = this.engines.get(engine.getId());
-        return (old != null && old.equals(engine));
-	}
-
-
 	public void delete(String id) throws IOException {
 		Resource engine = get(id);
 		if (engine == null) {
@@ -198,11 +192,14 @@ public class ResourceIndex {
 		if (this.me != null && engine.getId().equals(this.me.getId())) {
 			throw new RuntimeException("Local id conflict: " + engine.getId());
 		}
-	    engine.setLastUpdatedToNow();
-		if (!equalExists(engine)) {
-		    engine.setLastChangedToNow();
+		Resource old = get(engine.getId());
+		if (old != null && old.equals(engine)) { // nothing new
+		    old.setLastUpdatedToNow();
+		} else {
+            engine.setLastUpdatedToNow();
+            engine.setLastChangedToNow();
+            this.engines.put(engine.getId(), engine);
 		}
-   		this.engines.put(engine.getId(), engine);
 	}
 	
 	public boolean containsKey(String id) {
@@ -231,7 +228,7 @@ public class ResourceIndex {
 		int size = 0;
 		float lastScore = -99.0f;
 		for (Resource engine: this.engines.values()) {
-		    float score = engine.score(queryString) + engine.getPrior(); // TODO: add bias ?
+		    float score = engine.score(queryString) + engine.getPrior();
 	        if (size < max || score > lastScore) {
 	            if (size < max) size++;
 	            int index = size - 1;
@@ -293,7 +290,7 @@ public class ResourceIndex {
         Document doc = new Document();
         String id = engine.getId();
         JSONObject json = engine.toJson();
-        json.put("parameters", engine.getJsonPrivateParameters());  // we need to remember those
+        json.put("privateparameters", engine.getJsonPrivateParameters());  // we need to remember those
         doc.add(new StringField("id", id, Field.Store.YES)); // unique identifier
         doc.add(new StoredField("json", json.toString()));
         return doc;	    
@@ -320,7 +317,7 @@ public class ResourceIndex {
         	    LOGGER.info("Flushed resources to disk.");
 	        }
 	    } catch (Exception e) {
-	        LOGGER.warn("Flushing resource index failed.");
+	        LOGGER.warn("Flushing resource index failed: " + e);
 	    }
 	}
 	

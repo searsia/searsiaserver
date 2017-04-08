@@ -90,7 +90,7 @@ public class Search {
 			if (query != null && query.trim().length() > 0) {
 			    result = index.cacheSearch(query, engine.getId());
 			    if (result != null) {
-			        result.removeResourceRank();
+			        result.removeResourceQuery();
 			        json = result.toJson();
 			        json.put("resource", engine.toJson());
 			        LOGGER.info("Cache " + resourceid + ": " + query);
@@ -98,9 +98,9 @@ public class Search {
 			    } else {
 			        try {
                         result = engine.search(query);
-                        result.removeResourceRank();     // only trust your mother
+                        result.removeResourceQuery();     // only trust your mother
                         json = result.toJson();                         // first json for response, so
-                        result.addQueryResourceRankDate(engine.getId()); // response will not have query + resource
+                        result.addQueryResourceDate(engine.getId()); // response will not have query + resource
                         index.offer(result);  //  maybe do this AFTER the http response is sent:  https://jersey.java.net/documentation/latest/async.html (11.1.1)
                         json.put("resource", engine.toJson());
                         LOGGER.info("Query " + resourceid + ": " + query);

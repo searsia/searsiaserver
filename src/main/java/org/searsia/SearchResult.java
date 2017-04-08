@@ -109,35 +109,31 @@ public class SearchResult {
 	}
 
 	// TODO: maybe a list of query-resource pairs, if result found by multiple engines for multiple queries.
-	public void addQueryResourceRankDate(String resourceID) {
-		int rank = 1;
+	public void addQueryResourceDate(String resourceID) {
 		String query = getQuery();
 		for (Hit hit: this.hits) {
 			hit.putIfEmpty("query", query);
 			hit.putIfEmpty("rid", resourceID);  // TODO: if unknown rid, then replace!
-			hit.putIfEmpty("rank", rank++);
 			hit.putIfEmpty("foundBefore", df.format(new Date()));
 		}
 	}
 	
-	public void removeResourceRank() {
+	public void removeResourceQuery() {
 		for (Hit hit: this.hits) {
 			hit.remove("rid");
-			hit.remove("rank");
+			hit.remove("query");
 		}
 	}
-	
-	// TODO: needs a proper implementation, refactoring, and research ;-) 
-	// Scoring follows these rules:
-	//   1. hits are ordered such that the first hit per rid determines the resource ranking
-	//   2. if a resource has a exact query match, then these are ranked highest (given rule 1) 
-	//   3. order by score (given rule 1 and rule 2)
-	//   4. TODO: not more than x (=10?) hits per resource
-	//   5. stop after 20 resources
+
+	/**
+	 * New resource ranker, adds rscore.
+	 * @param query
+	 * @param engines
+	 */
 	public void scoreResourceSelection(String query, ResourceIndex engines) {
-		final float bias = 1.0f;
-		Map<String, Float> maxScore = new HashMap<String, Float>();
-		Map <String, Float> topEngines = engines.topValues(query, 20);
+		final float boost = 1.0f;
+		Map<String, Float> maxScore   = new HashMap<String, Float>();
+		Map<String, Float> topEngines = engines.topValues(query, 10);
 		for (Hit hit: this.hits) {
 			String rid = hit.getString("rid");
 			if (rid != null) {
@@ -145,33 +141,84 @@ public class SearchResult {
 				if (engines.containsKey(rid)) {
     				prior = engines.get(rid).getPrior();
 				}
-    			float score = hit.getScore() * bias + prior;
-				Float top = topEngines.get(rid);
-				if (top != null) { 
-					if (top > score) {
-       					score = top;
-					}
-					topEngines.remove(rid);
+                Float top = topEngines.get(rid);
+    			if (top != null) { 
+    			    if (top > prior) {
+    			        prior = top;
+    			    }
+    			    topEngines.remove(rid);
 				}
+                Float score = prior + hit.getScore() * boost;
 				Float max = maxScore.get(rid);
 				if (max == null || max < score) {
-					maxScore.put(rid, score);
-					max = score;
+                    max = score;
+					maxScore.put(rid, max);
 				} 
                 hit.setScore(score);
-                //hit.put("rscore", max);
+                hit.setResourceScore(max);
+			} else {
+			    hit.setResourceScore(hit.getScore() * boost);
 			}
 		}
     	for (String rid: topEngines.keySet()) {
    	        Hit hit = new Hit();
             hit.put("rid", rid);
             hit.setScore(topEngines.get(rid));
-            //hit.put("rscore", topEngines.get(rid));
+            hit.put("rscore", topEngines.get(rid));
             this.hits.add(hit);
 		}
 	    Collections.sort(this.hits, Collections.reverseOrder());
 	}
-	
+
+	/**
+     * TODO: needs a proper implementation, refactoring, and research ;-) 
+     * Scoring follows these rules:
+     *   1. hits are ordered such that the first hit per rid determines the resource ranking
+     *   2. if a resource has a exact query match, then these are ranked highest (given rule 1) 
+     *   3. order by score (given rule 1 and rule 2)
+     *   4. TODO: not more than x (=10?) hits per resource
+     *   5. stop after 20 resources
+     * @param query
+     * @param engines
+     */
+    public void scoreResourceSelectionOld(String query, ResourceIndex engines) {
+        final float boost = 1.0f;
+        Map<String, Float> maxScore = new HashMap<String, Float>();
+        Map <String, Float> topEngines = engines.topValues(query, 20);
+        for (Hit hit: this.hits) {
+            String rid = hit.getString("rid");
+            if (rid != null) {
+                float prior = 0.0f;
+                if (engines.containsKey(rid)) {
+                    prior = engines.get(rid).getPrior();
+                }
+                float score = hit.getScore() * boost + prior;
+                Float top = topEngines.get(rid);
+                if (top != null) { 
+                    if (top > score) {
+                        score = top;
+                    }
+                    topEngines.remove(rid);
+                }
+                Float max = maxScore.get(rid);
+                if (max == null || max < score) {
+                    maxScore.put(rid, score);
+                    max = score;
+                } 
+                hit.setScore(score);
+                //hit.put("rscore", max);
+            }
+        }
+        for (String rid: topEngines.keySet()) {
+            Hit hit = new Hit();
+            hit.put("rid", rid);
+            hit.setScore(topEngines.get(rid));
+            //hit.put("rscore", topEngines.get(rid));
+            this.hits.add(hit);
+        }
+        Collections.sort(this.hits, Collections.reverseOrder());
+    }
+
 	
 	public void scoreReranking(String query, String model) { // TODO use model
         SearchResult newResult = new SearchResult();
@@ -197,14 +244,21 @@ public class SearchResult {
 	}
 
 	
-	public String randomTerm() {
+	public String randomTerm(String notThisOne) {
         int size = this.hits.size();
         if (size > 0) {
     		int nr = random.nextInt(this.hits.size());
     		String text = this.hits.get(nr).toIndexVersion();
     		String terms[] = text.split(TOKENIZER); // TODO Lucene tokenizer?
     		nr = random.nextInt(terms.length);
-    		return terms[nr];
+    		String thisOne = terms[nr];
+    		int i = nr + 1;
+    		while (notThisOne.equals(thisOne)) {
+    		    if (i >= terms.length) { i = 0; }
+    		    thisOne = terms[i];
+    		    if (i == nr) { return null; }
+    		}
+    		return thisOne.toLowerCase();
         } else {
         	return null;
         }
