@@ -231,7 +231,7 @@ public class SearchResult {
 			String text = hit.toIndexVersion();
 			for (String term: text.toLowerCase().split(TOKENIZER)) {
 	        	if (queryTerms.containsKey(term)) {
-	        		score += 1.0f;
+	        		score += 1.0f; // TODO: single query term multiple times?
 	        	}
 			}
 			if (score > 0.001f) {
@@ -244,21 +244,21 @@ public class SearchResult {
 	}
 
 	
-	public String randomTerm(String notThisOne) {
+	public String randomTerm(String notThisOne) { // TODO: keep track of more previous random queries?
         int size = this.hits.size();
         if (size > 0) {
     		int nr = random.nextInt(this.hits.size());
-    		String text = this.hits.get(nr).toIndexVersion();
+    		String text = this.hits.get(nr).toIndexVersion().toLowerCase();
     		String terms[] = text.split(TOKENIZER); // TODO Lucene tokenizer?
     		nr = random.nextInt(terms.length);
     		String thisOne = terms[nr];
     		int i = nr + 1;
-    		while (notThisOne.equals(thisOne)) {
+    		while (thisOne.length() < 1 || notThisOne.equals(thisOne)) {
     		    if (i >= terms.length) { i = 0; }
     		    thisOne = terms[i];
     		    if (i == nr) { return null; }
     		}
-    		return thisOne.toLowerCase();
+    		return thisOne;
         } else {
         	return null;
         }

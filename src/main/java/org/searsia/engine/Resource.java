@@ -252,7 +252,11 @@ public class Resource implements Comparable<Resource> {
 		String thisQuery = this.nextQuery;
 		this.nextQuery = null; // so, nextQuery will be null in case of a searchexception
 		SearchResult result = search(thisQuery);
-		this.nextQuery = result.randomTerm(thisQuery);
+		if (this.testQuery.equals(thisQuery) && result.getHits().isEmpty()) {
+		    throw new SearchException("No results for test query: " + thisQuery);
+		} else {
+		    this.nextQuery = result.randomTerm(thisQuery);
+		}
 		return result;
 	}
 
@@ -263,6 +267,8 @@ public class Resource implements Comparable<Resource> {
 
 
 	public SearchResult search(String query, String debug) throws SearchException {
+	    this.nrOfRequests += 1;
+        SearchResult result;
 		try {
 			String url = fillTemplate(this.urlAPITemplate, URLEncoder.encode(query, "UTF-8"));
 			String postString = "";
@@ -282,7 +288,6 @@ public class Resource implements Comparable<Resource> {
 				postString = fillTemplate(this.postString, postQuery);
 			}
 			String page = getCompletePage(url, postString, this.headers);
-			SearchResult result;
             if (this.mimeType != null && this.mimeType.equals(SearchResult.SEARSIA_MIME_TYPE)) {
             	result = searsiaSearch(page, debug);
             } else {
@@ -291,12 +296,13 @@ public class Resource implements Comparable<Resource> {
             if (this.rerank != null && query != null) {
                 result.scoreReranking(query, this.rerank);
             }
-			result.setQuery(query);
-			result.setResourceId(this.getId());
-			return result;
 		} catch (Exception e) {  // catch all, also runtime exceptions
 			throw createPrivateSearchException(e);
 		} 
+        this.nrOfSuccess += 1;
+		result.setQuery(query);
+        result.setResourceId(this.getId());
+        return result;
 	}
 
 	public SearchResult searchWithoutQuery() throws SearchException {
@@ -768,6 +774,8 @@ public class Resource implements Comparable<Resource> {
         if (this.lastChanged != null) {
             engine.put("lastchanged", this.getLastChangedString());            
         }
+        engine.put("requestsok", this.nrOfSuccess);
+        engine.put("requests", this.nrOfRequests);
 		return engine;
 	}
 

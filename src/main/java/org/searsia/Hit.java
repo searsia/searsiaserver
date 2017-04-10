@@ -163,7 +163,7 @@ public class Hit implements Comparable<Hit> {
 		return json;
 	}
 	
-    public String toIndexVersion() { // TODO: special treatment for urls, etc.
+    public String toIndexVersion() { // TODO: special treatment for urls, etc. and StringBuilder
     	String result = "";
     	for (Object s : map.values()) {
     		if (s instanceof String) {

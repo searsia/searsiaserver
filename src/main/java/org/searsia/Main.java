@@ -110,7 +110,7 @@ public class Main {
     	    	     }
                      if (engine != null && rid.equals(engine.getId())) { 
                          engines.put(engine);
-                         LOGGER.info("Updated " + rid);
+                         LOGGER.debug("Updated " + rid);
                      } else {
                          LOGGER.warn("Warning: Resource not found: " + rid);
                      }

@@ -162,6 +162,10 @@ public class SearsiaOptions {
         }
         if (cmd.hasOption("m")) {
             motherTemplate = cmd.getOptionValue("m");
+            if (!motherTemplate.matches("^https?://.*|^file:.*")) {
+                motherTemplate = "file:" + motherTemplate;
+            }
+
         }
         if (cmd.hasOption("h") || cmd.getArgs().length < 0 || !cmd.hasOption("m")) {
             if (!cmd.hasOption("m")) {

@@ -70,21 +70,21 @@ public class Search {
 		mother = engines.getMother();
 		if (!resourceid.equals(me.getId())) {
 			engine = engines.get(resourceid);
-			if (engine == null || engine.getLastUpdatedSecondsAgo() > 3600) {  // unknown or old? ask your mother
-				if (mother != null) {
+			if (engine == null || engine.getLastUpdatedSecondsAgo() > 7200) {  // unknown or really old? ask your mother
+				if (mother != null) {     // TODO: option for 7200 and similar value (3600) in Main
 				    try {
     				    engine  = mother.searchResource(resourceid);
 				    } catch (SearchException e) {
-				    	String message = "Resource not found: @" + resourceid;
+				    	String message = "Resource not found: " + resourceid;
 				    	LOGGER.warn(message);
 					    return SearsiaApplication.responseError(404, message);
 				    }
 				}
 				if (engine == null) {
-					String message = "Unknown resource identifier: @" + resourceid;
+					String message = "Unknown resource identifier: " + resourceid;
 			    	LOGGER.warn(message);
     				return SearsiaApplication.responseError(404, message);
-				} 
+				}
     		    engines.put(engine);
  			}
 			if (query != null && query.trim().length() > 0) {
@@ -106,7 +106,7 @@ public class Search {
                         LOGGER.info("Query " + resourceid + ": " + query);
                         return SearsiaApplication.responseOk(json);
                     } catch (Exception e) {
-                        String message = "Resource @" + resourceid + " unavailable: " + e.getMessage();
+                        String message = "Resource " + resourceid + " unavailable: " + e.getMessage();
                         LOGGER.warn(message);
                         return SearsiaApplication.responseError(503, message);
                     }
@@ -132,7 +132,7 @@ public class Search {
 				    } catch (SearchException e) {
 				    	LOGGER.warn("Mother not available");
 				    } catch (Exception e) {
-				        LOGGER.warn(e.getMessage());
+				        LOGGER.warn(e);
 				    }
 		    	} else {  // own results? Do resource ranking.
 			        result.scoreResourceSelection(query, engines);
