@@ -163,7 +163,7 @@ public class SearsiaOptions {
         if (cmd.hasOption("m")) {
             motherTemplate = cmd.getOptionValue("m");
             if (!motherTemplate.matches("^https?://.*|^file:.*")) {
-                motherTemplate = "file:" + motherTemplate;
+                motherTemplate = "file:" + motherTemplate.replace("\\", "/"); // TODO C:\file on Windows?
             }
 
         }

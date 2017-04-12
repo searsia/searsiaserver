@@ -128,31 +128,40 @@ public class Main {
         if (uri1 == null) {
             return (uri2 == null);
         } else {
-            return  uriNormalize(uri1, myId).equals(uriNormalize(uri2, myId));      
+            uri1 = uri1.replaceAll("\\?.*$", "");
+            uri2 = uri2.replaceAll("\\?.*$", "");
+            return  uri1.equals(uri2);      
         }
     } 
     
-    private static String uriNormalize(String uri, String myId) {
+    private static String removeFileNameUri(String uri) {
         if (uri != null) {
-            uri = uri.replaceAll("\\?.*$", "");
-            uri = uri.replaceAll("\\/?search\\/?", "");
-            if (uri.endsWith(myId)) {
-                uri = uri.replace(myId, "");
-            }
+            uri = uri.replaceAll("\\/[^\\/]+$", "/");
         }
         return uri;
     }
-
-    private static String uriToTemplate(String uri, String myId) {
-      	if (!(uri == null) && !(uri.contains("{q"))) {
-       		if (!uri.endsWith("/")) {
-   	    		uri += "/";
-   		    }
-   		    uri += myId + "/search?q={q}";
-    	}
-    	return uri;
+    
+    private static String lastDir(String uri) {
+        if (uri.contains("/")) {
+            uri = uri.replaceAll("\\/[^\\/]*$", "");
+            uri = uri.replaceAll("^.+\\/", "");
+            return uri + "/";
+        } else {
+            return "";
+        }
     }
 
+    private static String normalizedUriToTemplate(String uri, String rid) {
+        if (uri != null) {
+            if (uri.endsWith("/") ) {
+                uri += rid + ".json?q={q}";
+            } else if (!uri.contains("{q")) { // check for tests on searsia.org
+                uri += "?q={q}";
+            }
+            
+        }
+    	return uri;
+    }
 
 	private static void printMessage(String message, Boolean isQuiet) {
         if (!isQuiet) {
@@ -215,7 +224,7 @@ public class Main {
             fatalError("Test failed: No results for test query.");
         } else {
             if (result.getHits().size() < 10) {
-                printMessage("Warning: less than 10 results; see \"testquery\" or \"rerank\".", isQuiet);
+                printMessage("Warning: less than 10 results for query: " + result.getQuery() + "; see \"testquery\" or \"rerank\".", isQuiet);
             }
             printMessage("Test succeeded.", isQuiet);
         }
@@ -260,12 +269,10 @@ public class Main {
     	    System.exit(0); 
     	}
         printMessage("Searsia server " + SearsiaApplication.VERSION, options.isQuiet());
+       
         
-        
-        
-        
-    	// Connect to the mother engine and gather information from the mother. 
-   		Resource myself = null;
+    	// Connect to the mother engine and gather information from the mother.
+        Resource myself = null;
     	Resource mother = null;
     	Resource connect = new Resource(options.getMotherTemplate(), null);
     	String version  = null;
@@ -280,8 +287,8 @@ public class Main {
         if (mother == null) {
             fatalError("Initialization failed: JSONObject[\"resource\"] not found.");
         }
-        if (!options.getMotherTemplate().contains(mother.getId())) {
-            fatalError("API Template (" + options.getMotherTemplate() + ") does not contain the id (" + mother.getId() +")");
+        if (!options.getMotherTemplate().matches(".*" + mother.getId() + "[^/]*$")) {
+            fatalError("API Template (" + options.getMotherTemplate() + "): file name must contain id (" + mother.getId() +")");
         }
         if (version != null && !version.startsWith("v1")) {
             fatalError("Wrong major Searsia version " + version + ": Must be v1.0.0 or higher.");
@@ -297,10 +304,10 @@ public class Main {
 
   	    // If test is set, test the mother
   	    if (options.getTestOutput() != null) {
-  	        printMessage("Testing: " + mother.getId(), options.isQuiet());
+  	        printMessage("Testing: " + mother.getName(), options.isQuiet());
   	        testMother(mother, options.getTestOutput(), options.isQuiet());
         } else {
-        	printMessage("Starting: " + myself.getId(), options.isQuiet());
+        	printMessage("Starting: " + myself.getName(), options.isQuiet());
         }
 
 
@@ -322,7 +329,7 @@ public class Main {
 
 
     	// Start the web server
-		String myURI = uriNormalize(options.getMyURI(), myself.getId());
+		String myURI = removeFileNameUri(options.getMyURI()) + lastDir(options.getMotherTemplate());
     	try {
     	    
     	    SearsiaApplication app = new SearsiaApplication(index, engines);
@@ -334,7 +341,7 @@ public class Main {
         
         // Start the update daemon if not testing
         if (options.getTestOutput() == null) {
-            printMessage("API end point: " + uriToTemplate(myURI, myself.getId()), options.isQuiet());
+            printMessage("API end point: " + normalizedUriToTemplate(myURI, myself.getId()), options.isQuiet());
             printMessage("Use Ctrl+c to stop.", options.isQuiet());
             try {
                 searsiaDaemon(index, engines, options.getPollInterval());

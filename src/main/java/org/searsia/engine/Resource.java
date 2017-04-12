@@ -93,8 +93,8 @@ public class Resource implements Comparable<Resource> {
 	private Long lastUsed = new Date().getTime(); // Unix time
     private Long lastUpdated = new Date().getTime(); // Unix time
     private Long lastChanged = null;
-    private Integer nrOfRequests = 0; 
-    private Integer nrOfSuccess = 0; 
+    private int nrOfRequests = 0; 
+    private int nrOfSuccess = 0; 
 
 
 	public Resource(String urlAPITemplate, String id) {
@@ -678,6 +678,13 @@ public class Resource implements Comparable<Resource> {
 		}
 	}
 
+	public int getNrOfRequests() {
+	    return this.nrOfRequests;
+	}
+	
+	public int getNrOfSuccess() {
+	    return this.nrOfSuccess;
+	}
 	
 	private Long secondsAgo(Long last) {
 	    if (last == null) { 
@@ -770,12 +777,6 @@ public class Resource implements Comparable<Resource> {
 			}
 			engine.put("headers", json); 
 		}
-        engine.put("lastupdated", this.getLastUpdatedString());
-        if (this.lastChanged != null) {
-            engine.put("lastchanged", this.getLastChangedString());            
-        }
-        engine.put("requestsok", this.nrOfSuccess);
-        engine.put("requests", this.nrOfRequests);
 		return engine;
 	}
 

@@ -125,12 +125,21 @@ public class SearchResult {
 		}
 	}
 
+    private void addMonitoringInfo(Hit hit, Resource resource) {       
+        String value = resource.getLastUpdatedString();
+        if (value != null) { hit.put("lastupdated", value); }
+        value = resource.getLastChangedString(); 
+        if (value != null) { hit.put("lastchanged", value); }
+        hit.put("requestsok", resource.getNrOfSuccess());
+        hit.put("requests", resource.getNrOfRequests());
+    }
+
 	/**
 	 * New resource ranker, adds rscore.
 	 * @param query
 	 * @param engines
 	 */
-	public void scoreResourceSelection(String query, ResourceIndex engines) {
+	public void scoreResourceSelection(String query, ResourceIndex engines, boolean extraInfo) {
 		final float boost = 1.0f;
 		Map<String, Float> maxScore   = new HashMap<String, Float>();
 		Map<String, Float> topEngines = engines.topValues(query, 10);
@@ -156,6 +165,9 @@ public class SearchResult {
 				} 
                 hit.setScore(score);
                 hit.setResourceScore(max);
+                if (extraInfo) {
+                    addMonitoringInfo(hit, engines.get(rid));
+                }
 			} else {
 			    hit.setResourceScore(hit.getScore() * boost);
 			}
@@ -164,11 +176,20 @@ public class SearchResult {
    	        Hit hit = new Hit();
             hit.put("rid", rid);
             hit.setScore(topEngines.get(rid));
-            hit.put("rscore", topEngines.get(rid));
+            hit.setResourceScore(topEngines.get(rid));
             this.hits.add(hit);
 		}
 	    Collections.sort(this.hits, Collections.reverseOrder());
 	}
+
+    /**
+     * New Top resources.
+     * @param query
+     * @param engines
+     */
+    public void scoreResourceSelection(String query, ResourceIndex engines) {
+        scoreResourceSelection(query, engines, false);
+    }
 
 	/**
      * TODO: needs a proper implementation, refactoring, and research ;-) 

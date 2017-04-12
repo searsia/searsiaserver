@@ -50,21 +50,21 @@ public class ResourceTest {
 	}
 	
     private Resource searsiaMimeOnlySearch() throws XPathExpressionException {
-        return new Resource("http://searsia.org/searsia/v1-wikididyoumean-{q?}.json", "randomid");
+        return new Resource("http://searsia.org/searsia/wiki/wikididyoumean{q?}.json", "randomid");
     }	
 
 	private Resource searsiaSearch() throws XPathExpressionException {
-		return new Resource("http://searsia.org/searsia/v1-wiki-{q?}.json", "wiki");
+		return new Resource("http://searsia.org/searsia/wiki/index{q}.json", "index");
 	}
 	
     private Resource xmlSearch() throws XPathExpressionException, SearchException { 	
-		Resource wiki = new Resource("http://searsia.org/searsia/v1-wiki-{q?}.json", "wiki");
-		Resource wikifull = wiki.searchResource("wikifull");
+		Resource wiki = new Resource("http://searsia.org/searsia/wiki/index{q?}.json", "index");
+		Resource wikifull = wiki.searchResource("wikifull1");
         return wikifull;
 	}
 
     private Resource jsonSearch() throws XPathExpressionException {
-		Resource wiki = new Resource("http://searsia.org/searsia/v1-wikifull-{q?}.json", "wikifull");
+		Resource wiki = new Resource("http://searsia.org/searsia/wiki/wikifull1{q?}.json", "wikifull1");
 		wiki.setMimeType("application/json");
 		wiki.setItemXpath("//hits");
 		wiki.addExtractor(
@@ -77,7 +77,7 @@ public class ResourceTest {
 	}
     
     private Resource javascriptSearch() throws XPathExpressionException {
-		Resource wikifull = new Resource("http://searsia.org/searsia/v1-wikifull-{q}.js", "wikifull");
+		Resource wikifull = new Resource("http://searsia.org/searsia/wiki/wikifull1{q}.js", "wikifull1");
 		wikifull.setMimeType("application/x-javascript");
 		wikifull.setItemXpath("//hits");
 		wikifull.addExtractor(
@@ -181,7 +181,7 @@ public class ResourceTest {
 	@Test
 	public void testSearchResource() throws XPathExpressionException, SearchException {
 		Resource se = searsiaSearch();
-		Resource engine = se.searchResource("wikifull");
+		Resource engine = se.searchResource("wikifull1");
 		Assert.assertTrue(engine != null);
 	}
 
@@ -190,7 +190,7 @@ public class ResourceTest {
         Resource se = htmlSearch();
         Boolean exception = false;
         try {
-            se.searchResource("wikifull");
+            se.searchResource("wikifull1");
         } catch (SearchException e) {
             exception = true;
         }
@@ -202,7 +202,7 @@ public class ResourceTest {
         Resource se = searsiaMimeOnlySearch();
         Boolean exception = false;
         try {
-            se.searchResource("wikifull");
+            se.searchResource("wikifull1");
         } catch (SearchException e) {
             exception = true;
         }

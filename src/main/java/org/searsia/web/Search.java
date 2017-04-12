@@ -38,7 +38,7 @@ import org.searsia.engine.SearchException;
  * 
  * @author Dolf Trieschnigg and Djoerd Hiemstra
  */
-@Path("{resourceid}/search")
+@Path("{resourceid}")
 public class Search {
 
 	private final static org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(Search.class);
@@ -62,7 +62,10 @@ public class Search {
 	@GET
 	@Produces(SearchResult.SEARSIA_MIME_ENCODING)
 	public Response query(@PathParam("resourceid") String resourceid, @QueryParam("q") String query) {
-
+	    if (!resourceid.endsWith(".json")) {
+	        return  SearsiaApplication.responseError(404, "Not found: " + resourceid);
+	    }
+        resourceid = resourceid.replaceAll("\\.json$", "");
 		Resource me, engine, mother;
 		SearchResult result;
 		JSONObject json;
@@ -137,9 +140,10 @@ public class Search {
 		    	} else {  // own results? Do resource ranking.
 			        result.scoreResourceSelection(query, engines);
 		    	}
-			} else {  // no query? Return empty results
+			} else {  // no query? Return empty results with extra info
+			    boolean extraInfo = true;
 				result = new SearchResult();
-		        result.scoreResourceSelection(query, engines);
+		        result.scoreResourceSelection(query, engines, extraInfo);
 			}
 		    json = result.toJson();
 		    json.put("resource", engines.getMyself().toJson());

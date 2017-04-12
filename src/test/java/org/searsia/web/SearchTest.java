@@ -28,7 +28,7 @@ public class SearchTest {
     
     
     private static Resource wiki() {
-    	return new Resource("http://searsia.org/searsia/v1-wiki-{q}.json", "wiki");
+    	return new Resource("http://searsia.org/searsia/wiki/wiki{q}.json", "wiki");
     }
  
     private static Resource wrong() {
@@ -59,7 +59,7 @@ public class SearchTest {
     @Test // returns 'my' resource description
 	public void test() throws IOException {
 		Search search = new Search(index, engines);
-		Response response = search.query("wiki", "");
+		Response response = search.query("wiki.json", "");
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
 		JSONObject json = new JSONObject(entity);
@@ -71,7 +71,7 @@ public class SearchTest {
     @Test // returns local search results for 'searsia'
 	public void testQuery() throws IOException {
 		Search search = new Search(index, engines);
-		Response response = search.query("wiki", "searsia search for noobs");
+		Response response = search.query("wiki.json", "searsia search for noobs");
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
 		JSONObject json = new JSONObject(entity);
@@ -92,7 +92,7 @@ public class SearchTest {
     @Test // returns local resource 'wrong' 
 	public void testResource() throws IOException {
 		Search search = new Search(index, engines);
-		Response response = search.query("wrong", "");
+		Response response = search.query("wrong.json", "");
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
 		JSONObject json = new JSONObject(entity);
@@ -104,7 +104,7 @@ public class SearchTest {
     @Test // returns resource 'wikididyoumean' (from mother)
 	public void testResourceUnknown() throws IOException {
 		Search search = new Search(index, engines);
-		Response response = search.query("wikididyoumean", "");
+		Response response = search.query("wikididyoumean.json", "");
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
 		JSONObject json = new JSONObject(entity);
@@ -116,11 +116,9 @@ public class SearchTest {
     @Test // returns results for the engine 'wrong' (which does not exist)
 	public void testError() throws IOException {
 		Search search = new Search(index, engines);
-		Response response = search.query("wrong", "testquery");
+		Response response = search.query("wrong.json", "testquery");
 		int status = response.getStatus();
 		Assert.assertEquals(503, status);
 	}
 
-
-	
 }

@@ -141,6 +141,10 @@ public class Hit implements Comparable<Hit> {
 		return (String) map.get("title");
 	}
 	
+    public String getRid() {
+        return (String) map.get("rid");
+    }
+    
 	@Override
 	public String toString() {
 		return map.entrySet().toString();
@@ -175,18 +179,25 @@ public class Hit implements Comparable<Hit> {
     
     @Override
     public int compareTo(Hit hit2) {
-    	Float score1 = getResourceScore();
+    	Float score1 = getResourceScore();  // order by best resources
     	Float score2 = hit2.getResourceScore();
-    	if (score1.compareTo(score2) == 0) {
-    		score1 = getScore();
-    		score2 = hit2.getScore();
-    		if (score1 != null && score2 != null) {
-        		return score1.compareTo(score2);
-    		} else {
-    			return 0;
-    		}
+    	int compare = score1.compareTo(score2);
+    	if (compare != 0) {
+            return compare;
     	} else {
-    		return score1.compareTo(score2);
+    	    String rid1 = getRid(); // if two resources the same score
+    	    String rid2 = hit2.getRid();
+    	    if (rid1 != null && rid2 != null && rid1.compareTo(rid2) != 0) {
+    	        return compare = rid1.compareTo(rid2);
+    	    } else {
+        		score1 = getScore();
+        		score2 = hit2.getScore();
+        		if (score1 != null && score2 != null) {
+        		    return score1.compareTo(score2);
+        		} else {
+        		    return 0;
+        		}
+    		}
     	}
     }
     
