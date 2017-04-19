@@ -2,59 +2,71 @@ package org.searsia.index;
 
 import java.io.IOException;
 
+import javax.xml.xpath.XPathExpressionException;
+
+import org.apache.log4j.Logger;
+import org.apache.log4j.varia.NullAppender;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import org.searsia.index.ResourceIndex;
 import org.searsia.engine.Resource;
 
 public class TestResourceIndex {
 	
+    private static final Logger LOGGER = Logger.getLogger("org.searsia");
     private static final String PATH  = "target/index-test";
     private static final String INDEX = "test";
     private static ResourceIndex engines;
    
     @BeforeClass
     public static void setUp() throws Exception {
+        LOGGER.removeAllAppenders();
+        LOGGER.addAppender(new NullAppender());
     	engines = new ResourceIndex(PATH, INDEX);
     	Resource engine = searsia();
     	engines.putMother(engine);
     }
     
     @AfterClass
-    public static void lastThing() throws IOException {
+    public static void lastThing() throws IOException, XPathExpressionException, JSONException {
     	engines.put(newby());
     	checkFiles();
     }
      
-    private static Resource utwente() {
-    	Resource e = new Resource("http://utwente.nl/search?q={q}", "567");
-    	e.setName("UT");
-    	return e;
+    private static Resource utwente() throws XPathExpressionException, JSONException {
+        JSONObject json = new JSONObject(
+            "{\"apitemplate\":\"http://utwente.nl/search?q={q}\",\"id\":\"567\",\"name\":\"UT\"}"
+        );
+    	return new Resource(json);
     }
     
-    private static Resource searsia() {
-    	Resource e = new Resource("http://searsia.com/?q={q}", "1234");
-    	e.addPrivateParameter("api", "topsecret");
-    	return e;
+    private static Resource searsia() throws XPathExpressionException, JSONException {
+        JSONObject json = new JSONObject(
+            "{\"apitemplate\":\"http://searsia.com/?q={q}\",\"id\":\"1234\",\"privateparameters\":{\"api\":\"topsecret\"}}"
+        );
+    	return new Resource(json);
     }
     
-    private static Resource newby() {
-    	Resource e = new Resource("http://new.com/?q={q}", "new");
-    	e.addPrivateParameter("apikey", "secret");
-    	return e;
+    private static Resource newby() throws XPathExpressionException, JSONException {
+        JSONObject json = new JSONObject(
+            "{\"apitemplate\":\"http://new.com/?q={q}\",\"id\":\"new\",\"privateparameters\":{\"apikey\":\"secret\"}}"
+        );
+    	return new Resource(json);
     }
     
-    private static Resource me() {
-    	Resource e = new Resource("http://me.org", "me");
-    	e.setName("Me");
-    	return e;
+    private static Resource me() throws XPathExpressionException, JSONException {
+        JSONObject json = new JSONObject(
+            "{\"apitemplate\":\"http://me.org\",\"id\":\"me\",\"name\":\"Me\"}"
+        );
+        return new Resource(json);
     }
     
     
-    public static void checkFiles() throws IOException {
+    public static void checkFiles() throws IOException, XPathExpressionException, JSONException {
     	Resource e1 = me();
     	Resource e2 = engines.getMyself();
     	Assert.assertTrue("Trying to retrieve me", e1.equals(e2));
@@ -69,7 +81,7 @@ public class TestResourceIndex {
     }
 	
     @Test
-    public void addResource() {
+    public void addResource() throws XPathExpressionException, JSONException {
     	Resource e1 = utwente();
     	engines.put(e1);
     	Resource e2 = engines.get(e1.getId());
@@ -77,7 +89,7 @@ public class TestResourceIndex {
     }
  
     @Test
-    public void addMe() {
+    public void addMe() throws XPathExpressionException, JSONException {
     	Resource e1 = me();
     	engines.putMyself(e1);
     	Resource e2 = engines.getMyself();
@@ -85,7 +97,7 @@ public class TestResourceIndex {
     }
 
     @Test
-    public void getMother() {
+    public void getMother() throws XPathExpressionException, JSONException {
     	Resource e1 = searsia();
     	Resource e2 = engines.getMother();
     	Assert.assertTrue("Mother", e1.equals(e2));

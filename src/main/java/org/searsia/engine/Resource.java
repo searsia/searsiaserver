@@ -96,7 +96,6 @@ public class Resource implements Comparable<Resource> {
     private int nrOfRequests = 0; 
     private int nrOfSuccess = 0; 
 
-
 	public Resource(String urlAPITemplate, String id) {
 		this.urlAPITemplate = urlAPITemplate;
 		this.id = id;
@@ -244,6 +243,17 @@ public class Resource implements Comparable<Resource> {
             this.lastChanged = dateFormat.parse(date).getTime();
         } catch (ParseException e) { }
     }
+
+
+    public Resource updateFromAPI() throws SearchException {
+        SearchResult result = searchWithoutQuery();
+        if (result == null) { throw new SearchException("No results."); }
+        Resource resource = result.getResource(); 
+        if (resource == null) { throw new SearchException("Object \"resource\" not found."); }
+        updateWith(resource);
+        return this;
+    }
+    
 
 	public SearchResult randomSearch() throws SearchException {
 		if (this.nextQuery == null) {
@@ -744,42 +754,77 @@ public class Resource implements Comparable<Resource> {
 			throw new RuntimeException(e);
 		}
 	}
-	
 
-	public JSONObject toJson() {
-		JSONObject engine = new JSONObject();
-		if (id != null)                  engine.put("id", id);
-		if (name != null)                engine.put("name", name);
-		if (urlUserTemplate != null)     engine.put("urltemplate", urlUserTemplate);
-		if (favicon != null)             engine.put("favicon", favicon);
-		if (banner != null)              engine.put("banner", banner);
-		if (urlAPITemplate != null)      engine.put("apitemplate", urlAPITemplate);
-		if (urlSuggestTemplate != null)  engine.put("suggesttemplate", urlSuggestTemplate);
-		if (mimeType != null)            engine.put("mimetype", mimeType);
-		if (rerank != null)              engine.put("rerank", rerank);
-		if (postString != null)          engine.put("post", postString);
-		if (postQueryEncode != null)     engine.put("postencode", postQueryEncode);
-		if (testQuery != null)           engine.put("testquery", testQuery);
-		if (prior != null)               engine.put("prior", prior);
-		if (rate != defaultRATE)         engine.put("maxqueriesperday", rate);
-		if (itemXpath != null)           engine.put("itempath", itemXpath);
-		if (extractors != null && extractors.size() > 0) {
-			JSONObject json = new JSONObject();
-			for (TextExtractor e: extractors) {
-				json.put(e.getField(), e.getPath());
-			}
-			engine.put("extractors", json); 
-		}
-		if (headers != null && headers.size() > 0) {
-			JSONObject json = new JSONObject();
-			for (String header: headers.keySet()) {
-				json.put(header, headers.get(header));
-			}
-			engine.put("headers", json); 
-		}
-		return engine;
+	
+	public void updateWith(Resource e2) {
+        if (e2.id != null)                 this.id       = e2.id;
+        if (e2.name != null)               this.name     = e2.name;
+        if (e2.urlUserTemplate != null)    this.urlUserTemplate = e2.urlUserTemplate;
+        if (e2.favicon != null)            this.favicon  = e2.favicon;
+        if (e2.banner != null)             this.banner   = e2.banner;
+        if (e2.urlAPITemplate != null)     this.urlAPITemplate = e2.urlAPITemplate;
+        if (e2.urlSuggestTemplate != null) this.urlSuggestTemplate = e2.urlSuggestTemplate;
+        if (e2.mimeType != null)           this.mimeType = e2.mimeType;
+        if (e2.rerank != null)             this.rerank   = e2.rerank;
+        if (e2.postString != null)         this.postString = e2.postString;
+        if (e2.postQueryEncode != null)    this.postQueryEncode = e2.postQueryEncode;
+        if (e2.testQuery != null)          this.testQuery = e2.testQuery;
+        if (e2.prior != null)              this.prior     = e2.prior;
+        if (e2.rate != defaultRATE)        this.rate      = e2.rate;
+        if (e2.itemXpath != null)          this.itemXpath = e2.itemXpath;
+        if (e2.extractors != null)         this.extractors = e2.extractors;
+        if (e2.headers != null)            this.headers   = e2.headers;
+        if (e2.privateParameters != null)  this.privateParameters = e2.privateParameters;
 	}
 
+
+    public JSONObject toJson() {
+        return toJsonEngine();
+    }
+
+    public JSONObject toJsonEngine() {
+        JSONObject engine = new JSONObject();
+        if (id != null)                  engine.put("id", id);
+        if (name != null)                engine.put("name", name);
+        if (urlUserTemplate != null)     engine.put("urltemplate", urlUserTemplate);
+        if (favicon != null)             engine.put("favicon", favicon);
+        if (banner != null)              engine.put("banner", banner);
+        if (urlAPITemplate != null)      engine.put("apitemplate", urlAPITemplate);
+        if (urlSuggestTemplate != null)  engine.put("suggesttemplate", urlSuggestTemplate);
+        if (mimeType != null)            engine.put("mimetype", mimeType);
+        if (rerank != null)              engine.put("rerank", rerank);
+        if (postString != null)          engine.put("post", postString);
+        if (postQueryEncode != null)     engine.put("postencode", postQueryEncode);
+        if (testQuery != null)           engine.put("testquery", testQuery);
+        if (prior != null)               engine.put("prior", prior);
+        if (rate != defaultRATE)         engine.put("maxqueriesperday", rate);
+        if (itemXpath != null)           engine.put("itempath", itemXpath);
+        if (extractors != null && extractors.size() > 0) {
+            JSONObject json = new JSONObject();
+            for (TextExtractor e: extractors) {
+                json.put(e.getField(), e.getPath());
+            }
+            engine.put("extractors", json); 
+        }
+        if (headers != null && headers.size() > 0) {
+            JSONObject json = new JSONObject();
+            for (String header: headers.keySet()) {
+                json.put(header, headers.get(header));
+            }
+            engine.put("headers", json); 
+        }
+        return engine;
+    }
+
+
+    @Override
+    public int compareTo(Resource e2) {
+        Float score1 = getPrior();
+        Float score2 = e2.getPrior();
+        return score1.compareTo(score2);
+    }
+
+   
     @Override
     public boolean equals(Object o) {  // TODO: AARGH, can't this be done simpler?
     	if (o == null) return false;
@@ -804,14 +849,7 @@ public class Resource implements Comparable<Resource> {
     	return true;
     }
     
-    @Override
-    public int compareTo(Resource e2) {
-    	Float score1 = getPrior();
-    	Float score2 = e2.getPrior();
-   		return score1.compareTo(score2);
-    }
 
-    
     private boolean listEquals(List<?> a, List<?> b) {
         if (a == null && b == null)
      	   return true;

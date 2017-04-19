@@ -35,7 +35,8 @@ public class TestSearchResultIndex {
         index.offer(result);
         index.flush();
     }
-    
+
+
     private static SearchResult readFile(String fileString) throws IOException {
         SearchResult result = new SearchResult();       
         String s, jsonString = "";       // TODO: Does the following file name work in Windows?
