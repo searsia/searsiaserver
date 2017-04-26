@@ -1,0 +1,6 @@
+{
+  "resource": {
+    "apitemplate": "http://searsia.org/searsia/wiki/index{q}.json",
+    "id": "index",
+  }
+}

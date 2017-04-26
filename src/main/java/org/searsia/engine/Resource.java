@@ -96,9 +96,9 @@ public class Resource implements Comparable<Resource> {
     private int nrOfRequests = 0; 
     private int nrOfSuccess = 0; 
 
-	public Resource(String urlAPITemplate, String id) {
+	public Resource(String urlAPITemplate) {
 		this.urlAPITemplate = urlAPITemplate;
-		this.id = id;
+		this.id = null;
 		this.name = null;
 		this.mimeType = SearchResult.SEARSIA_MIME_TYPE;
 		this.testQuery = defaultTestQuery;
@@ -157,7 +157,12 @@ public class Resource implements Comparable<Resource> {
 	public void setUrlAPITemplate(String urlTemplate) {
 		this.urlAPITemplate = urlTemplate;
 	}
-   
+
+
+	/* 
+	 * Setters no longer used: Everything now via JSON Objects
+	 * 
+
 	public void setUrlUserTemplate(String urlTemplate) {
 		this.urlUserTemplate = urlTemplate;
 	}
@@ -198,20 +203,6 @@ public class Resource implements Comparable<Resource> {
 		this.itemXpath = itemXpath;
 	}
 	
-	public void addExtractor(TextExtractor ... e) {
-		for (TextExtractor ee: e) {
-			this.extractors.add(ee);
-		}
-	}
-
-	public void addHeader(String key, String value) {
-		this.headers.put(key, value);
-	}
-
-	public void addPrivateParameter(String key, String value) {
-		this.privateParameters.put(key, value);
-	}
-
 	public void setPrior(float prior) {
 		this.prior = prior;
 	}
@@ -223,6 +214,20 @@ public class Resource implements Comparable<Resource> {
 	public void setRerank(String rerank) {
 		this.rerank  = rerank;
 	}
+*/
+    private void addExtractor(TextExtractor ... e) {
+        for (TextExtractor ee: e) {
+            this.extractors.add(ee);
+        }
+    }
+
+    private void addHeader(String key, String value) {
+        this.headers.put(key, value);
+    }
+
+    private void addPrivateParameter(String key, String value) {
+        this.privateParameters.put(key, value);
+    }
 
 	public void setLastUpdatedToNow() {
 	    this.lastUpdated = new Date().getTime();
@@ -463,11 +468,11 @@ public class Resource implements Comparable<Resource> {
         return DOMBuilder.string2DOM(xml);
 	}
 	
-    private Document parseDocumentJSON(String jsonString) throws IOException {
+    private Document parseDocumentJSON(String jsonString) throws IOException {  // TODO Does not catch "/bla": true
         jsonString = jsonString.replaceAll("\"[^\"]*[/<>' =][^\"]*\":[ \n\r]*\"[^\"]*\",?", ""); // completely remove data with keys that have one of: /<>' =
     	jsonString = jsonString.replaceAll("\"([0-9][^\"]*)\"[ \n\r]*:", "\"t$1\":"); // tags starting with a number are not well-formed XML
-        jsonString = jsonString.replaceAll("\"content\":", "\"searsia_org_json_content\":"); // work around. org.json.XML is broken: https://github.com/stleary/JSON-java/issues/286
-    	if (jsonString.startsWith("[")) {  // turn lists into objects
+        jsonString = jsonString.replaceAll("\"content\":", "\"searsia_org_json_content\":"); // TODO write DOMBuilder.json2DOM(): this is a work around. org.json.XML is broken: https://github.com/stleary/JSON-java/issues/286
+        if (jsonString.startsWith("[")) {  // turn lists into objects    
         	jsonString = "{\"list\":" + jsonString + "}";
         }
         String xml = "<root>" + XML.toString(new JSONObject(jsonString)) + "</root>";

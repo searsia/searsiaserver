@@ -16,55 +16,7 @@ import org.searsia.engine.Resource;
 public class ResourceTest {
 
 	private static final String SECRET_API_KEY = "a7235cdsf43d3a2dfgeda";
-	
-    private Resource searsiaMimeOnlySearch() throws XPathExpressionException {
-        return new Resource("http://searsia.org/searsia/wiki/wikididyoumean{q?}.json", "randomid");
-    }	
 
-	private Resource searsiaSearch() throws XPathExpressionException {
-		return new Resource("http://searsia.org/searsia/wiki/index{q}.json", "index");
-	}
-	
-    private Resource xmlSearch() throws XPathExpressionException, SearchException { 	
-		Resource wiki = new Resource("http://searsia.org/searsia/wiki/index{q?}.json", "index");
-		Resource wikifull = wiki.searchResource("wikifull1");
-        return wikifull;
-	}
-
-    private Resource jsonSearch() throws XPathExpressionException {
-		Resource wiki = new Resource("http://searsia.org/searsia/wiki/wikifull1{q?}.json", "wikifull1");
-		wiki.setMimeType("application/json");
-		wiki.setItemXpath("//hits");
-		wiki.addExtractor(
-			new TextExtractor("title", "./title"),
-			new TextExtractor("description", "./description"),
-			new TextExtractor("url", "./url"),
-			new TextExtractor("content", "./content")
-		);
-		return wiki;
-	}
-    
-    private Resource javascriptSearch() throws XPathExpressionException {
-		Resource wikifull = new Resource("http://searsia.org/searsia/wiki/wikifull1{q}.js", "wikifull1");
-		wikifull.setMimeType("application/x-javascript");
-		wikifull.setItemXpath("//hits");
-		wikifull.addExtractor(
-			new TextExtractor("title", "./title"),
-			new TextExtractor("description", "./description"),
-			new TextExtractor("url", "./url")
-		);
-		return wikifull;
-	}
-    
-    @Test
-    public void testje()  throws XPathExpressionException, SearchException {
-        System.out.println(searsiaSearch().toJson());
-        System.out.println(searsiaMimeOnlySearch().toJson());
-        System.out.println(xmlSearch().toJson());
-        System.out.println(jsonSearch().toJson());
-        System.out.println(javascriptSearch().toJson());
-    }
-    
     @BeforeClass
     public static void setUp() {
     	Logger.getLogger("").setLevel(Level.WARNING); 
@@ -72,7 +24,7 @@ public class ResourceTest {
 	
 	@Test
 	public void testSearchSearsia() throws XPathExpressionException, SearchException {
-        Resource se = new Resource("file:src/test/resources/index.json", null).updateFromAPI();
+        Resource se = new Resource("file:src/test/resources/index.json").updateFromAPI();
 		String query = "informat";
 		SearchResult result = se.search(query);
 		Assert.assertEquals(query, result.getQuery());
@@ -81,7 +33,7 @@ public class ResourceTest {
 
 	@Test
 	public void testSearchHtml() throws XPathExpressionException, SearchException {
-		Resource se = new Resource("file:src/test/resources/hiemstra.json", null).updateFromAPI();
+		Resource se = new Resource("file:src/test/resources/hiemstra.json").updateFromAPI();
 		SearchResult result = se.search("dolf trieschnigg", "xml");
 		Assert.assertEquals("text/html", se.getMimeType());
 		Assert.assertEquals(10, result.getHits().size());
@@ -89,7 +41,7 @@ public class ResourceTest {
 
 	@Test
 	public void testSearchPost() throws XPathExpressionException, SearchException {
-        Resource se = new Resource("file:src/test/resources/hiemstrapost.json", null).updateFromAPI();
+        Resource se = new Resource("file:src/test/resources/hiemstrapost.json").updateFromAPI();
 		SearchResult result = se.search("dolf trieschnigg");
 		Assert.assertEquals("application/xml", se.getMimeType());
 		Assert.assertEquals(10, result.getHits().size());
@@ -97,36 +49,36 @@ public class ResourceTest {
 
 	@Test
 	public void testSearchXml() throws XPathExpressionException, SearchException {
-		Resource se = xmlSearch();
-		SearchResult result = se.search("informat");
-		Assert.assertEquals("application/xml", se.getMimeType());
+		Resource se1 = new Resource("http://searsia.org/searsia/wiki/index{q}.json").updateFromAPI();
+        Resource se2 = se1.searchResource("wikifull1");
+		SearchResult result = se2.search("informat");
+		Assert.assertEquals("application/xml", se2.getMimeType());
 		Assert.assertEquals(10, result.getHits().size());
 	}
 
 	@Test
 	public void testSearchXml2() throws XPathExpressionException, SearchException {
-        Resource se = new Resource("file:src/test/resources/hiemstra.json", null).updateFromAPI();
-		se.setMimeType("application/xml");
-		se.setRerank(null);
+        Resource se = new Resource("file:src/test/resources/hiemstraxml.json").updateFromAPI();
 		long startTime = System.currentTimeMillis();
 		SearchResult result = se.search("test");
+        Assert.assertEquals("application/xml", se.getMimeType());
 		Assert.assertEquals(10, result.getHits().size());
 		Assert.assertFalse("Parser timed out", System.currentTimeMillis() - startTime > 10000);
 	}
 
 	@Test
 	public void testSearchJson() throws XPathExpressionException, SearchException {
-		Resource se = jsonSearch();
+		Resource se = new Resource("file:src/test/resources/searsia.json").updateFromAPI();
 		String debug = "xml";
 		SearchResult result = se.search("informat", debug);
 		Assert.assertNotNull(result.getDebugOut());
 		Assert.assertEquals("application/json", se.getMimeType());
-		Assert.assertEquals(10, result.getHits().size());
+		Assert.assertTrue("Result size 10 or more", result.getHits().size() >= 10);
 	}
 
 	@Test
 	public void testSearchJson2() throws XPathExpressionException, SearchException {
-		Resource se = jsonSearch();
+        Resource se = new Resource("http://searsia.org/searsia/wiki/wikifull1{q}.json");
 		SearchResult result = se.search("json");
 		Assert.assertEquals(1, result.getHits().size());
 		Assert.assertEquals("extra content", result.getHits().get(0).getString("content"));
@@ -134,14 +86,14 @@ public class ResourceTest {
 
     @Test
     public void testSearchJson3() throws XPathExpressionException, SearchException {
-        Resource se = jsonSearch();
+        Resource se = new Resource("http://searsia.org/searsia/wiki/wikifull1{q}.json");
         SearchResult result = se.search("strange keys");
         Assert.assertEquals(1, result.getHits().size());
     }
 
 	@Test
 	public void testSearchJavascript() throws XPathExpressionException, SearchException {
-		Resource se = javascriptSearch();
+		Resource se = new Resource("file:src/test/resources/javascript.json").updateFromAPI();
 		String debug = "xml";
 		SearchResult result = se.search("informat", debug);
 		Assert.assertEquals("application/x-javascript", se.getMimeType());
@@ -150,21 +102,21 @@ public class ResourceTest {
 
 	@Test
 	public void testSearchSearsiaEmpty() throws XPathExpressionException, SearchException {
-		Resource se = searsiaSearch();
+		Resource se = new Resource("http://searsia.org/searsia/wiki/index{q}.json").updateFromAPI();
 		SearchResult result = se.searchWithoutQuery();
 		Assert.assertTrue(result.getHits().size() > 0);
 	}
 
 	@Test
 	public void testSearchResource() throws XPathExpressionException, SearchException {
-		Resource se = searsiaSearch();
+		Resource se = new Resource("file:src/test/resources/index.json").updateFromAPI();
 		Resource engine = se.searchResource("wikifull1");
 		Assert.assertTrue(engine != null);
 	}
 
     @Test
     public void testSearchNoResource1() throws XPathExpressionException, SearchException {
-        Resource se = new Resource("file:src/test/resources/hiemstra.json", null).updateFromAPI();
+        Resource se = new Resource("file:src/test/resources/hiemstra.json").updateFromAPI();
         Boolean exception = false;
         try {
             se.searchResource("wikifull1");
@@ -176,7 +128,7 @@ public class ResourceTest {
 
     @Test
     public void testSearchNoResource2() throws XPathExpressionException, SearchException {
-        Resource se = searsiaMimeOnlySearch();
+        Resource se = new Resource("file:src/test/resources/randomid.json").updateFromAPI();
         Boolean exception = false;
         try {
             se.searchResource("wikifull1");
@@ -188,7 +140,7 @@ public class ResourceTest {
 
 	@Test
 	public void testSearchError() throws XPathExpressionException, SearchException  {
-        Resource se = new Resource("file:src/test/resources/wrong.json", null).updateFromAPI();
+        Resource se = new Resource("file:src/test/resources/wrong.json").updateFromAPI();
 		String message = null;
 		String apiKey = se.getPrivateParameter("apikey");
 		try {
@@ -203,12 +155,7 @@ public class ResourceTest {
 
 	@Test
 	public void testJsonRoundtrip() throws XPathExpressionException, SearchException {
-        Resource se1 = new Resource("file:src/test/resources/hiemstra.json", null).updateFromAPI();
-		se1.setPostString("POST");
-		se1.setPostQueryEncode("application/x-www-form-urlencoded");
-        se1.setRerank("lm");
-		se1.setBanner("me.png");
-		se1.setUrlSuggestTemplate("http://whatever");
+        Resource se1 = new Resource("file:src/test/resources/hiemstracrazy.json").updateFromAPI();
 		JSONObject json = se1.toJson();
 		Resource se2 = new Resource(json);
 		Assert.assertEquals("id", se1.getId(), se2.getId());
@@ -240,15 +187,15 @@ public class ResourceTest {
 
 	@Test
 	public void equalEngines1() throws XPathExpressionException, SearchException {
-        Resource se1 = new Resource("file:src/test/resources/hiemstra.json", null).updateFromAPI();
+        Resource se1 = new Resource("file:src/test/resources/hiemstra.json").updateFromAPI();
 		JSONObject json = se1.toJson();
 		Resource se2 = new Resource(json);
         Assert.assertTrue("Equals big engine", se1.equals(se2));
 	}
 	
 	@Test
-	public void equalEngines2() throws XPathExpressionException {
-		Resource se1 = searsiaSearch();
+	public void equalEngines2() throws XPathExpressionException, SearchException {
+		Resource se1 = new Resource("file:src/test/resources/index.json").updateFromAPI();
 		JSONObject json = se1.toJson();
 		Resource se2 = new Resource(json);
         Assert.assertTrue("Truely Equals small engine", se1.equals(se2));

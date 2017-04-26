@@ -274,7 +274,7 @@ public class Main {
     	// Connect to the mother engine and gather information from the mother.
         Resource myself = null;
     	Resource mother = null;
-    	Resource connect = new Resource(options.getMotherTemplate(), null);
+    	Resource connect = new Resource(options.getMotherTemplate());
     	String version  = null;
     	SearchResult result = null;
   	    try {

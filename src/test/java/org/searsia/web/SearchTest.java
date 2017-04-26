@@ -3,16 +3,17 @@ package org.searsia.web;
 import java.io.IOException;
 
 import javax.ws.rs.core.Response;
+import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.log4j.Logger;
 import org.apache.log4j.varia.NullAppender;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import org.searsia.index.SearchResultIndex;
 import org.searsia.index.ResourceIndex;
 import org.searsia.web.Search;
@@ -27,16 +28,16 @@ public class SearchTest {
     private static ResourceIndex engines;
     
     
-    private static Resource wiki() {
-    	return new Resource("http://searsia.org/searsia/wiki/wiki{q}.json", "wiki");
+    private static Resource wiki() throws XPathExpressionException, JSONException {
+    	return new Resource(new JSONObject("{\"apitemplate\":\"http://searsia.org/searsia/wiki/wiki{q}.json\", \"id\":\"wiki\"}"));
     }
  
-    private static Resource wrong() {
-    	return new Resource("http://searsia.com/doesnotexist?q={q}", "wrong");
+    private static Resource wrong() throws XPathExpressionException, JSONException {
+    	return new Resource(new JSONObject("{\"apitemplate\":\"http://searsia.com/doesnotexist?q={q}\", \"id\":\"wrong\"}"));
     }
     
-    private static Resource me() {
-    	return new Resource("http://me.org?q={q}", "wiki");
+    private static Resource me() throws XPathExpressionException, JSONException {
+    	return new Resource(new JSONObject("{\"apitemplate\":\"http://me.org?q={q}\", \"id\":\"wiki\"}"));
     }
     
     
@@ -90,7 +91,7 @@ public class SearchTest {
 	}
     
     @Test // returns local resource 'wrong' 
-	public void testResource() throws IOException {
+	public void testResource() throws IOException, XPathExpressionException, JSONException {
 		Search search = new Search(index, engines);
 		Response response = search.query("wrong.json", "");
 		int status = response.getStatus();
