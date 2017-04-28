@@ -129,7 +129,7 @@ public class DOMBuilder {
   public static Document json2DOM(JSONObject jsonDocument) {
     
     Document document = null;
-    
+
     try {
 
       /* Obtain the document builder for the configured XML parser. */
@@ -234,17 +234,20 @@ public class DOMBuilder {
    * @param out The W3C {@link Node} that receives the DOM content.
    */
   private static void createDOMfromJSONObject(JSONObject json, Node out, Document doc) {
-    for (String name : JSONObject.getNames(json)) {
-      Object object = json.get(name);
-      if (object instanceof JSONArray) {
-        createDOMfromJSONArray((JSONArray) object, out, doc, name);
-      } else {
-        if (object instanceof JSONObject) {
-          org.w3c.dom.Element _e = doc.createElement(correctXML(name));
-          out.appendChild(_e);
-          createDOMfromJSONObject((JSONObject) object, _e, doc);
-        } else  
+    String [] names = JSONObject.getNames(json);
+    if (names != null) {
+      for (String name : names) {
+        Object object = json.get(name);
+        if (object instanceof JSONArray) {
+          createDOMfromJSONArray((JSONArray) object, out, doc, name);
+        } else {
+          if (object instanceof JSONObject) {
+            org.w3c.dom.Element _e = doc.createElement(correctXML(name));
+            out.appendChild(_e);
+            createDOMfromJSONObject((JSONObject) object, _e, doc);
+          } else  
           createDOMfromJSONPrimitive(object, out, doc, name);
+        }
       }
     }
   }
