@@ -48,7 +48,6 @@ import javax.xml.xpath.XPathFactory;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.XML;
 import org.jsoup.Jsoup;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -455,7 +454,6 @@ public class Resource implements Comparable<Resource> {
 		    	nrOfCurly -= 1;
 		    	if (nrOfCurly == 0) {
 		    		String subString = scriptString.substring(first, i + 1);
-		        	subString = subString.replaceAll("\"([0-9][^\"]*)\":", "\"t$1\":"); // tags starting with a number are not well-formed XML
                     try {
                     	array.put(new JSONObject(subString));
                     } catch (JSONException e) { }
@@ -464,20 +462,14 @@ public class Resource implements Comparable<Resource> {
 		}
 		JSONObject object = new JSONObject();
 		object.put("list", array);
-		String xml = "<root>" + XML.toString(object) + "</root>";
-        return DOMBuilder.string2DOM(xml);
+        return DOMBuilder.json2DOM(object);
 	}
 	
-    private Document parseDocumentJSON(String jsonString) throws IOException {  // TODO Does not catch "/bla": true
-        jsonString = jsonString.replaceAll("\"[^\"]*[/<>' =][^\"]*\":[ \n\r]*\"[^\"]*\",?", ""); // completely remove data with keys that have one of: /<>' =
-    	jsonString = jsonString.replaceAll("\"([0-9][^\"]*)\"[ \n\r]*:", "\"t$1\":"); // tags starting with a number are not well-formed XML
-        jsonString = jsonString.replaceAll("\"content\":", "\"searsia_org_json_content\":"); // TODO write DOMBuilder.json2DOM(): this is a work around. org.json.XML is broken: https://github.com/stleary/JSON-java/issues/286
+    private Document parseDocumentJSON(String jsonString) throws IOException {
         if (jsonString.startsWith("[")) {  // turn lists into objects    
         	jsonString = "{\"list\":" + jsonString + "}";
         }
-        String xml = "<root>" + XML.toString(new JSONObject(jsonString)) + "</root>";
-        xml = xml.replaceAll("searsia_org_json_content>", "content>");  // use a constant for 'searsia_org_json_content'? see 5 lines above
-        return DOMBuilder.string2DOM(xml);
+        return DOMBuilder.json2DOM(new JSONObject(jsonString));
     }
 	
     private Document parseDocumentXML(String xmlString) throws IOException {
