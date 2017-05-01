@@ -40,7 +40,7 @@ public class SearchResultTest {
     	String term = sr.randomTerm(notThis);
         Assert.assertFalse("Same random term", term.equals(notThis));
 		String terms = h.toIndexVersion().toLowerCase();
-		Assert.assertTrue("Index contains term", terms.contains(term));
+		Assert.assertTrue("Index contains random term: " + term, terms.contains(term));
         Assert.assertEquals("Total nr of hits", sr.getHits().size(), 2);
         sr.scoreReranking("test", "or");
         Assert.assertEquals("Nr of hits after reranking", sr.getHits().size(), 2);

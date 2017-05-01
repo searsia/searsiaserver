@@ -141,16 +141,6 @@ public class Main {
         return uri;
     }
     
-    private static String lastDir(String uri) {
-        if (uri.contains("/")) {
-            uri = uri.replaceAll("\\/[^\\/]*$", "");
-            uri = uri.replaceAll("^.+\\/", "");
-            return uri + "/";
-        } else {
-            return "";
-        }
-    }
-
     private static String normalizedUriToTemplate(String uri, String rid) {
         if (uri != null) {
             if (uri.endsWith("/") ) {
@@ -329,7 +319,7 @@ public class Main {
 
 
     	// Start the web server
-		String myURI = removeFileNameUri(options.getMyURI()) + lastDir(options.getMotherTemplate());
+		String myURI = removeFileNameUri(options.getMyURI());
     	try {
     	    
     	    SearsiaApplication app = new SearsiaApplication(index, engines);

@@ -17,6 +17,10 @@
 package org.searsia.web;
 
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.OPTIONS;
@@ -42,9 +46,14 @@ import org.searsia.engine.SearchException;
 public class Search {
 
 	private final static org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(Search.class);
+    private final static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
+    private final static String startTime = dateFormat.format(new Date());
 	
 	private ResourceIndex engines;
     private SearchResultIndex index;
+    private long nrOfQueriesOk = 0;
+    private long nrOfQueriesError = 0;
+
 
 	public Search(SearchResultIndex index, ResourceIndex engines) throws IOException {
 		this.engines  = engines;
@@ -116,18 +125,22 @@ public class Search {
 			    }
 			} else {
 				json = new JSONObject().put("resource", engine.toJson());
+				json.put("health", engine.toJsonHealth());
 		        LOGGER.info("Resource " + resourceid + ".");
 				return SearsiaApplication.responseOk(json);
 			}
 		} else {
-			if (query != null && query.trim().length() > 0) {
+			JSONObject healthJson = null;
+		    if (query != null && query.trim().length() > 0) {
 		    	try {
 			        result = index.search(query);
 			    } catch (Exception e) {
 			    	String message = "Service unavailable: " + e.getMessage();
 			    	LOGGER.warn(message);
+                    this.nrOfQueriesError += 1;
 				    return SearsiaApplication.responseError(503, message);				
 			    }
+                this.nrOfQueriesOk += 1;
 		    	if (result.getHits().isEmpty() && mother != null) {  // empty? ask mother!
 				    try {
     				    result  = mother.search(query);
@@ -140,14 +153,20 @@ public class Search {
 		    	} else {  // own results? Do resource ranking.
 			        result.scoreResourceSelection(query, engines);
 		    	}
-			} else {  // no query? Return empty results with extra info
-			    boolean extraInfo = true;
+			} else {
 				result = new SearchResult();
-		        result.scoreResourceSelection(query, engines, extraInfo);
+		        result.scoreResourceSelection(query, engines);
+		        healthJson = engines.toJsonHealth();
+		        healthJson.put("requestsok", this.nrOfQueriesOk);
+                healthJson.put("requestserr", this.nrOfQueriesError);
+                healthJson.put("upsince", startTime);
 			}
 		    json = result.toJson();
-		    json.put("resource", engines.getMyself().toJson());
-		    LOGGER.info("Local " + resourceid + ": " + query);
+		    json.put("resource", me.toJson());
+		    if (healthJson != null) {
+                json.put("health", healthJson);
+		    }
+		    LOGGER.info("Local " + resourceid + ": " + query); // TODO query can be null
 			return SearsiaApplication.responseOk(json);
 		}
 	}

@@ -127,26 +127,24 @@ public class ResourceIndex {
             for (ScoreDoc hit: hits) {
                 Document doc = searcher.doc(hit.doc);
                 JSONObject json = new JSONObject(doc.get("json"));
-                Resource engine = new Resource(json);
-                if (json.has("lastupdated")) {
-                    String lastUpdated = json.getString("lastupdated");
+                Resource engine = new Resource((JSONObject) json.get("resource"));
+                if (json.has("health")) {
+                    engine.updateHealth((JSONObject) json.get("health"));
+                    String lastUpdated = engine.getLastUpdatedString();
                     if (this.lastFlushed == null || this.lastFlushed.compareTo(lastUpdated) < 0) {
                         this.lastFlushed = lastUpdated;
                     }
-                    engine.setLastUpdatedToDateString(lastUpdated);
-                }
-                if (json.has("lastupdated")) {
-                    engine.setLastUpdatedToDateString(json.getString("lastupdated"));
                 }
                 this.engines.put(engine.getId(), engine);
             }
-        } catch (javax.xml.xpath.XPathExpressionException | JSONException e) {
+        } catch (Exception e) {
         	throw new IOException(e.getMessage());
         }
         finally {
             reader.close(); 
         }
 	}
+
 	
 	private void initResourceIndex() throws IOException {
         Directory dir = FSDirectory.open(indexDir.toFile());
@@ -193,12 +191,10 @@ public class ResourceIndex {
 			throw new RuntimeException("Local id conflict: " + engine.getId());
 		}
 		Resource old = get(engine.getId());
-		if (old != null && old.equals(engine)) { // nothing new
-		    old.setLastUpdatedToNow();
-		} else {
-            engine.setLastUpdatedToNow();
-            engine.setLastChangedToNow();
+		if (old == null) { 
             this.engines.put(engine.getId(), engine);
+		} else {
+		    old.updateWith(engine);
 		}
 	}
 	
@@ -251,20 +247,24 @@ public class ResourceIndex {
 	
 	public void putMother(Resource mother) {
         mother.setLastUpdatedToNow();
-		this.mother = mother;
+        if (this.mother == null) {
+            this.mother = mother;
+        } else {
+            this.mother.updateWith(mother);
+        }
 	}
 	
-	public void putMyself(Resource engine) {
-		if (get(engine.getId()) != null) {
-			throw new RuntimeException("The server id '" + engine.getId() + "' already exists.");
+	public void putMyself(Resource me) {
+		if (get(me.getId()) != null) {
+			throw new RuntimeException("The server id '" + me.getId() + "' already exists.");
 		}
-        engine.setLastUpdatedToNow();
+        me.setLastUpdatedToNow();
 		try {
-			writeMyselfFile(engine);
+			writeMyselfFile(me);
 		} catch (IOException e) {
-			LOGGER.error("Could not write index file");
+			LOGGER.error("Could not write resource index file");
 		}
-		this.me = engine;
+		this.me = me;
 	}
 	
 	public float maxPrior() {
@@ -289,8 +289,13 @@ public class ResourceIndex {
 	private Document luceneDocument(Resource engine) {
         Document doc = new Document();
         String id = engine.getId();
-        JSONObject json = engine.toJson();
-        json.put("privateparameters", engine.getJsonPrivateParameters());  // we need to remember those
+        JSONObject json = new JSONObject();
+        JSONObject resourceJson = engine.toJsonEngine();
+        resourceJson.put("privateparameters", engine.getJsonPrivateParameters());  // we need to remember those
+        JSONObject healthJson = engine.toJsonHealth();
+        json.put("resource", resourceJson);
+        json.put("health", healthJson);
+        json.put("searsia", "v1");
         doc.add(new StringField("id", id, Field.Store.YES)); // unique identifier
         doc.add(new StoredField("json", json.toString()));
         return doc;	    
@@ -331,4 +336,34 @@ public class ResourceIndex {
 		this.me = null;
 	}
 	
+	
+	public JSONObject toJsonHealth() {
+	    String lastMessage = null;
+	    int countOk = 0,
+	        countError = 0;
+	    if (this.mother.isHealthy()) {
+	        countOk += 1;
+	    } else {
+	        countError += 1;
+	        lastMessage = this.mother.getId() + " (mother): " + this.mother.getLastError();
+	    }
+	    for (Resource engine: this.engines.values()) {
+	        if (engine.isHealthy()) {
+	            countOk += 1;
+	        } else {
+                countError += 1;
+	            if (lastMessage == null) { // last error of any engine
+                   lastMessage = engine.getId() + ": " + engine.getLastError();
+	            }
+	        }
+	    }
+	    JSONObject stats = new JSONObject();
+	    stats.put("enginesok", countOk);
+        stats.put("engineserr", countError);
+        if (lastMessage != null) {
+            stats.put("lastmessage", lastMessage);
+        }
+	    return stats;
+	}
+
 }

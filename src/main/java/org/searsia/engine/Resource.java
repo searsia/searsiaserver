@@ -66,7 +66,7 @@ public class Resource implements Comparable<Resource> {
     
 	// TODO: private static final Pattern queryPattern = Pattern.compile("\\{q\\??\\}");
 
-    // data to be set by setters
+    // data to be set by JSON
 	private String id = null;
 	private String name = null;
 	private String urlAPITemplate = null;
@@ -86,14 +86,17 @@ public class Resource implements Comparable<Resource> {
 	private String rerank = null;
 	private int rate = defaultRATE;
 
-	// internal data not to be shared
-	private String nextQuery = null;
-	private double allowance = defaultRATE / 2;
-	private Long lastUsed = new Date().getTime(); // Unix time
-    private Long lastUpdated = new Date().getTime(); // Unix time
-    private Long lastChanged = null;
-    private int nrOfRequests = 0; 
-    private int nrOfSuccess = 0; 
+	// internal data shared for health report
+	private String   nextQuery = null;
+    private String   lastMessage = null;
+	private double   allowance = defaultRATE / 2;
+	private long      lastUsed = new Date().getTime(); // Unix time
+    private long    lastUsedOk = lastUsed; 
+    private long lastUsedError = lastUsed; 
+    private long   lastUpdated = lastUsed;
+    private long       upsince = lastUsed;
+    private int     nrOfError = 0; 
+    private int    nrOfOk = 0; 
 
 	public Resource(String urlAPITemplate) {
 		this.urlAPITemplate = urlAPITemplate;
@@ -238,13 +241,13 @@ public class Resource implements Comparable<Resource> {
         } catch (ParseException e) { }
     }
 
-    public void setLastChangedToNow() {
-        this.lastChanged = new Date().getTime();
+    public void setUpSinceToNow() {
+        this.upsince = new Date().getTime();
     }
 
-    public void setLastChangedToDateString(String date) {
+    public void setUpSinceDateString(String date) {
         try {
-            this.lastChanged = dateFormat.parse(date).getTime();
+            this.upsince = dateFormat.parse(date).getTime();
         } catch (ParseException e) { }
     }
 
@@ -265,12 +268,8 @@ public class Resource implements Comparable<Resource> {
 		}
 		String thisQuery = this.nextQuery;
 		this.nextQuery = null; // so, nextQuery will be null in case of a searchexception
-		SearchResult result = search(thisQuery);
-		if (this.testQuery.equals(thisQuery) && result.getHits().isEmpty()) {
-		    throw new SearchException("No results for test query: " + thisQuery);
-		} else {
-		    this.nextQuery = result.randomTerm(thisQuery);
-		}
+		SearchResult result = search(thisQuery, null);
+        this.nextQuery = result.randomTerm(thisQuery);
 		return result;
 	}
 
@@ -281,7 +280,11 @@ public class Resource implements Comparable<Resource> {
 
 
 	public SearchResult search(String query, String debug) throws SearchException {
-	    this.nrOfRequests += 1;
+        if (rateLimitReached()) {
+            this.lastMessage = "Too many queries";
+            this.lastUsedError = new Date().getTime();
+            throw new SearchException(this.lastMessage);
+        }
         SearchResult result;
 		try {
 			String url = fillTemplate(this.urlAPITemplate, URLEncoder.encode(query, "UTF-8"));
@@ -310,10 +313,17 @@ public class Resource implements Comparable<Resource> {
             if (this.rerank != null && query != null) {
                 result.scoreReranking(query, this.rerank);
             }
+            if (this.testQuery.equals(query) && result.getHits().isEmpty()) {
+                throw new SearchException("No results for test query: " + query);
+            }
 		} catch (Exception e) {  // catch all, also runtime exceptions
+		    this.nrOfError += 1;
+	        this.lastUsedError = new Date().getTime();
+	        this.lastMessage = e.getMessage();
 			throw createPrivateSearchException(e);
-		} 
-        this.nrOfSuccess += 1;
+		}
+        this.nrOfOk += 1;
+        this.lastUsedOk = new Date().getTime();
 		result.setQuery(query);
         result.setResourceId(this.getId());
         return result;
@@ -430,7 +440,7 @@ public class Resource implements Comparable<Resource> {
 		return hit;
 	}
 
-	private Document parseDocumentHTML(String htmlString, String urlString) throws IOException {
+	private Document parseDocumentHTML(String htmlString, String urlString) {
         org.jsoup.nodes.Document jsoupDoc = Jsoup.parse(htmlString, urlString);
         return DOMBuilder.jsoup2DOM(jsoupDoc);
     }
@@ -441,7 +451,7 @@ public class Resource implements Comparable<Resource> {
 	 * @return Document
 	 * @throws IOException
 	 */
-	private Document parseDocumentJavascript(String scriptString) throws IOException {
+	private Document parseDocumentJavascript(String scriptString) {
 		int nrOfCurly = 0;
 		int first = -1;
 		JSONArray array = new JSONArray();
@@ -465,18 +475,18 @@ public class Resource implements Comparable<Resource> {
         return DOMBuilder.json2DOM(object);
 	}
 	
-    private Document parseDocumentJSON(String jsonString) throws IOException {
+    private Document parseDocumentJSON(String jsonString) {
         if (jsonString.startsWith("[")) {  // turn lists into objects    
         	jsonString = "{\"list\":" + jsonString + "}";
         }
         return DOMBuilder.json2DOM(new JSONObject(jsonString));
     }
 	
-    private Document parseDocumentXML(String xmlString) throws IOException {
+    private Document parseDocumentXML(String xmlString) {
         return DOMBuilder.string2DOM(xmlString);
     }
 
-    private String fillTemplate(String template, String query) throws IOException {
+    private String fillTemplate(String template, String query) throws SearchException {
   		String url = template;
    		for (String param: getPrivateParameterKeys()) {
    			url = url.replaceAll("\\{" + param + "\\??\\}", getPrivateParameter(param));
@@ -485,7 +495,7 @@ public class Resource implements Comparable<Resource> {
         url = url.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", ""); // remove optional parameters
 		if (url.matches(".*\\{[0-9A-Za-z\\-_]+\\}.*")) {
 		    String param = url.substring(url.indexOf("{"), url.indexOf("}") + 1);
-			throw new IOException("Missing url parameter " + param);
+			throw new SearchException("Missing url parameter " + param);
 		}        
         return url;
 	}
@@ -566,9 +576,6 @@ public class Resource implements Comparable<Resource> {
     }
 
     private String getCompletePage(String urlString, String postString, Map<String, String> headers) throws IOException {
-        if (rateLimitReached()) {
-        	throw new IOException("Rate limited");
-        }
         URL url = new URL(urlString);
         URLConnection connection = setConnectionProperties(url, headers);
         InputStream stream;
@@ -677,6 +684,15 @@ public class Resource implements Comparable<Resource> {
 		return this.rate;
 	}
 	
+	public int getAllowance() {
+        long timePassed = new Date().getTime() - this.lastUsed;
+        double currentAllowance = this.allowance + (((double) timePassed / defaultPER)) * this.rate;
+        if (currentAllowance > this.rate) {
+            return this.rate;
+        }
+        return (int) currentAllowance;
+	}
+	
 	public float getPrior() {
 		if (this.prior == null) {
 			return 0.0f; 
@@ -685,43 +701,57 @@ public class Resource implements Comparable<Resource> {
 		}
 	}
 
-	public int getNrOfRequests() {
-	    return this.nrOfRequests;
+	public int getNrOfErrors() {
+	    return this.nrOfError;
 	}
 	
 	public int getNrOfSuccess() {
-	    return this.nrOfSuccess;
+	    return this.nrOfOk;
 	}
 	
-	private Long secondsAgo(Long last) {
-	    if (last == null) { 
-	        return null;
-	    } else {
-    	    Long now = new Date().getTime();
-            Long ago = 1 + (now - last) / 1000;
-            if (ago < 0 || ago > 8640000l) { // 100 days...
-                ago = 8640000l;
-            }
-            return  ago;
-	    }
+	private long secondsAgo(long last) {
+ 	    long now = new Date().getTime();
+        long ago = 1 + (now - last) / 1000;
+        if (ago < 0 || ago > 8640000l) { // 100 days...
+            ago = 8640000l;
+        }
+        return  ago;
 	}
 
+    public String getLastError() {
+        return this.lastMessage;
+    }
+	
+    public String getLastUsedString() {
+        return dateFormat.format(new Date(this.lastUsed));
+    }
+
+    public String getLastSuccessDate() {
+        return dateFormat.format(new Date(this.lastUsedOk));
+    }
+
+    public String getLastErrorDate() {
+        return dateFormat.format(new Date(this.lastUsedError));
+    }
 
 	public String getLastUpdatedString() {
         return dateFormat.format(new Date(this.lastUpdated));
 	}
 
-    public String getLastChangedString() {
-        return dateFormat.format(new Date(this.lastChanged));
+    public String getUpSinceString() {
+        return dateFormat.format(new Date(this.upsince));
     }
 
     public long getLastUpdatedSecondsAgo() {
 	    return secondsAgo(this.lastUpdated);
 	}
 
-
     public Long getLastUsedSecondsAgo() {
         return secondsAgo(this.lastUsed);
+    }
+    
+    public boolean isHealthy() {
+        return this.lastUsedOk >= this.lastUsedError;
     }
 
     
@@ -748,30 +778,36 @@ public class Resource implements Comparable<Resource> {
 		try {
 			return new Resource(this.toJson());
 		} catch (XPathExpressionException | JSONException e) {
-			throw new RuntimeException(e);
+			throw new RuntimeException(e.getMessage());
 		}
 	}
 
 	
 	public void updateWith(Resource e2) {
-        if (e2.id != null)                 this.id       = e2.id;
-        if (e2.name != null)               this.name     = e2.name;
-        if (e2.urlUserTemplate != null)    this.urlUserTemplate = e2.urlUserTemplate;
-        if (e2.favicon != null)            this.favicon  = e2.favicon;
-        if (e2.banner != null)             this.banner   = e2.banner;
-        if (e2.urlAPITemplate != null)     this.urlAPITemplate = e2.urlAPITemplate;
-        if (e2.urlSuggestTemplate != null) this.urlSuggestTemplate = e2.urlSuggestTemplate;
-        if (e2.mimeType != null)           this.mimeType = e2.mimeType;
-        if (e2.rerank != null)             this.rerank   = e2.rerank;
-        if (e2.postString != null)         this.postString = e2.postString;
-        if (e2.postQueryEncode != null)    this.postQueryEncode = e2.postQueryEncode;
-        if (e2.testQuery != null)          this.testQuery = e2.testQuery;
-        if (e2.prior != null)              this.prior     = e2.prior;
-        if (e2.rate != defaultRATE)        this.rate      = e2.rate;
-        if (e2.itemXpath != null)          this.itemXpath = e2.itemXpath;
-        if (e2.extractors != null)         this.extractors = e2.extractors;
-        if (e2.headers != null)            this.headers   = e2.headers;
-        if (e2.privateParameters != null)  this.privateParameters = e2.privateParameters;
+        setLastUpdatedToNow();
+        if (!equals(e2)) {
+            setUpSinceToNow();
+            if (this.id != null && !this.id.equals(e2.id)) throw new RuntimeException("Cannot update resource ID.");
+            this.id       = e2.id;
+            this.name     = e2.name;
+            this.urlUserTemplate = e2.urlUserTemplate;
+            this.favicon  = e2.favicon;
+            this.banner   = e2.banner;
+            this.urlAPITemplate = e2.urlAPITemplate;
+            this.urlSuggestTemplate = e2.urlSuggestTemplate;
+            if (e2.mimeType == null) { this.mimeType = SearchResult.SEARSIA_MIME_TYPE; }
+            else { this.mimeType = e2.mimeType; }
+            this.rerank   = e2.rerank;
+            this.postString = e2.postString;
+            this.postQueryEncode = e2.postQueryEncode;
+            if (e2.testQuery == null) { this.testQuery = defaultTestQuery; } else { this.testQuery = e2.testQuery; }
+            this.prior = e2.prior;
+            this.rate = e2.rate;
+            this.itemXpath = e2.itemXpath;
+            this.extractors = e2.extractors;
+            this.headers   = e2.headers;
+            this.privateParameters = e2.privateParameters;            
+        }
 	}
 
 
@@ -814,6 +850,55 @@ public class Resource implements Comparable<Resource> {
     }
 
 
+    public JSONObject toJsonEngineDontShare() {
+        JSONObject engine = new JSONObject();
+        if (id != null)                  engine.put("id", id);
+        if (name != null)                engine.put("name", name);
+        if (urlUserTemplate != null)     engine.put("urltemplate", urlUserTemplate);
+        if (favicon != null)             engine.put("favicon", favicon);
+        if (banner != null)              engine.put("banner", banner);
+        if (mimeType != null && !mimeType.equals(SearchResult.SEARSIA_MIME_TYPE))
+                                         engine.put("mimetype", mimeType);
+        if (rerank != null)              engine.put("rerank", rerank);
+        if (rate != defaultRATE)         engine.put("maxqueriesperday", rate);
+        return engine;
+    }
+
+
+    public JSONObject toJsonHealth() {
+        JSONObject health = new JSONObject();
+        health.put("dayallowance", getAllowance());
+        health.put("requestsok",   this.nrOfOk); 
+        health.put("requestserr",  this.nrOfError); 
+        health.put("lastsuccess",  getLastSuccessDate());
+        health.put("lasterror",    getLastErrorDate());
+        health.put("lastupdated",  getLastUpdatedString());
+        health.put("upsince",      getUpSinceString());
+        if (this.lastMessage != null) health.put("lastmessage", this.lastMessage);
+        return health;
+    }
+
+
+    /**
+     * Only used at startup when reading resources from disk
+     * @param health
+     * @throws ParseException
+     */
+    public void updateHealth(JSONObject health) throws ParseException {
+        //try {
+            Integer num = health.getInt("requestsok");
+            if (num != null) this.nrOfOk = num;
+            num = health.getInt("requestserr");
+            if (num != null) this.nrOfError = num;
+            this.lastUsedOk  = dateFormat.parse(health.getString("lastsuccess")).getTime();
+            this.lastUsedError = dateFormat.parse(health.getString("lasterror")).getTime();
+            this.lastUpdated = dateFormat.parse(health.getString("lastupdated")).getTime();
+            this.upsince = dateFormat.parse(health.getString("upsince")).getTime();
+            if (health.has("lastmessage")) this.lastMessage   = health.getString("lastmessage");
+       // } catch (Exception e) { } // TODO: woops?
+    }
+
+    
     @Override
     public int compareTo(Resource e2) {
         Float score1 = getPrior();

@@ -17,8 +17,8 @@
 package org.searsia;
 
 import java.io.File;
-import org.apache.log4j.Level;
 
+import org.apache.log4j.Level;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -37,6 +37,7 @@ public class SearsiaOptions {
     private String test;
     private Boolean quiet;
     private Boolean help;
+    private Boolean dontshare;
 	private int cacheSize;
     private int pollInterval;
     private int logLevel;
@@ -51,27 +52,43 @@ public class SearsiaOptions {
     public SearsiaOptions(String[] args) throws IllegalArgumentException {
     	Options options = new Options();
         options.addOption("c", "cache",    true,  "Set cache size (integer: number of result pages).");
-        options.addOption("t", "test",     true,  "Print test output and exit (string: 'json', 'xml', 'response').");
+        options.addOption("d", "dontshare",false, "Do not share resource definitions.");
         options.addOption("h", "help",     false, "Show help.");
         options.addOption("i", "interval", true,  "Set poll interval (integer: in seconds).");
         options.addOption("l", "log",      true,  "Set log level (0=off, 1=error, 2=warn=default, 3=info, 4=debug).");
         options.addOption("m", "mother",   true,  "Set url of mother's web service end point.");
         options.addOption("p", "path",     true,  "Set directory path to store the index.");
         options.addOption("q", "quiet",    false, "No output to console.");
+        options.addOption("t", "test",     true,  "Print test output and exit (string: 'json', 'xml', 'response').");
         options.addOption("u", "url",      true,  "Set url of my web service endpoint.");
         setDefaults();
         parse(options, args);
+        if (myURI == null) {
+            myURI = "http://localhost:16842/searsia/" + lastDir(motherTemplate);
+        }
     }
 
     
+    private static String lastDir(String uri) {
+        if (uri.contains("/")) {
+            uri = uri.replaceAll("\\/[^\\/]*$", "");
+            uri = uri.replaceAll("^.+\\/", "");
+            return uri + "/";
+        } else {
+            return "";
+        }
+    }
+
+
     private void setDefaults() {
         test           = null; // no test 
         help           = false;
         quiet          = false;
+        dontshare      = false;
         cacheSize      = 500;
         pollInterval   = 120;
         logLevel       = 2;
-        myURI          = "http://localhost:16842/searsia/";
+        myURI          = null; // is set in constructor
         motherTemplate = null;
         indexPath      = friendlyIndexPath();
     }
@@ -157,6 +174,9 @@ public class SearsiaOptions {
         if (cmd.hasOption("q")) {
             quiet = true;
         }
+        if (cmd.hasOption("d")) {
+            dontshare = true;
+        }
         if (cmd.hasOption("u")) {
             myURI  = cmd.getOptionValue("u");
         }
@@ -226,6 +246,10 @@ public class SearsiaOptions {
     	return quiet;
     }
     
+    public Boolean isNotShared() {
+        return dontshare;
+    }
+    
     public Boolean isHelp() {
         return help;
     }
@@ -240,6 +264,7 @@ public class SearsiaOptions {
     	result += "\n  Poll Interval = " + getPollInterval();
     	result += "\n  Cache Size    = " + getCacheSize();
     	result += "\n  Test Output   = " + getTestOutput();
+        result += "\n  Do Not Share  = " + isNotShared();
     	return result;
     }
 
