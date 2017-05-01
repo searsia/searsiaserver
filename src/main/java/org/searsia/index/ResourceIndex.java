@@ -348,13 +348,17 @@ public class ResourceIndex {
 	        lastMessage = this.mother.getId() + " (mother): " + this.mother.getLastError();
 	    }
 	    for (Resource engine: this.engines.values()) {
+	        String error = engine.getLastError();
 	        if (engine.isHealthy()) {
 	            countOk += 1;
 	        } else {
                 countError += 1;
-	            if (lastMessage == null) { // last error of any engine
-                   lastMessage = engine.getId() + ": " + engine.getLastError();
+	            if (lastMessage == null) {
+                   lastMessage = engine.getId() + ": " + error;
 	            }
+	        }
+	        if (countError == 0 && lastMessage == null && error != null) {
+                lastMessage = engine.getId() + ": " + error; // last error of any engine
 	        }
 	    }
 	    JSONObject stats = new JSONObject();

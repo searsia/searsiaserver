@@ -269,7 +269,11 @@ public class Resource implements Comparable<Resource> {
 		String thisQuery = this.nextQuery;
 		this.nextQuery = null; // so, nextQuery will be null in case of a searchexception
 		SearchResult result = search(thisQuery, null);
-        this.nextQuery = result.randomTerm(thisQuery);
+		if (this.testQuery.equals(thisQuery) && result.getHits().isEmpty()) {
+		    throw new SearchException("No results for test query: " + thisQuery);
+		} else {
+		    this.nextQuery = result.randomTerm(thisQuery);
+		}		
 		return result;
 	}
 
@@ -313,17 +317,14 @@ public class Resource implements Comparable<Resource> {
             if (this.rerank != null && query != null) {
                 result.scoreReranking(query, this.rerank);
             }
-            if (this.testQuery.equals(query) && result.getHits().isEmpty()) {
-                throw new SearchException("No results for test query: " + query);
+            if (!result.getHits().isEmpty()) {
+                this.nrOfOk += 1; // only success if at least one result
+                this.lastUsedOk = new Date().getTime();                
             }
 		} catch (Exception e) {  // catch all, also runtime exceptions
-		    this.nrOfError += 1;
-	        this.lastUsedError = new Date().getTime();
 	        this.lastMessage = e.getMessage();
 			throw createPrivateSearchException(e);
 		}
-        this.nrOfOk += 1;
-        this.lastUsedOk = new Date().getTime();
 		result.setQuery(query);
         result.setResourceId(this.getId());
         return result;
@@ -406,7 +407,7 @@ public class Resource implements Comparable<Resource> {
 		    document = parseDocumentJavascript(page);
 		} else if (this.mimeType.equals("application/xml")) {
 		    document = parseDocumentXML(page);
-		} else if (this.mimeType.equals("text/html")){
+		} else if (this.mimeType.equals("text/html")) {
 		    document = parseDocumentHTML(page, url);
 		} else {
 		    throw new IOException("MIME Type not supported: " + this.mimeType);
