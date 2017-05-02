@@ -190,13 +190,29 @@ public class Main {
     }
 
     
-    private static void testMother(Resource mother, String debugInfo, Boolean isQuiet) {
-        SearchResult result = null;
-        try {
-            result = mother.search(mother.getTestQuery(), debugInfo);
-        } catch (SearchException e) {
-            fatalError("Test failed: " + e.getMessage());
+    private static void testAll(Resource mother, SearchResult result, Boolean isQuiet) throws SearchException {
+        int nrFailed = 0;
+        for (Hit hit: result.getHits()) {
+            if (hit.getRid() != null) {
+                try {
+                    Resource engine = mother.searchResource(hit.getRid());
+                    testMother(engine, "none", isQuiet);
+                } catch (Exception e) {
+                    nrFailed += 1;
+                    printMessage("Test failed: " + e.getMessage(), isQuiet);
+                }
+            }                    
         }
+        if (nrFailed > 0) {
+            throw new SearchException(nrFailed + " engines failed.");
+        }
+    }
+
+
+	private static void testMother(Resource mother, String debugInfo, Boolean isQuiet) throws SearchException {
+        printMessage("Testing: " + mother.getName() + " (" + mother.getId() + ")", isQuiet);
+        SearchResult result = null;
+        result = mother.search(mother.getTestQuery(), debugInfo);
         if (!isQuiet) {
             if (debugInfo.equals("json")) {
                 System.out.println(result.toJson().toString(2));
@@ -211,12 +227,13 @@ public class Main {
         }
         System.out.flush();
         if (result.getHits().isEmpty()) {
-            fatalError("Test failed: No results for test query.");
-        } else {
-            if (result.getHits().size() < 10) {
-                printMessage("Warning: less than 10 results for query: " + result.getQuery() + "; see \"testquery\" or \"rerank\".", isQuiet);
-            }
-            printMessage("Test succeeded.", isQuiet);
+            throw new SearchException("No results for test query.");
+        } 
+        if (result.getHits().size() < 10) {
+            printMessage("Warning: less than 10 results for query: " + result.getQuery() + "; see \"testquery\" or \"rerank\".", isQuiet);
+        }
+        if (debugInfo.equals("all")) {
+            testAll(mother, result, isQuiet);
         }
     }
 
@@ -294,8 +311,12 @@ public class Main {
 
   	    // If test is set, test the mother
   	    if (options.getTestOutput() != null) {
-  	        printMessage("Testing: " + mother.getName(), options.isQuiet());
-  	        testMother(mother, options.getTestOutput(), options.isQuiet());
+  	        try {
+  	            testMother(mother, options.getTestOutput(), options.isQuiet());
+                printMessage("Test succeeded.", options.isQuiet());
+  	        } catch (Exception e) {
+  	            fatalError("Test failed: " + e.getMessage());
+  	        }
         } else {
         	printMessage("Starting: " + myself.getName(), options.isQuiet());
         }
@@ -320,8 +341,7 @@ public class Main {
 
     	// Start the web server
 		String myURI = removeFileNameUri(options.getMyURI());
-    	try {
-    	    
+    	try {	    
     	    SearsiaApplication app = new SearsiaApplication(index, engines);
             server = GrizzlyHttpServerFactory.createHttpServer(URI.create(myURI), app); 
     	} catch (Exception e) {

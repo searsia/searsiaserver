@@ -59,7 +59,7 @@ public class SearsiaOptions {
         options.addOption("m", "mother",   true,  "Set url of mother's web service end point.");
         options.addOption("p", "path",     true,  "Set directory path to store the index.");
         options.addOption("q", "quiet",    false, "No output to console.");
-        options.addOption("t", "test",     true,  "Print test output and exit (string: 'json', 'xml', 'response').");
+        options.addOption("t", "test",     true,  "Print test output and exit (string: 'json', 'xml', 'response', 'all').");
         options.addOption("u", "url",      true,  "Set url of my web service endpoint.");
         setDefaults();
         parse(options, args);
@@ -148,8 +148,8 @@ public class SearsiaOptions {
         }
         if (cmd.hasOption("t")) {
             test = cmd.getOptionValue("t").toLowerCase();
-            if (!(test.equals("json") || test.equals("xml") || test.equals("response"))) {
-                throw new IllegalArgumentException("Test output must be one of 'json', 'xml' or 'response'.");        	            	
+            if (!(test.equals("json") || test.equals("xml") || test.equals("response") || test.equals("all"))) {
+                throw new IllegalArgumentException("Test output must be one of 'json', 'xml', 'response', or 'all'.");        	            	
             }
         }
         try {
