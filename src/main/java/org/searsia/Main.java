@@ -318,7 +318,7 @@ public class Main {
   	            fatalError("Test failed: " + e.getMessage());
   	        }
         } else {
-        	printMessage("Starting: " + myself.getName(), options.isQuiet());
+        	printMessage("Starting: " + myself.getName() + " (" + myself.getId() + ")", options.isQuiet());
         }
 
 
@@ -357,6 +357,6 @@ public class Main {
                 searsiaDaemon(index, engines, options.getPollInterval());
             } catch (InterruptedException e) { }
         }
-        server.shutdownNow();
+        server.shutdownNow(); // Catch ctrl+c: http://www.waelchatila.com/2006/01/13/1137143896635.html
     }
 } 

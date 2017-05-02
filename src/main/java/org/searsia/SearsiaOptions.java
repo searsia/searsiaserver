@@ -38,6 +38,7 @@ public class SearsiaOptions {
     private Boolean quiet;
     private Boolean help;
     private Boolean dontshare;
+    private Boolean nohealth;
 	private int cacheSize;
     private int pollInterval;
     private int logLevel;
@@ -57,13 +58,14 @@ public class SearsiaOptions {
         options.addOption("i", "interval", true,  "Set poll interval (integer: in seconds).");
         options.addOption("l", "log",      true,  "Set log level (0=off, 1=error, 2=warn=default, 3=info, 4=debug).");
         options.addOption("m", "mother",   true,  "Set url of mother's web service end point.");
+        options.addOption("n", "nohealth", false, "Do not share health report.");
         options.addOption("p", "path",     true,  "Set directory path to store the index.");
         options.addOption("q", "quiet",    false, "No output to console.");
         options.addOption("t", "test",     true,  "Print test output and exit (string: 'json', 'xml', 'response', 'all').");
         options.addOption("u", "url",      true,  "Set url of my web service endpoint.");
         setDefaults();
         parse(options, args);
-        if (myURI == null) {
+        if (myURI == null && motherTemplate != null) {
             myURI = "http://localhost:16842/searsia/" + lastDir(motherTemplate);
         }
     }
@@ -85,6 +87,7 @@ public class SearsiaOptions {
         help           = false;
         quiet          = false;
         dontshare      = false;
+        nohealth       = false;
         cacheSize      = 500;
         pollInterval   = 120;
         logLevel       = 2;
@@ -177,6 +180,9 @@ public class SearsiaOptions {
         if (cmd.hasOption("d")) {
             dontshare = true;
         }
+        if (cmd.hasOption("n")) {
+            nohealth = true;
+        }
         if (cmd.hasOption("u")) {
             myURI  = cmd.getOptionValue("u");
         }
@@ -199,7 +205,7 @@ public class SearsiaOptions {
     
     private void help(Options options) {
         HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp("SearsiaServer", options);
+        formatter.printHelp("searsiaserver", options);
      }
     
     public int getCacheSize() {
@@ -250,6 +256,10 @@ public class SearsiaOptions {
         return dontshare;
     }
     
+    public Boolean isNoHealthReport() {
+        return nohealth;
+    }
+    
     public Boolean isHelp() {
         return help;
     }
@@ -265,6 +275,7 @@ public class SearsiaOptions {
     	result += "\n  Cache Size    = " + getCacheSize();
     	result += "\n  Test Output   = " + getTestOutput();
         result += "\n  Do Not Share  = " + isNotShared();
+        result += "\n  No Health Rep.= " + isNoHealthReport();
     	return result;
     }
 

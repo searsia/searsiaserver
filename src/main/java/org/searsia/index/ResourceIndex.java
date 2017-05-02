@@ -341,26 +341,24 @@ public class ResourceIndex {
 	    String lastMessage = null;
 	    int countOk = 0,
 	        countError = 0;
-	    if (this.mother.isHealthy()) {
-	        countOk += 1;
-	    } else {
-	        countError += 1;
-	        lastMessage = this.mother.getId() + " (mother): " + this.mother.getLastError();
-	    }
 	    for (Resource engine: this.engines.values()) {
 	        String error = engine.getLastError();
 	        if (engine.isHealthy()) {
 	            countOk += 1;
 	        } else {
                 countError += 1;
-	            if (lastMessage == null) {
-                   lastMessage = engine.getId() + ": " + error;
-	            }
+                lastMessage = engine.getId() + ": " + error;
 	        }
 	        if (countError == 0 && lastMessage == null && error != null) {
-                lastMessage = engine.getId() + ": " + error; // last error of any engine
+	            lastMessage = engine.getId() + ": " + error; // last error of any engine
 	        }
 	    }
+        if (this.mother.isHealthy()) {
+            countOk += 1;
+        } else {
+            countError += 1;
+            lastMessage = this.mother.getId() + " (mother): " + this.mother.getLastError();
+        }
 	    JSONObject stats = new JSONObject();
 	    stats.put("enginesok", countOk);
         stats.put("engineserr", countError);

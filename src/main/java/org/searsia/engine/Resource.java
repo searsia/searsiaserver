@@ -270,7 +270,10 @@ public class Resource implements Comparable<Resource> {
 		this.nextQuery = null; // so, nextQuery will be null in case of a searchexception
 		SearchResult result = search(thisQuery, null);
 		if (this.testQuery.equals(thisQuery) && result.getHits().isEmpty()) {
-		    throw new SearchException("No results for test query: " + thisQuery);
+	        this.nrOfError += 1;
+	        this.lastUsedError = new Date().getTime();
+	        this.lastMessage = "No results for test query: " + thisQuery;
+		    throw new SearchException(this.lastMessage);
 		} else {
 		    this.nextQuery = result.randomTerm(thisQuery);
 		}		
@@ -322,7 +325,9 @@ public class Resource implements Comparable<Resource> {
                 this.lastUsedOk = new Date().getTime();                
             }
 		} catch (Exception e) {  // catch all, also runtime exceptions
-	        this.lastMessage = e.getMessage();
+	        this.nrOfError += 1;
+	        this.lastUsedError = new Date().getTime();
+		    this.lastMessage = e.getMessage();
 			throw createPrivateSearchException(e);
 		}
 		result.setQuery(query);
