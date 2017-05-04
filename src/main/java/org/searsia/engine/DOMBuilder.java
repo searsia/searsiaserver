@@ -168,7 +168,7 @@ public class DOMBuilder {
     } else if (node instanceof org.jsoup.nodes.Element) {
       
       org.jsoup.nodes.Element e = ((org.jsoup.nodes.Element) node);
-      org.w3c.dom.Element _e = doc.createElement(e.tagName());
+      org.w3c.dom.Element _e = doc.createElement(correctXML(e.tagName()));
       out.appendChild(_e);
       org.jsoup.nodes.Attributes atts = e.attributes();
       
@@ -293,7 +293,7 @@ public class DOMBuilder {
    * @return
    */
   private static String correctXML(String name) {
-    name = name.replaceAll("[^A-Z0-9a-z\\-_\\.]|^([^A-Za-z])", "_$1");
+    name = name.replaceAll("[^A-Z0-9a-z\\-_\\.]|^([^A-Za-z_])", "_$1");
     return name;
   }
   

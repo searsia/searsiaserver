@@ -155,14 +155,22 @@ public class Hit implements Comparable<Hit> {
 		return value.replaceAll("[<>]", "");
 	}
 
-	public JSONObject toJson() {
+    public JSONObject toJson() {
+        return toJson(null);
+    }
+
+	
+	public JSONObject toJson(String ignoreKey) {
 		JSONObject json = new JSONObject();
 		for (Entry<String,Object> e: map.entrySet()) {
 			Object value = e.getValue();
 			if (value instanceof String) {
 				value = noHTML((String) value);
 			}
-			json.put(e.getKey(), value);
+			String key = e.getKey();
+			if (!e.equals(ignoreKey)) {
+                json.put(e.getKey(), value);
+			}
 		}
 		return json;
 	}

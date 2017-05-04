@@ -101,7 +101,7 @@ public class Main {
     	     String rid = hit.getString("rid");
     	     if (rid != null ) {
     	         Resource engine = engines.get(rid);
-    	         if (engine == null || engine.getLastUpdatedSecondsAgo() > 3600) {
+    	         if (engine == null || engine.getLastUpdatedSecondsAgo() > 7200) { // TODO: option for 7200 ?
     	     	     i += 1;
     	    	     try {
     	    	         engine = mother.searchResource(rid);

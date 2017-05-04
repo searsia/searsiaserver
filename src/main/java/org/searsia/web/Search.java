@@ -82,8 +82,8 @@ public class Search {
 		mother = engines.getMother();
 		if (!resourceid.equals(me.getId())) {
 			engine = engines.get(resourceid);
-			if (engine == null || engine.getLastUpdatedSecondsAgo() > 7200) {  // unknown or really old? ask your mother
-				if (mother != null) {     // TODO: option for 7200 and similar value (3600) in Main
+			if (engine == null || engine.getLastUpdatedSecondsAgo() > 9600) {  // unknown or really old? ask your mother
+				if (mother != null) {     // TODO: option for 9600 and similar value (7200) in Main
 				    try {
     				    engine  = mother.searchResource(resourceid);
 				    } catch (SearchException e) {
@@ -102,9 +102,7 @@ public class Search {
 			if (query != null && query.trim().length() > 0) {
 			    result = index.cacheSearch(query, engine.getId());
 			    if (result != null) {
-			        result.removeResourceQuery();
-			        json = result.toJson();
-			        json.put("resource", engine.toJson());
+			        json = result.toJson("query");
 			        LOGGER.info("Cache " + resourceid + ": " + query);
 			        return SearsiaApplication.responseOk(json);
 			    } else {

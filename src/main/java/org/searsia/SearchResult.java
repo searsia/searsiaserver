@@ -264,11 +264,15 @@ public class SearchResult {
         }
 	}
 	
-	public JSONObject toJson() {
+    public JSONObject toJson() {
+        return toJson(null);
+    }
+
+	public JSONObject toJson(String ignoreKey) {
 		JSONObject r = new JSONObject();
 		r.put("hits", new JSONArray());
 		for (Hit hit: hits) {
-			r.append("hits", hit.toJson());
+			r.append("hits", hit.toJson(ignoreKey));
 		}
 		return r;
 	}
