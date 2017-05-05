@@ -762,7 +762,31 @@ public class Resource implements Comparable<Resource> {
         return this.lastUsedOk >= this.lastUsedError;
     }
 
-    
+
+    public Resource getLocalResource(String myUri) {
+        JSONObject json = new JSONObject();
+        Resource result = null;
+        json.put("apitemplate", myUri);
+        json.put("id", this.getId());
+        json.put("mimetype", SearchResult.SEARSIA_MIME_TYPE);
+        String value = this.getName();
+        if (value != null) { json.put("name", value); }
+        json.put("name",  this.getName());
+        value = this.getBanner();
+        if (value != null) { json.put("banner", value); }
+        value = this.getFavicon();
+        if (value != null) { json.put("favicon", value); }
+        value = this.getSuggestTemplate();
+        if (value != null) { json.put("suggesttemplate", value); }
+        value = this.getTestQuery();
+        if (value != null) { json.put("testquery", value); }
+        try {
+            result = new Resource(json);
+        } catch (XPathExpressionException e) { }
+        return result;
+    }
+
+
     public float score(String query) {
 		float score = 0.0f;
 		Map<String, Boolean> nameTerm = new HashMap<String, Boolean>();

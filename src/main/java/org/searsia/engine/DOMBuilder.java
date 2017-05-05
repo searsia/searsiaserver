@@ -192,9 +192,9 @@ public class DOMBuilder {
           }
         }
         try {
-            _e.setAttribute(attName, a.getValue());
+          _e.setAttribute(attName, a.getValue());
         } catch (DOMException domExcept) {
-             continue;
+           continue;
         }
       }
       
@@ -244,12 +244,11 @@ public class DOMBuilder {
         Object object = json.get(name);
         if (object instanceof JSONArray) {
           createDOMfromJSONArray((JSONArray) object, out, doc, name);
+        } else if (object instanceof JSONObject) {
+          org.w3c.dom.Element _e = doc.createElement(correctXML(name));
+          out.appendChild(_e);
+          createDOMfromJSONObject((JSONObject) object, _e, doc);
         } else {
-          if (object instanceof JSONObject) {
-            org.w3c.dom.Element _e = doc.createElement(correctXML(name));
-            out.appendChild(_e);
-            createDOMfromJSONObject((JSONObject) object, _e, doc);
-          } else  
           createDOMfromJSONPrimitive(object, out, doc, name);
         }
       }

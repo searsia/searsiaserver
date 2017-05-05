@@ -61,9 +61,11 @@ public class Main {
 
 	
     private static void searsiaDaemon(SearchResultIndex index, ResourceIndex engines, 
-    		int pollInterval) throws InterruptedException {
-    	Resource mother = engines.getMother();
-    	Resource engine = null;
+    		SearsiaOptions options) throws InterruptedException {
+    	Resource mother  = engines.getMother();
+    	Resource engine  = null;
+    	int pollInterval = options.getPollInterval();
+    	String myUri     = options.getMyURI();
         while(true) {
             Thread.sleep(pollInterval * 1000);
             try {
@@ -74,7 +76,8 @@ public class Main {
                        	result = engine.randomSearch();
                         Resource newmother = result.getResource();
                         if (newmother != null && newmother.getId().equals(mother.getId())) {
-                            engines.putMother(newmother);  // TODO myself!
+                            engines.putMother(newmother);
+                            engines.putMyself(newmother.getLocalResource(myUri));
                         } else {
                             LOGGER.warn("Unable to update mother: Did ids change?");
                         }
@@ -207,8 +210,8 @@ public class Main {
             throw new SearchException(nrFailed + " engines failed.");
         }
     }
-
-
+    
+    
 	private static void testMother(Resource mother, String debugInfo, Boolean isQuiet) throws SearchException {
         printMessage("Testing: " + mother.getName() + " (" + mother.getId() + ")", isQuiet);
         SearchResult result = null;
@@ -300,15 +303,15 @@ public class Main {
         if (version != null && !version.startsWith("v1")) {
             fatalError("Wrong major Searsia version " + version + ": Must be v1.0.0 or higher.");
         }
-        myself = mother.deepcopy();
-        myself.setUrlAPITemplate(options.getMyURI());
+        
         if (mother.getAPITemplate() == null) {
             mother.setUrlAPITemplate(options.getMotherTemplate());
         } else if (!sameTemplates(mother.getAPITemplate(), options.getMotherTemplate(), mother.getId())) {
             printMessage("Warning: Mother changed to " + mother.getAPITemplate(), options.isQuiet()); 
         }
-  	    
+        myself = mother.getLocalResource(options.getMyURI());
 
+  	    
   	    // If test is set, test the mother
   	    if (options.getTestOutput() != null) {
   	        try {
@@ -354,7 +357,7 @@ public class Main {
             printMessage("API end point: " + normalizedUriToTemplate(myURI, myself.getId()), options.isQuiet());
             printMessage("Use Ctrl+c to stop.", options.isQuiet());
             try {
-                searsiaDaemon(index, engines, options.getPollInterval());
+                searsiaDaemon(index, engines, options);
             } catch (InterruptedException e) { }
         }
         server.shutdownNow(); // Catch ctrl+c: http://www.waelchatila.com/2006/01/13/1137143896635.html
