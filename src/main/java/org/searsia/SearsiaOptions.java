@@ -65,14 +65,16 @@ public class SearsiaOptions {
         options.addOption("u", "url",      true,  "Set url of my web service endpoint.");
         setDefaults();
         parse(options, args);
-        if (myURI == null && motherTemplate != null) {
+        if (myURI == null) {
             myURI = "http://localhost:16842/searsia/" + lastDir(motherTemplate);
+        } else if (myURI.endsWith("/")) {
+            myURI += "/";
         }
     }
 
-    
+
     private static String lastDir(String uri) {
-        if (uri.contains("/")) {
+        if (uri != null && uri.contains("/")) {
             uri = uri.replaceAll("\\/[^\\/]*$", "");
             uri = uri.replaceAll("^.+\\/", "");
             return uri + "/";
