@@ -23,6 +23,13 @@ import java.util.Map.Entry;
 
 import org.json.JSONObject;
 
+/**
+ * A single search hit. A hit can have any field. 
+ * Standard fields are "title", "description", "url, "favicon", "image".
+ * 
+ * @author Djoerd Hiemstra and Dolf Trieschnigg
+ */
+
 public class Hit implements Comparable<Hit> {
 
 	private Map<String,Object> map;
@@ -89,9 +96,9 @@ public class Hit implements Comparable<Hit> {
 	
 	/**
 	 * This id of will be used the Lucene index.
-	 * So one url may be indexed multiple times, 
+	 * One url may be indexed multiple times, 
 	 * once for each resource id (rid).
-	 * @return
+	 * @return unique identifier
 	 */
 	public String getId() {
 		String result = (String) map.get("url");
@@ -156,11 +163,19 @@ public class Hit implements Comparable<Hit> {
 	}
 
     public JSONObject toJson() {
-        return toJson(null);
+        JSONObject json = new JSONObject();
+        for (Entry<String,Object> e: map.entrySet()) {
+            Object value = e.getValue();
+            if (value instanceof String) {
+                value = noHTML((String) value);
+            }
+            json.put(e.getKey(), value);
+        }
+        return json;
     }
 
 	
-	public JSONObject toJson(String ignoreKey) {
+	public JSONObject toJsonNoQueryResourceId() {
 		JSONObject json = new JSONObject();
 		for (Entry<String,Object> e: map.entrySet()) {
 			Object value = e.getValue();
@@ -168,8 +183,8 @@ public class Hit implements Comparable<Hit> {
 				value = noHTML((String) value);
 			}
 			String key = e.getKey();
-			if (!e.equals(ignoreKey)) {
-                json.put(e.getKey(), value);
+			if (!key.equals("query") && !key.equals("rid")) {
+                json.put(key, value);
 			}
 		}
 		return json;

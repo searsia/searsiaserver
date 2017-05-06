@@ -39,14 +39,14 @@ import org.searsia.engine.SearchException;
 
 
 /**
- * Searsia Main class does the following actions:
+ * Searsia Main class. Does the following actions:
  * 
- *  1. Connect to mother peer
- *  2. If it runs in test mode, test the mother, print results and exit.
- *  3. Open/create Lucene indexes
- *  4. Get the 10 top resources if older than one hour
- *  5. Run the web server
- *  6. Run the daemon to periodically poll the mother and resources
+ *  1. Connect to mother peer;
+ *  2. If it runs in test mode, test the mother, print results and exit;
+ *  3. Open/create Lucene indexes;
+ *  4. Get the 10 top resources if not existing or too old;
+ *  5. Run the web server;
+ *  6. Run the daemon to periodically poll the mother and resources.
  * 
  * Start as:  java -jar target/searsiaserver.jar
  * More info: java -jar target/searsiaserver.jar --help
@@ -91,8 +91,12 @@ public class Main {
                		index.offer(result);
                		LOGGER.info("Sampled " + engine.getId() + ": " + result.getQuery());
                 }
-            } catch (Exception e) { 
-            	LOGGER.warn("Sampling " + engine.getId() + " failed: " + e.getMessage());
+            } catch (Exception e) {
+                if (engine != null) {
+                	LOGGER.warn("Sampling " + engine.getId() + " failed: " + e.getMessage());
+                } else {
+                    LOGGER.warn("Flushing index to disk failed:" + e.getMessage());
+                }
             }
         }
     }
@@ -170,7 +174,7 @@ public class Main {
     /**
      * For a unique filename (public because used in searsiafedweb)
      * @param inputString
-     * @return
+     * @return Unique hash
      */
 	public static String getHashString(String inputString) {
         MessageDigest md;
@@ -227,8 +231,8 @@ public class Main {
                     System.out.println(debugOut);
                 }
             }
+            System.out.flush();
         }
-        System.out.flush();
         if (result.getHits().isEmpty()) {
             throw new SearchException("No results for test query.");
         } 
@@ -264,7 +268,7 @@ public class Main {
 
 
     public static void main(String[] args) {
-    	ResourceIndex engines = null;
+    	ResourceIndex engines   = null;
     	SearchResultIndex index = null;
     	SearsiaOptions options  = null; 
     	HttpServer server       = null;
@@ -282,10 +286,10 @@ public class Main {
        
         
     	// Connect to the mother engine and gather information from the mother.
-        Resource myself = null;
-    	Resource mother = null;
+        Resource myself  = null;
+    	Resource mother  = null;
     	Resource connect = new Resource(options.getMotherTemplate());
-    	String version  = null;
+    	String version   = null;
     	SearchResult result = null;
   	    try {
            	result = connect.searchWithoutQuery();
@@ -303,13 +307,15 @@ public class Main {
         if (version != null && !version.startsWith("v1")) {
             fatalError("Wrong major Searsia version " + version + ": Must be v1.0.0 or higher.");
         }
-        
+
+
         if (mother.getAPITemplate() == null) {
             mother.setUrlAPITemplate(options.getMotherTemplate());
         } else if (!sameTemplates(mother.getAPITemplate(), options.getMotherTemplate(), mother.getId())) {
             printMessage("Warning: Mother changed to " + mother.getAPITemplate(), options.isQuiet()); 
         }
-        myself = mother.getLocalResource(options.getMyURI());
+        String myURI = removeFileNameUri(options.getMyURI());
+        myself = mother.getLocalResource(myURI);
 
   	    
   	    // If test is set, test the mother
@@ -343,8 +349,7 @@ public class Main {
 
 
     	// Start the web server
-		String myURI = removeFileNameUri(options.getMyURI());
-    	try {	    
+    	try {
     	    SearsiaApplication app = new SearsiaApplication(index, engines);
             server = GrizzlyHttpServerFactory.createHttpServer(URI.create(myURI), app); 
     	} catch (Exception e) {

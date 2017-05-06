@@ -39,12 +39,9 @@ import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 
 /**
- * Returns a W3C DOM for a Jsoup parsed document.
+ * Returns a W3C DOM for a Jsoup parsed document or a Json parsed document.
  * 
- * @author <a href="mailto:kasper@dfki.de">Walter Kasper</a>
- * 
- * Returns a W3C DOM for a Json document
- * 
+ * @author Walter Kasper
  * @author Djoerd Hiemstra
  * 
  */
@@ -54,7 +51,7 @@ public class DOMBuilder {
    * Returns a W3C DOM that exposes the content as the supplied XML string. 
    * @param xmlString The XML string to parse.
    * @return A W3C Document.
-   * @throws   
+   * @throws RuntimeException if not well-formed
    */
   public static Document string2DOM(String xmlString) {
 
@@ -78,6 +75,11 @@ public class DOMBuilder {
   }
 
   
+  /**
+   * Returns an XML string for a W3C Document 
+   * @param document A W3C Document
+   * @return XML string
+   */
   public static String DOM2String(Document document) {
       TransformerFactory tf = TransformerFactory.newInstance();
       Transformer transformer;
@@ -126,8 +128,8 @@ public class DOMBuilder {
 
   
   /**
-   * Returns a W3C DOM that exposes the same content as the supplied Jsoup document into a W3C DOM.
-   * @param jsoupDocument The Jsoup document to convert.
+   * Returns a W3C DOM that exposes the same content as the supplied JSON Object into a W3C DOM.
+   * @param jsonDocument The JSON Object to convert.
    * @return A W3C Document.
    */
   public static Document json2DOM(JSONObject jsonDocument) {
@@ -286,10 +288,10 @@ public class DOMBuilder {
   }
   
   /**
-   * Element names can contain letters, digits, hyphens, underscores, and periods
+   * XML Element names can contain letters, digits, hyphens, underscores, and periods
    * Element names must start with a letter or underscore
-   * @param name
-   * @return
+   * @param name XML element name
+   * @return correct XML element name
    */
   private static String correctXML(String name) {
     name = name.replaceAll("[^A-Z0-9a-z\\-_\\.]|^([^A-Za-z_])", "_$1");

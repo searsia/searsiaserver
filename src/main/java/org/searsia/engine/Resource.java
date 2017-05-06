@@ -55,6 +55,12 @@ import org.w3c.dom.NodeList;
 import org.searsia.Hit;
 import org.searsia.SearchResult;
 
+/**
+ * A Searsia Resource: A wrapper for external search engines. It can read results from
+ * engines that produce results in: HTML, XML, JSON, and SEARSIA JSON.
+ * 
+ * @author Djoerd Hiemstra and Dolf Trieschnigg
+ */
 public class Resource implements Comparable<Resource> {
 
     public final static String defaultTestQuery = "searsia";
@@ -155,6 +161,7 @@ public class Resource implements Comparable<Resource> {
 			throw new IllegalArgumentException("Missing Identifier");
 		}
 	}
+	
 	
 	public void setUrlAPITemplate(String urlTemplate) {
 		this.urlAPITemplate = urlTemplate;

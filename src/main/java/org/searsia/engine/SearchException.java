@@ -16,7 +16,9 @@
 
 package org.searsia.engine;
 
-
+/**
+ * A Searsia Search Exception
+ */
 public class SearchException extends Exception {
 
 	private static final long serialVersionUID = -7429746644586456271L;

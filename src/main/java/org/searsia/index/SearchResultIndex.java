@@ -178,7 +178,7 @@ public class SearchResultIndex {
     /**
      * Get Hit by Lucene id. Used for tests only
      * @param hitId
-     * @return
+     * @return hit
      * @throws IOException
      */
     protected Hit getHit(String hitId) throws IOException {
@@ -199,13 +199,15 @@ public class SearchResultIndex {
 
     /**
      * Searches the queue for a cached result
+     * TODO: Is this thread safe in case of a concurrent cash flush?  See:
+     * https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/package-summary.html#Weakly
      * @param query
-     * @return
+     * @return search result page
      */
     public SearchResult cacheSearch(String query, String resourceId) {
         if (query != null && resourceId != null) {  // TODO: make more efficient with initial HashMap check query+id
             Iterator<SearchResult> iterator = this.queue.iterator();
-            while(iterator.hasNext()) {
+            while (iterator.hasNext()) {
                 SearchResult result = iterator.next();
                 if (query.equals(result.getQuery()) && resourceId.equals(result.getResourceId())) {
                     return result;

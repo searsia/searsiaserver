@@ -27,7 +27,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 /**
- * Searsia Server options
+ * Searsia Server options.
  * @author Djoerd Hiemstra
  *
  */
@@ -47,10 +47,11 @@ public class SearsiaOptions {
     private String indexPath; 
 
     /**
-     * Takes command line options and sensible defaults
-     * 
+     * Takes command line options and sensible defaults.
+     * @param args Command Line options
+     * @throws IllegalArgumentException
      */
-    public SearsiaOptions(String[] args) throws IllegalArgumentException {
+     public SearsiaOptions(String[] args) throws IllegalArgumentException {
     	Options options = new Options();
         options.addOption("c", "cache",    true,  "Set cache size (integer: number of result pages).");
         options.addOption("d", "dontshare",false, "Do not share resource definitions.");
@@ -67,8 +68,6 @@ public class SearsiaOptions {
         parse(options, args);
         if (myURI == null) {
             myURI = "http://localhost:16842/searsia/" + lastDir(motherTemplate);
-        } else if (myURI.endsWith("/")) {
-            myURI += "/";
         }
     }
 
@@ -210,18 +209,37 @@ public class SearsiaOptions {
         formatter.printHelp("searsiaserver", options);
      }
     
+    /**
+     * Get the size of the SearchResult cache.
+     * @return cache size
+     */
     public int getCacheSize() {
     	return cacheSize;
     }
 
+    /**
+     * Get the test that needs to be executed.
+     * Possible values: "json", "xml", "response", "all", or null (no test)
+     * @return test
+     */
     public String getTestOutput() {
     	return test;
     }
     
+    /**
+     * Get log level, a value between 0 and 5
+     * Possible values: 0=off, 1=error, 2=warn (default), 3=info, 4=debug, 5=trace
+     * @return log level
+     */
     public int getLogLevel() {
     	return logLevel;
     }
     
+    /**
+     * Get the log4j level.
+     * Possible values: off, error, warn (default), info, debug, trace
+     * @return log4j level
+     */
     public Level getLoggerLevel() {
     	switch(logLevel) {
         	case 0 : return Level.OFF; 
@@ -234,6 +252,10 @@ public class SearsiaOptions {
     	}
     }
     
+    /**
+     * Get poll interval (in seconds).
+     * @return poll interval.
+     */
     public int getPollInterval() {
     	return pollInterval;
     }

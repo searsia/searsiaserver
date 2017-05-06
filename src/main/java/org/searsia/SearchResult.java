@@ -31,6 +31,13 @@ import org.json.JSONObject;
 import org.searsia.index.ResourceIndex;
 import org.searsia.engine.Resource;
 
+/**
+ * A Searsia Search result page, 
+ * consisting of "hits", a "query" and a "resource".
+ * 
+ * @author Djoerd Hiemstra and Dolf Trieschnigg
+ */
+
 public class SearchResult {
 	public  static final String SEARSIA_MIME_TYPE     = "application/searsia+json";
 	public  static final String SEARSIA_MIME_ENCODING = SEARSIA_MIME_TYPE + "; charset=utf-8";
@@ -171,13 +178,13 @@ public class SearchResult {
 	}
 
 	/**
-     * TODO: needs a proper implementation, refactoring, and research ;-) 
      * Scoring follows these rules:
-     *   1. hits are ordered such that the first hit per rid determines the resource ranking
-     *   2. if a resource has a exact query match, then these are ranked highest (given rule 1) 
-     *   3. order by score (given rule 1 and rule 2)
-     *   4. TODO: not more than x (=10?) hits per resource
-     *   5. stop after 20 resources
+     * (TODO: needs a proper implementation, refactoring, and research ;-) ) 
+     *   1. hits are ordered such that the first hit per rid determines the resource ranking;
+     *   2. if a resource has a exact query match, then these are ranked highest (given rule 1);
+     *   3. order by score (given rule 1 and rule 2);
+     *   4. TODO: not more than x (=10?) hits per resource;
+     *   5. stop after 20 resources.
      * @param query
      * @param engines
      */
@@ -265,15 +272,21 @@ public class SearchResult {
 	}
 	
     public JSONObject toJson() {
-        return toJson(null);
+        return toJson(false);
     }
 
-	public JSONObject toJson(String ignoreKey) {
+	public JSONObject toJson(boolean censorQueryResourceId) {
 		JSONObject r = new JSONObject();
 		r.put("hits", new JSONArray());
 		for (Hit hit: hits) {
-			r.append("hits", hit.toJson(ignoreKey));
+		    if (censorQueryResourceId) {
+                r.append("hits", hit.toJsonNoQueryResourceId());
+		    } else {
+     			r.append("hits", hit.toJson());
+		    }
 		}
 		return r;
 	}
+
+
 }
