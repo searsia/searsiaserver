@@ -30,7 +30,7 @@ public class TestSearchResultIndex {
     public static void setUp() throws Exception {
     	LOGGER.removeAllAppenders();
     	LOGGER.addAppender(new NullAppender());
-    	index = new SearchResultIndex(PATH, INDEX, 2);
+    	index = new SearchResultIndex(PATH, INDEX, 10);
         SearchResult result = readFile("exampleSearchResult.json");
         index.offer(result);
         index.flush();
@@ -56,6 +56,7 @@ public class TestSearchResultIndex {
         }
         JSONObject resource = json.getJSONObject("resource");
         result.setResourceId(resource.getString("id"));
+        result.setQuery(json.getString("query"));
         return result;
     }
 
@@ -76,11 +77,15 @@ public class TestSearchResultIndex {
     public void testSearch2() throws Exception {
         SearchResult result = readFile("exampleSearchResult.json");
         index.offer(result);
-        index.flush();  // add it again
         String query = "dolf";
+        String resourceId = result.getResourceId();
+        SearchResult result2 = index.cacheSearch(query, resourceId);
+        Assert.assertEquals(query, result2.getQuery());
+        Assert.assertEquals("Cache result size", 10, result2.getHits().size());        
+        index.flush();
         result = index.search(query);
         Assert.assertEquals(query, result.getQuery());
-		Assert.assertEquals(1, result.getHits().size());
+		Assert.assertEquals("Index result size", 1, result.getHits().size());
     }
 
     @Test

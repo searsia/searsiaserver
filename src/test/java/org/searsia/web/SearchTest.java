@@ -5,7 +5,11 @@ import java.io.IOException;
 import javax.ws.rs.core.Response;
 import javax.xml.xpath.XPathExpressionException;
 
+import org.apache.log4j.Appender;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 import org.apache.log4j.varia.NullAppender;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -20,6 +24,8 @@ import org.searsia.web.Search;
 import org.searsia.engine.Resource;
 
 public class SearchTest {
+    
+    private static boolean letsLog = false;
 
     private static final Logger LOGGER = Logger.getLogger("org.searsia");
     private static final String PATH  = "target/index-test";
@@ -33,7 +39,11 @@ public class SearchTest {
     }
  
     private static Resource wrong() throws XPathExpressionException, JSONException {
-    	return new Resource(new JSONObject("{\"apitemplate\":\"http://searsia.com/doesnotexist?q={q}\", \"id\":\"wrong\"}"));
+    	return new Resource(new JSONObject("{\"apitemplate\":\"http://doesnotexist.com/wrong?q={q}\", \"id\":\"wrong\"}"));
+    }
+    
+    private static Resource ok() throws XPathExpressionException, JSONException {
+        return new Resource(new JSONObject("{\"apitemplate\":\"http://searsia.org/searsia/wiki/wikifull1{q}.json\", \"id\":\"wikifull1\"}"));
     }
     
     private static Resource me() throws XPathExpressionException, JSONException {
@@ -43,12 +53,20 @@ public class SearchTest {
     
     @BeforeClass
     public static void setUp() throws Exception {
+        Appender appender = null;
     	LOGGER.removeAllAppenders();
-    	LOGGER.addAppender(new NullAppender()); // thou shall not log
-    	index = new SearchResultIndex(PATH, INDEX, 2);
+    	if (letsLog) {
+    	    appender = new ConsoleAppender(new PatternLayout("%m%n"), ConsoleAppender.SYSTEM_ERR);
+    	} else {
+    	    appender = new NullAppender();  // thou shall not log
+    	}
+    	LOGGER.addAppender(appender);
+        LOGGER.setLevel(Level.ALL);
+    	index = new SearchResultIndex(PATH, INDEX, 10);
     	engines = new ResourceIndex(PATH, INDEX);
     	engines.putMother(wiki());
-    	engines.put(wrong());   	
+    	engines.put(wrong());
+    	engines.put(ok());
     	engines.putMyself(me());
     }
 
@@ -88,6 +106,7 @@ public class SearchTest {
 		Assert.assertEquals(200, status);
 		Assert.assertTrue(hits.length() > 0);
 		Assert.assertEquals("http://searsia.org", url);
+		Assert.assertNotNull(json.get("resource"));
 	}
     
     @Test // returns local resource 'wrong' 
@@ -122,4 +141,27 @@ public class SearchTest {
 		Assert.assertEquals(503, status);
 	}
 
+    @Test // returns results for the engine 'wikifull1'
+    public void testOk() throws IOException {
+        Search search = new Search(index, engines);
+        Response response = search.query("wikifull1.json", "informat");
+        int status = response.getStatus();
+        String entity = (String) response.getEntity();
+        JSONObject json = new JSONObject(entity);
+        Assert.assertEquals(200, status);
+        Assert.assertNotNull(json.get("hits"));
+        Assert.assertNotNull(json.get("resource"));
+        LOGGER.trace("Query result: " + json);
+        
+        response = search.query("wikifull1.json", "informat");
+        status = response.getStatus();
+        entity = (String) response.getEntity();
+        json = new JSONObject(entity);
+        Assert.assertEquals(200, status);
+        Assert.assertNotNull(json.get("hits"));
+        Assert.assertNotNull(json.get("resource"));
+        LOGGER.trace("Cache result: " + json);
+    }
+
+    
 }

@@ -142,6 +142,7 @@ public class SearchResultIndex {
     }
     
     public void offer(SearchResult result) {
+        // assert(result.getQuery() != null && result.getResourceId() != null);
     	this.queue.offer(result);
     }
     

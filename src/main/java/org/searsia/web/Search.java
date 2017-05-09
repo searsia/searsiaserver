@@ -102,7 +102,9 @@ public class Search {
 			if (query != null && query.trim().length() > 0) {
 			    result = index.cacheSearch(query, engine.getId());
 			    if (result != null) {
-			        json = result.toJson("query");
+                    boolean censorQueryResourceId = true;
+			        json = result.toJson(censorQueryResourceId);
+			        json.put("resource", engine.toJson());
 			        LOGGER.info("Cache " + resourceid + ": " + query);
 			        return SearsiaApplication.responseOk(json);
 			    } else {

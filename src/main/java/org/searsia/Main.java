@@ -73,6 +73,7 @@ public class Main {
                 	SearchResult result = null;
                 	if (mother != null && random.nextBoolean()) { // sample mostly from mother
                 		engine = mother;
+                        LOGGER.trace("Next: mother sample");
                        	result = engine.randomSearch();
                         Resource newmother = result.getResource();
                         if (newmother != null && newmother.getId().equals(mother.getId())) {
@@ -84,6 +85,7 @@ public class Main {
                         getResources(mother, result, engines);
                 	} else {
                     	engine = engines.getRandom();
+                        LOGGER.trace("Next sample: " + engine.getId());
                        	result = engine.randomSearch();
         				result.removeResourceQuery();     // only trust your mother
         				result.addQueryResourceDate(engine.getId());
@@ -260,7 +262,6 @@ public class Main {
 				new PatternLayout("%p %d{ISO8601} %m%n"),
 				logDir.resolve("searsia.log").toString(),
 				"'.'yyyy-MM-dd");
-		// Appender appender = new ConsoleAppender(new PatternLayout("%m%n"), ConsoleAppender.SYSTEM_ERR);	       
 		LOGGER.addAppender(appender);
 		LOGGER.setLevel(level);
 		LOGGER.warn("Searsia restart");

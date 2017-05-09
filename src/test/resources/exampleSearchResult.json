@@ -56,5 +56,6 @@
     "urltemplate": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/?s={q}",
     "favicon": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/images\/ut.ico",
     "name": "Djoerd Hiemstra"
-  }
+  },
+  "query": "dolf"
 }
