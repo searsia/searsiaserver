@@ -159,8 +159,8 @@ public class SearsiaOptions {
         try {
             if (cmd.hasOption("i")) {
                 pollInterval = new Integer(cmd.getOptionValue("i"));
-                if (pollInterval < 5) {
-                  	pollInterval = 5;
+                if (pollInterval < 10) {
+                  	pollInterval = 10;
                 }
             }
             if (cmd.hasOption("l")) {

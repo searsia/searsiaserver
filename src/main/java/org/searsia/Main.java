@@ -77,6 +77,9 @@ public class Main {
                        	result = engine.randomSearch();
                         Resource newmother = result.getResource();
                         if (newmother != null && newmother.getId().equals(mother.getId())) {
+                            if (newmother.getAPITemplate() == null) {
+                                newmother.setUrlAPITemplate(mother.getAPITemplate());
+                            }
                             engines.putMother(newmother);
                             engines.putMyself(newmother.getLocalResource(myUri));
                         } else {

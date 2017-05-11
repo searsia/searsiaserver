@@ -255,15 +255,16 @@ public class SearchResult {
         int size = this.hits.size();
         if (size > 0) {
     		int nr = random.nextInt(this.hits.size());
-    		String text = this.hits.get(nr).toIndexVersion().toLowerCase();
+    		String text = this.hits.get(nr).toTitleDescriptionIndexVersion().toLowerCase();
     		String terms[] = text.split(TOKENIZER); // TODO Lucene tokenizer?
     		nr = random.nextInt(terms.length);
     		String thisOne = terms[nr];
     		int i = nr + 1;
     		while (thisOne.length() < 1 || notThisOne.equals(thisOne)) {
     		    if (i >= terms.length) { i = 0; }
-    		    thisOne = terms[i];
+    		    else { i += 1; }
     		    if (i == nr) { return null; }
+                thisOne = terms[i];
     		}
     		return thisOne;
         } else {

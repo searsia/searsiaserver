@@ -200,6 +200,16 @@ public class Hit implements Comparable<Hit> {
     	return result.trim();
     }
     
+    public String toTitleDescriptionIndexVersion() {
+        String result = (String) this.get("title");
+        String desc   = (String) this.get("description");
+        if (result == null) { result = ""; }
+        if (desc != null) {
+            result += " " + desc;
+        }
+        return result.trim();
+    }
+    
     @Override
     public int compareTo(Hit hit2) {
     	Float score1 = getResourceScore();  // order by best resources
