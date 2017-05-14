@@ -226,8 +226,30 @@ public class SearchResult {
         Collections.sort(this.hits, Collections.reverseOrder());
     }
 
-	
-	public void scoreReranking(String query, String model) { // TODO use model
+
+    public void scoreReranking(String query, String model) {
+        if ("random".equals(model)) {
+            scoreRerankingRandom();
+        } else {
+            scoreRerankingRest(query);
+        }
+    }
+
+
+    private void scoreRerankingRandom() {
+        Hit hit;
+        int i, j,
+            size = this.hits.size();
+        for (i = 0; i < size; i += 1) {
+            j = random.nextInt(size);
+            hit = this.hits.get(i);
+            this.hits.set(i, this.hits.get(j));
+            this.hits.set(j, hit);
+        }
+    }
+
+
+	private void scoreRerankingRest(String query) {
         SearchResult newResult = new SearchResult();
         Map<String, Float> queryTerms  = new HashMap<String, Float>();
         for (String term: query.toLowerCase().split(TOKENIZER)) {
