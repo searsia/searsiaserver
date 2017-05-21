@@ -336,7 +336,7 @@ public class Main {
 
 
         // Create or open indexes. The filename appends the MD5 of the id so we don't confuse indexes
-        String fileName = myself.getId() + "_" + getHashString(options.getMotherTemplate());
+        String fileName = myself.getId() + "_" + getHashString(mother.getAPITemplate());
         String path     = options.getIndexPath();
         Level level     = options.getLoggerLevel();
         try {

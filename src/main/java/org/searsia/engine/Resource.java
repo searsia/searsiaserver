@@ -301,6 +301,9 @@ public class Resource implements Comparable<Resource> {
         }
         SearchResult result;
 		try {
+		    if (this.urlAPITemplate == null) {
+		        throw new SearchException("No API Template");
+		    }
 			String url = fillTemplate(this.urlAPITemplate, URLEncoder.encode(query, "UTF-8"));
 			String postString = "";
 			String postQuery;
