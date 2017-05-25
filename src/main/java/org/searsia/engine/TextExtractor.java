@@ -52,6 +52,9 @@ public class TextExtractor {
             if (nodeList != null) {
                 for (int i=0; i < nodeList.getLength(); i++) {
                     Node node = nodeList.item(i);
+                    if (!resultString.equals("")) {
+                        resultString += " ";
+                    }
                     resultString += node.getTextContent();
                 }
             }
