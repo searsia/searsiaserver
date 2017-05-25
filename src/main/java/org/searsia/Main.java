@@ -243,6 +243,8 @@ public class Main {
         } 
         if (result.getHits().size() < 10) {
             printMessage("Warning: less than 10 results for query: " + result.getQuery() + "; see \"testquery\" or \"rerank\".", isQuiet);
+        } else if (result.getHits().size() > 49) {
+            printMessage("Warning: more than 49 results for query: " + result.getQuery(), isQuiet);
         }
         if (debugInfo.equals("all")) {
             testAll(mother, result, isQuiet);

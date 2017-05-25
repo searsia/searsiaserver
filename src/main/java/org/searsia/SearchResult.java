@@ -281,9 +281,9 @@ public class SearchResult {
     		String terms[] = text.split(TOKENIZER); // TODO Lucene tokenizer?
     		nr = random.nextInt(terms.length);
     		String thisOne = terms[nr];
-    		int i = nr + 1;
+    		int i = nr;
     		while (thisOne.length() < 1 || notThisOne.equals(thisOne)) {
-    		    if (i >= terms.length) { i = 0; }
+    		    if (i + 1 >= terms.length) { i = 0; }
     		    else { i += 1; }
     		    if (i == nr) { return null; }
                 thisOne = terms[i];
