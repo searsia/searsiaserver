@@ -117,12 +117,16 @@ public class Main {
     	     	     i += 1;
     	    	     try {
     	    	         engine = mother.searchResource(rid);
-    	    	     } catch (Exception e) {
+    	    	     } catch (SearchException e) {
     	    	         LOGGER.warn("Warning: Update failed: " + e.getMessage());
     	    	     }
                      if (engine != null && rid.equals(engine.getId())) { 
                          engines.put(engine);
-                         LOGGER.debug("Updated " + rid);
+                         if (engine.isDeleted()) {
+                             LOGGER.debug("Deleted: " + rid);
+                         } else {
+                             LOGGER.debug("Updated: " + rid);
+                         }
                      } else {
                          LOGGER.warn("Warning: Resource not found: " + rid);
                      }
@@ -322,10 +326,17 @@ public class Main {
         }
         String myURI = removeFileNameUri(options.getMyURI());
         myself = mother.getLocalResource(myURI);
+        String fileName = myself.getId() + "_" + getHashString(mother.getAPITemplate());
+        String path     = options.getIndexPath();
+        Level level     = options.getLoggerLevel();
 
   	    
-  	    // If test is set, test the mother
+        // If test is set, test the mother
   	    if (options.getTestOutput() != null) {
+  	        String tmpDir = System.getProperty("java.io.tmpdir");
+  	        if (tmpDir != null) { 
+  	            path = tmpDir;
+  	        }
   	        try {
   	            testMother(mother, options.getTestOutput(), options.isQuiet());
                 printMessage("Test succeeded.", options.isQuiet());
@@ -338,9 +349,6 @@ public class Main {
 
 
         // Create or open indexes. The filename appends the MD5 of the id so we don't confuse indexes
-        String fileName = myself.getId() + "_" + getHashString(mother.getAPITemplate());
-        String path     = options.getIndexPath();
-        Level level     = options.getLoggerLevel();
         try {
             setupLogger(path, fileName, level);
             engines  = new ResourceIndex(path, fileName);

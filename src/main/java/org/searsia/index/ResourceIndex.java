@@ -211,10 +211,18 @@ public class ResourceIndex {
 	    Object[] keys = this.engines.keySet().toArray();
 	    if (keys.length > 0) {
             int nr = random.nextInt(keys.length);
-	        return this.engines.get(keys[nr]);
-	    } else {
-	    	return getMother();
-	    }
+            int i = nr + 1;
+            Resource engine = this.engines.get(keys[nr]);
+            while (engine.isDeleted() && i != nr) {
+               if (i >= keys.length) { i = 0; }
+               engine = this.engines.get(keys[i]);
+               i += 1;
+            }
+            if (!engine.isDeleted()) {
+    	        return engine;
+            }
+	    } 
+        return getMother();
 	}
 	
 	// Efficiency can be gained here?

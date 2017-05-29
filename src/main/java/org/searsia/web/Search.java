@@ -85,20 +85,26 @@ public class Search {
 			if (engine == null || engine.getLastUpdatedSecondsAgo() > 9600) {  // unknown or really old? ask your mother
 				if (mother != null) {     // TODO: option for 9600 and similar value (7200) in Main
 				    try {
-    				    engine  = mother.searchResource(resourceid);
+				        Resource newEngine  = mother.searchResource(resourceid);
+    				    engine = newEngine;
+    	                engines.put(engine);
 				    } catch (SearchException e) {
-				    	String message = "Resource not found: " + resourceid;
-				    	LOGGER.warn(message);
-					    return SearsiaApplication.responseError(404, message);
+				        if (engine != null) {
+	                        LOGGER.warn("Not found at mother: " + resourceid);				            
+				        }
 				    }
 				}
 				if (engine == null) {
-					String message = "Unknown resource identifier: " + resourceid;
+					String message = "Not found: " + resourceid;
 			    	LOGGER.warn(message);
     				return SearsiaApplication.responseError(404, message);
 				}
-    		    engines.put(engine);
  			}
+			if (engine.isDeleted()) {
+			    String message = "Gone: " + resourceid;
+			    LOGGER.warn(message);
+                return SearsiaApplication.responseError(410, message);
+			}
 			if (query != null && query.trim().length() > 0) {
 			    result = index.cacheSearch(query, engine.getId());
 			    if (result != null) {

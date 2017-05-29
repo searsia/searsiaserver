@@ -64,6 +64,7 @@ import org.searsia.SearchResult;
 public class Resource implements Comparable<Resource> {
 
     public final static String defaultTestQuery = "searsia";
+    public final static String goneErrorMessage = "Searsia Gone";
 
     // For rate limiting: Default = 1000 queries per day
     private final static int defaultRATE = 1000;    // unit: queries
@@ -91,7 +92,8 @@ public class Resource implements Comparable<Resource> {
 	private Float prior = null;
 	private String rerank = null;
 	private int rate = defaultRATE;
-
+	private boolean deleted = false;
+	
 	// internal data shared for health report
 	private String   nextQuery = null;
     private String   lastMessage = null;
@@ -101,8 +103,8 @@ public class Resource implements Comparable<Resource> {
     private long lastUsedError = lastUsed; 
     private long   lastUpdated = lastUsed;
     private long       upsince = lastUsed;
-    private int     nrOfError = 0; 
-    private int    nrOfOk = 0; 
+    private int      nrOfError = 0; 
+    private int         nrOfOk = 0; 
 
 	public Resource(String urlAPITemplate) {
 		this.urlAPITemplate = urlAPITemplate;
@@ -128,6 +130,7 @@ public class Resource implements Comparable<Resource> {
 		if (jo.has("rerank"))          this.rerank          = jo.getString("rerank");
 		if (jo.has("banner"))          this.banner          = jo.getString("banner");
 		if (jo.has("itempath"))        this.itemXpath       = jo.getString("itempath");
+        if (jo.has("deleted"))         this.deleted         = jo.getBoolean("deleted");
 		if (jo.has("prior"))           this.prior           = new Float(jo.getDouble("prior"));
 		if (jo.has("maxqueriesperday")) this.rate           = jo.getInt("maxqueriesperday");
 		if (jo.has("extractors")) {
@@ -379,12 +382,31 @@ public class Resource implements Comparable<Resource> {
     		if (json.has("resource")) {
         		engine = new Resource(json.getJSONObject("resource"));
     		}
-            return engine;
+		} catch (IOException e) {
+		    String message = e.getMessage();
+		    if (message != null && message.equals(goneErrorMessage)) { // TODO: not using error message like this??
+		        engine = deletedResource(resourceid);
+		    } else {
+    			throw createPrivateSearchException(e);
+		    }
 		} catch (Exception e) {
-			throw createPrivateSearchException(e);
+		    throw createPrivateSearchException(e);
 		}
+        return engine;
 	}
-
+	
+	private Resource deletedResource(String resourceid) throws SearchException {
+	    Resource engine = null;
+	    JSONObject json = new JSONObject();
+        json.put("id", resourceid);
+        json.put("deleted", true);
+        try {
+            engine = new Resource(json);
+        } catch (XPathExpressionException e) {
+            throw new SearchException(e);
+        }
+        return engine;
+	}
 
 	private SearchResult searsiaSearch(String jsonPage, String debug) throws XPathExpressionException, JSONException {
 		SearchResult result = new SearchResult();
@@ -583,12 +605,16 @@ public class Resource implements Comparable<Resource> {
             http.setRequestMethod("GET");
             http.connect();
         }
-        if (http.getResponseCode() == 301) { // FollowRedirects did not work?!        
+        int responseCode = http.getResponseCode();
+        if (responseCode == 301) { // FollowRedirects did not work?!        
             throw new IOException("Moved permanently");
+        }
+        if (responseCode == 410) { // Gone: we will use this special error message.
+            throw new IOException(goneErrorMessage);
         }
         return http.getInputStream();
     }
-    
+        
     private InputStream fileConnect(URLConnection connection) throws IOException {
     	String fileName = connection.getURL().getFile();
     	return new FileInputStream(new File(fileName));
@@ -700,6 +726,10 @@ public class Resource implements Comparable<Resource> {
 
 	public int getRate() {
 		return this.rate;
+	}
+	
+	public boolean isDeleted() {
+	    return this.deleted;
 	}
 	
 	public int getAllowance() {
@@ -825,12 +855,15 @@ public class Resource implements Comparable<Resource> {
 	}
 
 	
-	public void updateWith(Resource e2) {
+	public void updateWith(Resource e2) { // TODO: bad idea in multi-threaded app!?
         setLastUpdatedToNow();
         if (!equals(e2)) {
-            setUpSinceToNow();
             if (this.id != null && !this.id.equals(e2.id)) throw new RuntimeException("Cannot update resource ID.");
+            setUpSinceToNow();
+            this.nrOfOk = 0;
+            this.nrOfError = 0;
             this.id       = e2.id;
+            this.deleted  = e2.deleted;
             this.name     = e2.name;
             this.urlUserTemplate = e2.urlUserTemplate;
             this.favicon  = e2.favicon;
@@ -848,7 +881,7 @@ public class Resource implements Comparable<Resource> {
             this.itemXpath = e2.itemXpath;
             this.extractors = e2.extractors;
             this.headers   = e2.headers;
-            this.privateParameters = e2.privateParameters;            
+            this.privateParameters = e2.privateParameters;          
         }
 	}
 
@@ -859,34 +892,38 @@ public class Resource implements Comparable<Resource> {
 
     public JSONObject toJsonEngine() {
         JSONObject engine = new JSONObject();
-        if (id != null)                  engine.put("id", id);
-        if (name != null)                engine.put("name", name);
-        if (urlUserTemplate != null)     engine.put("urltemplate", urlUserTemplate);
-        if (favicon != null)             engine.put("favicon", favicon);
-        if (banner != null)              engine.put("banner", banner);
-        if (urlAPITemplate != null)      engine.put("apitemplate", urlAPITemplate);
-        if (urlSuggestTemplate != null)  engine.put("suggesttemplate", urlSuggestTemplate);
-        if (mimeType != null)            engine.put("mimetype", mimeType);
-        if (rerank != null)              engine.put("rerank", rerank);
-        if (postString != null)          engine.put("post", postString);
-        if (postQueryEncode != null)     engine.put("postencode", postQueryEncode);
-        if (testQuery != null)           engine.put("testquery", testQuery);
-        if (prior != null)               engine.put("prior", prior);
-        if (rate != defaultRATE)         engine.put("maxqueriesperday", rate);
-        if (itemXpath != null)           engine.put("itempath", itemXpath);
-        if (extractors != null && extractors.size() > 0) {
-            JSONObject json = new JSONObject();
-            for (TextExtractor e: extractors) {
-                json.put(e.getField(), e.getPath());
+        if (id != null) engine.put("id", id);
+        if (deleted) {
+            engine.put("deleted", true);
+        } else {
+            if (name != null)                engine.put("name", name);
+            if (urlUserTemplate != null)     engine.put("urltemplate", urlUserTemplate);
+            if (favicon != null)             engine.put("favicon", favicon);
+            if (banner != null)              engine.put("banner", banner);
+            if (urlAPITemplate != null)      engine.put("apitemplate", urlAPITemplate);
+            if (urlSuggestTemplate != null)  engine.put("suggesttemplate", urlSuggestTemplate);
+            if (mimeType != null)            engine.put("mimetype", mimeType);
+            if (rerank != null)              engine.put("rerank", rerank);
+            if (postString != null)          engine.put("post", postString);
+            if (postQueryEncode != null)     engine.put("postencode", postQueryEncode);
+            if (testQuery != null)           engine.put("testquery", testQuery);
+            if (prior != null)               engine.put("prior", prior);
+            if (rate != defaultRATE)         engine.put("maxqueriesperday", rate);
+            if (itemXpath != null)           engine.put("itempath", itemXpath);
+            if (extractors != null && extractors.size() > 0) {
+                JSONObject json = new JSONObject();
+                for (TextExtractor e: extractors) {
+                    json.put(e.getField(), e.getPath());
+                }
+                engine.put("extractors", json); 
             }
-            engine.put("extractors", json); 
-        }
-        if (headers != null && headers.size() > 0) {
-            JSONObject json = new JSONObject();
-            for (String header: headers.keySet()) {
-                json.put(header, headers.get(header));
+            if (headers != null && headers.size() > 0) {
+                JSONObject json = new JSONObject();
+                for (String header: headers.keySet()) {
+                    json.put(header, headers.get(header));
+                }
+                engine.put("headers", json); 
             }
-            engine.put("headers", json); 
         }
         return engine;
     }
@@ -895,14 +932,18 @@ public class Resource implements Comparable<Resource> {
     public JSONObject toJsonEngineDontShare() {
         JSONObject engine = new JSONObject();
         if (id != null)                  engine.put("id", id);
-        if (name != null)                engine.put("name", name);
-        if (urlUserTemplate != null)     engine.put("urltemplate", urlUserTemplate);
-        if (favicon != null)             engine.put("favicon", favicon);
-        if (banner != null)              engine.put("banner", banner);
-        if (mimeType != null && !mimeType.equals(SearchResult.SEARSIA_MIME_TYPE))
-                                         engine.put("mimetype", mimeType);
-        if (rerank != null)              engine.put("rerank", rerank);
-        if (rate != defaultRATE)         engine.put("maxqueriesperday", rate);
+        if (deleted) {
+            engine.put("deleted", true);
+        } else {
+            if (name != null)                engine.put("name", name);
+            if (urlUserTemplate != null)     engine.put("urltemplate", urlUserTemplate);
+            if (favicon != null)             engine.put("favicon", favicon);
+            if (banner != null)              engine.put("banner", banner);
+            if (mimeType != null && !mimeType.equals(SearchResult.SEARSIA_MIME_TYPE))
+                                             engine.put("mimetype", mimeType);
+            if (rerank != null)              engine.put("rerank", rerank);
+            if (rate != defaultRATE)         engine.put("maxqueriesperday", rate);
+        }
         return engine;
     }
 
@@ -954,6 +995,7 @@ public class Resource implements Comparable<Resource> {
     	if (o == null) return false;
     	Resource e = (Resource) o;
     	if (!stringEquals(this.getId(), e.getId())) return false;
+    	if (this.isDeleted() != e.isDeleted()) return false;
     	if (!stringEquals(this.getName(), e.getName())) return false;
     	if (!stringEquals(this.getMimeType(), e.getMimeType())) return false;
         if (!stringEquals(this.getRerank(), e.getRerank())) return false;

@@ -39,18 +39,21 @@ public class SearchTest {
     }
  
     private static Resource wrong() throws XPathExpressionException, JSONException {
-    	return new Resource(new JSONObject("{\"apitemplate\":\"http://doesnotexist.com/wrong?q={q}\", \"id\":\"wrong\"}"));
+    	return new Resource(new JSONObject("{\"apitemplate\":\"http://reallyreallydoesnotexist.com/wrong?q={q}\", \"id\":\"wrong\"}"));
     }
     
     private static Resource ok() throws XPathExpressionException, JSONException {
         return new Resource(new JSONObject("{\"apitemplate\":\"http://searsia.org/searsia/wiki/wikifull1{q}.json\", \"id\":\"wikifull1\"}"));
     }
     
+    private static Resource okDeleted() throws XPathExpressionException, JSONException {
+        return new Resource(new JSONObject("{\"deleted\":true, \"id\":\"wikifull1\"}"));
+    }
+    
     private static Resource me() throws XPathExpressionException, JSONException {
     	return new Resource(new JSONObject("{\"apitemplate\":\"http://me.org?q={q}\", \"id\":\"wiki\"}"));
     }
-    
-    
+
     @BeforeClass
     public static void setUp() throws Exception {
         Appender appender = null;
@@ -142,7 +145,7 @@ public class SearchTest {
 	}
 
     @Test // returns results for the engine 'wikifull1'
-    public void testOk() throws IOException {
+    public void testOk() throws IOException, XPathExpressionException, JSONException {
         Search search = new Search(index, engines);
         Response response = search.query("wikifull1.json", "informat");
         int status = response.getStatus();
@@ -161,6 +164,14 @@ public class SearchTest {
         Assert.assertNotNull(json.get("hits"));
         Assert.assertNotNull(json.get("resource"));
         LOGGER.trace("Cache result: " + json);
+        
+        engines.put(okDeleted());
+        response = search.query("wikifull1.json", "informat");
+        status = response.getStatus();
+        entity = (String) response.getEntity();
+        json = new JSONObject(entity);
+        Assert.assertEquals(410, status);
+        LOGGER.trace("No result: " + json);        
     }
 
     
