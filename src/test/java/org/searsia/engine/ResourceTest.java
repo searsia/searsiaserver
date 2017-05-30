@@ -1,12 +1,11 @@
 package org.searsia.engine;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.xml.xpath.XPathExpressionException;
 
@@ -19,7 +18,7 @@ public class ResourceTest {
 
     @BeforeClass
     public static void setUp() {
-    	Logger.getLogger("").setLevel(Level.WARNING); 
+    	Logger.getLogger("").setLevel(Level.WARN); 
     }
 	
 	@Test

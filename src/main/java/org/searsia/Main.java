@@ -286,7 +286,7 @@ public class Main {
     	// Get options. This will also set the default options.
     	try {
     	    options = new SearsiaOptions(args);
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             fatalError(e.getMessage());
         }
     	if (options.isHelp()) { 

@@ -17,6 +17,8 @@
 package org.searsia;
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import org.apache.log4j.Level;
 import org.apache.commons.cli.DefaultParser;
@@ -50,17 +52,18 @@ public class SearsiaOptions {
      * Takes command line options and sensible defaults.
      * @param args Command Line options
      * @throws IllegalArgumentException
+     * @throws MalformedURLException 
      */
-     public SearsiaOptions(String[] args) throws IllegalArgumentException {
+     public SearsiaOptions(String[] args) throws IllegalArgumentException, MalformedURLException {
     	Options options = new Options();
         options.addOption("c", "cache",    true,  "Set cache size (integer: number of result pages).");
-        options.addOption("d", "dontshare",false, "Do not share resource definitions.");
+        options.addOption("d", "dontshare",false, "Do not share resource definitions."); // TODO
         options.addOption("h", "help",     false, "Show help.");
         options.addOption("i", "interval", true,  "Set poll interval (integer: in seconds).");
         options.addOption("l", "log",      true,  "Set log level (0=off, 1=error, 2=warn=default, 3=info, 4=debug).");
         options.addOption("m", "mother",   true,  "Set url of mother's web service end point.");
         options.addOption("n", "nohealth", false, "Do not share health report.");
-        options.addOption("p", "path",     true,  "Set directory path to store the index.");
+        options.addOption("p", "path",     true,  "Set directory path to store the index."); // TODO
         options.addOption("q", "quiet",    false, "No output to console.");
         options.addOption("t", "test",     true,  "Print test output and exit (string: 'json', 'xml', 'response', 'all').");
         options.addOption("u", "url",      true,  "Set url of my web service endpoint.");
@@ -72,11 +75,14 @@ public class SearsiaOptions {
     }
 
 
-    private static String lastDir(String uri) {
-        if (uri != null && uri.contains("/")) {
-            uri = uri.replaceAll("\\/[^\\/]*$", "");
-            uri = uri.replaceAll("^.+\\/", "");
-            return uri + "/";
+    private static String lastDir(String urlString) throws MalformedURLException {
+        urlString = urlString.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", "");
+        URL url = new URL(urlString);
+        String path = url.getPath();
+        if (path != null && path.contains("/")) {
+            path = path.replaceAll("\\/[^\\/]*$", ""); // remove file
+            path = path.replaceAll("^.+\\/", ""); // remove trailing directories
+            return path + "/";
         } else {
             return "";
         }
