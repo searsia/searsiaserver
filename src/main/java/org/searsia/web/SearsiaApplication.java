@@ -69,6 +69,7 @@ public class SearsiaApplication extends ResourceConfig {
 		java.util.logging.Logger.getLogger("").setLevel(java.util.logging.Level.WARNING);
 		register(new Search(index, engines));
 		register(new OpenSearch(engines));
+        register(new Redirect(engines.getMyself().getId()));
 	}
 	
 }

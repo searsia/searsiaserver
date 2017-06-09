@@ -116,19 +116,17 @@ public class SearchResult {
 	}
 
 	// TODO: maybe a list of query-resource pairs, if result found by multiple engines for multiple queries.
-	public void addQueryResourceDate(String resourceID) {
-		String query = getQuery();
+	public void addResourceDate(String resourceID) {
 		for (Hit hit: this.hits) {
-			hit.putIfEmpty("query", query);
 			hit.putIfEmpty("rid", resourceID);  // TODO: if unknown rid, then replace!
 			hit.putIfEmpty("foundBefore", df.format(new Date()));
 		}
 	}
 	
-	public void removeResourceQuery() {
+	public void removeResource() {
 		for (Hit hit: this.hits) {
 			hit.remove("rid");
-			hit.remove("query");
+			hit.remove("query"); // for legacy reasons, we added the query to the result before
 		}
 	}
 

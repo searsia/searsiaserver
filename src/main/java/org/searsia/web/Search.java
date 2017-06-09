@@ -75,106 +75,116 @@ public class Search {
 	        return  SearsiaApplication.responseError(404, "Not found: " + resourceid);
 	    }
         resourceid = resourceid.replaceAll("\\.json$", "");
-		Resource me, engine, mother;
-		SearchResult result;
-		JSONObject json;
-		me = engines.getMyself();
-		mother = engines.getMother();
+		Resource me = engines.getMyself();
 		if (!resourceid.equals(me.getId())) {
-			engine = engines.get(resourceid);
-			if (engine == null || engine.getLastUpdatedSecondsAgo() > 9600) {  // unknown or really old? ask your mother
-				if (mother != null) {     // TODO: option for 9600 and similar value (7200) in Main
-				    try {
-				        Resource newEngine  = mother.searchResource(resourceid);
-    				    engine = newEngine;
-    	                engines.put(engine);
-				    } catch (SearchException e) {
-				        if (engine != null) {
-	                        LOGGER.warn("Not found at mother: " + resourceid);				            
-				        }
-				    }
-				}
-				if (engine == null) {
-					String message = "Not found: " + resourceid;
-			    	LOGGER.warn(message);
-    				return SearsiaApplication.responseError(404, message);
-				}
- 			}
-			if (engine.isDeleted()) {
-			    String message = "Gone: " + resourceid;
-			    LOGGER.warn(message);
-                return SearsiaApplication.responseError(410, message);
-			}
-			if (query != null && query.trim().length() > 0) {
-			    result = index.cacheSearch(query, engine.getId());
-			    if (result != null) {
-                    boolean censorQueryResourceId = true;
-			        json = result.toJson(censorQueryResourceId);
-			        json.put("resource", engine.toJson());
-			        LOGGER.info("Cache " + resourceid + ": " + query);
-			        return SearsiaApplication.responseOk(json);
-			    } else {
-			        try {
-                        result = engine.search(query);
-                        result.removeResourceQuery();     // only trust your mother
-                        json = result.toJson();                         // first json for response, so
-                        result.addQueryResourceDate(engine.getId()); // response will not have query + resource
-                        index.offer(result);  //  maybe do this AFTER the http response is sent:  https://jersey.java.net/documentation/latest/async.html (11.1.1)
-                        json.put("resource", engine.toJson());
-                        LOGGER.info("Query " + resourceid + ": " + query);
-                        return SearsiaApplication.responseOk(json);
-                    } catch (Exception e) {
-                        String message = "Resource " + resourceid + " unavailable: " + e.getMessage();
-                        LOGGER.warn(message);
-                        return SearsiaApplication.responseError(503, message);
-                    }
-			    }
-			} else {
-				json = new JSONObject().put("resource", engine.toJson());
-				json.put("health", engine.toJsonHealth());
-		        LOGGER.info("Resource " + resourceid + ".");
-				return SearsiaApplication.responseOk(json);
-			}
+		    return getRemoteResults(resourceid, query);
 		} else {
-			JSONObject healthJson = null;
-		    if (query != null && query.trim().length() > 0) {
-		    	try {
-			        result = index.search(query);
-			    } catch (Exception e) {
-			    	String message = "Service unavailable: " + e.getMessage();
-			    	LOGGER.warn(message);
-                    this.nrOfQueriesError += 1;
-				    return SearsiaApplication.responseError(503, message);				
-			    }
-                this.nrOfQueriesOk += 1;
-		    	if (result.getHits().isEmpty() && mother != null) {  // empty? ask mother!
-				    try {
-    				    result  = mother.search(query);
-    				    index.offer(result);  // really trust mother
-				    } catch (SearchException e) {
-				    	LOGGER.warn("Mother not available");
-				    } catch (Exception e) {
-				        LOGGER.warn(e);
-				    }
-		    	} else {  // own results? Do resource ranking.
-			        result.scoreResourceSelection(query, engines);
-		    	}
-			} else {
-				result = new SearchResult();
-		        result.scoreResourceSelection(query, engines);
-		        healthJson = engines.toJsonHealth();
-		        healthJson.put("requestsok", this.nrOfQueriesOk);
-                healthJson.put("requestserr", this.nrOfQueriesError);
-                healthJson.put("upsince", startTime);
-			}
-		    json = result.toJson();
-		    json.put("resource", me.toJson());
-		    if (healthJson != null) {
-                json.put("health", healthJson);
-		    }
-		    LOGGER.info("Local " + resourceid + ": " + query); // TODO query can be null
-			return SearsiaApplication.responseOk(json);
+		    return getLocalResults(query);
 		}
 	}
-	
+
+    private Response getRemoteResults(String resourceid, String query) {
+        Resource engine = engines.get(resourceid);
+        Resource mother = engines.getMother();
+        JSONObject json = null;
+        if (engine == null || engine.getLastUpdatedSecondsAgo() > 9600) {  // unknown or really old? ask your mother
+            if (mother != null) {     // TODO: option for 9600 and similar value (7200) in Main
+                try {
+                    Resource newEngine  = mother.searchResource(resourceid);
+                    engine = newEngine;
+                    engines.put(engine);
+                } catch (SearchException e) {
+                    if (engine != null) {
+                        LOGGER.warn("Not found at mother: " + resourceid);
+                    }
+                }
+            }
+            if (engine == null) {
+                String message = "Not found: " + resourceid;
+                LOGGER.warn(message);
+                return SearsiaApplication.responseError(404, message);
+            }
+        }
+        if (engine.isDeleted()) {
+            String message = "Gone: " + resourceid;
+            LOGGER.warn(message);
+            return SearsiaApplication.responseError(410, message);
+        }
+        if (query != null && query.trim().length() > 0) {
+            SearchResult result = index.cacheSearch(query, engine.getId());
+            if (result != null) {
+                boolean censorQueryResourceId = true;
+                json = result.toJson(censorQueryResourceId);
+                json.put("resource", engine.toJson());
+                LOGGER.info("Cache " + resourceid + ": " + query);
+                return SearsiaApplication.responseOk(json);
+            } else {
+                try {
+                    result = engine.search(query);
+                    result.removeResource();     // only trust your mother
+                    json = result.toJson();                         // first json for response, so
+                    result.addResourceDate(engine.getId()); // response will not have query + resource
+                    index.offer(result);  //  maybe do this AFTER the http response is sent:  https://jersey.java.net/documentation/latest/async.html (11.1.1)
+                    json.put("resource", engine.toJson());
+                    LOGGER.info("Query " + resourceid + ": " + query);
+                    return SearsiaApplication.responseOk(json);
+                } catch (Exception e) {
+                    String message = "Resource " + resourceid + " unavailable: " + e.getMessage();
+                    LOGGER.warn(message);
+                    return SearsiaApplication.responseError(503, message);
+                }
+            }
+        } else {
+            json = new JSONObject().put("resource", engine.toJson());
+            json.put("health", engine.toJsonHealth());
+            LOGGER.info("Resource " + resourceid + ".");
+            return SearsiaApplication.responseOk(json);
+        }
+    }
+
+    private Response getLocalResults(String query) {
+        JSONObject json = null, healthJson = null;
+        Resource mother = engines.getMother();
+        Resource me     = engines.getMyself();
+        SearchResult result = null;
+        if (query != null && query.trim().length() > 0) {
+            try {
+                result = index.search(query);
+            } catch (Exception e) {
+                String message = "Service unavailable: " + e.getMessage();
+                LOGGER.warn(message);
+                this.nrOfQueriesError += 1;
+                return SearsiaApplication.responseError(503, message);
+            }
+            this.nrOfQueriesOk += 1;
+            if (result.getHits().isEmpty() && mother != null) {  // empty? ask mother!
+                try {
+                    result  = mother.search(query);
+                    index.offer(result);  // really trust mother
+                } catch (SearchException e) {
+                    LOGGER.warn("Mother not available");
+                } catch (Exception e) {
+                    LOGGER.warn(e);
+                }
+            } else {  // own results? Do resource ranking.
+                result.scoreResourceSelection(query, engines);
+            }
+        } else { // no query: create a 'resource only' result, plus health report
+            result = new SearchResult();
+            result.scoreResourceSelection(query, engines);
+            healthJson = engines.toJsonHealth();
+            healthJson.put("requestsok", this.nrOfQueriesOk);
+            healthJson.put("requestserr", this.nrOfQueriesError);
+            healthJson.put("upsince", startTime);
+            LOGGER.info("Local:" + query);
+        }
+        json = result.toJson();
+        json.put("resource", me.toJson());
+        if (healthJson != null) {
+            json.put("health", healthJson);
+        }
+        LOGGER.info("Local.");
+        return SearsiaApplication.responseOk(json);
+    }
+
 }

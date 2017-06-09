@@ -339,6 +339,7 @@ public class ResourceIndex {
 	 * @throws IOException
 	 */
 	public void close() throws IOException {
+	    this.flush();
 		this.writer.close();
 		this.mother = null;
 		this.me = null;

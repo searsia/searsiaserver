@@ -90,8 +90,8 @@ public class Main {
                     	engine = engines.getRandom();
                         LOGGER.trace("Next sample: " + engine.getId());
                        	result = engine.randomSearch();
-        				result.removeResourceQuery();     // only trust your mother
-        				result.addQueryResourceDate(engine.getId());
+        				result.removeResource();     // only trust your mother
+        				result.addResourceDate(engine.getId());
                 	}
                		index.offer(result);
                		LOGGER.info("Sampled " + engine.getId() + ": " + result.getQuery());
