@@ -803,10 +803,9 @@ public class Resource implements Comparable<Resource> {
     }
 
 
-    public Resource getLocalResource(String myUri) {
+    public Resource getLocalResource() {
         JSONObject json = new JSONObject();
         Resource result = null;
-        json.put("apitemplate", myUri + this.getId() + ".json?q={q}");
         json.put("id", this.getId());
         json.put("mimetype", SearchResult.SEARSIA_MIME_TYPE);
         String value = this.getName();

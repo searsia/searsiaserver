@@ -65,7 +65,6 @@ public class Main {
     	Resource mother  = engines.getMother();
     	Resource engine  = null;
     	int pollInterval = options.getPollInterval();
-    	String myUri     = options.getMyURI();
         while(true) {
             Thread.sleep(pollInterval * 1000);
             try {
@@ -81,7 +80,7 @@ public class Main {
                                 newmother.setUrlAPITemplate(mother.getAPITemplate());
                             }
                             engines.putMother(newmother);
-                            engines.putMyself(newmother.getLocalResource(myUri));
+                            engines.putMyself(newmother.getLocalResource());
                         } else {
                             LOGGER.warn("Unable to update mother: Did ids change?");
                         }
@@ -324,8 +323,7 @@ public class Main {
         } else if (!sameTemplates(mother.getAPITemplate(), options.getMotherTemplate(), mother.getId())) {
             printMessage("Warning: Mother changed to " + mother.getAPITemplate(), options.isQuiet()); 
         }
-        String myURI = removeFileNameUri(options.getMyURI());
-        myself = mother.getLocalResource(myURI);
+        myself = mother.getLocalResource();
         String fileName = myself.getId() + "_" + getHashString(mother.getAPITemplate());
         String path     = options.getIndexPath();
         Level level     = options.getLoggerLevel();
@@ -360,9 +358,24 @@ public class Main {
 	    engines.putMyself(myself);
         
 	    getResources(mother, result, engines);
-
+	    
+	    // Export index and exit
+	    if (options.isExport()) {
+            printMessage("Exporting index...", options.isQuiet());
+	        try {
+    	        engines.dump();
+	            engines.close();
+                index.dump();
+	            index.close();
+	        } catch (IOException e) {
+	            fatalError("Index export failed: " + e.getMessage());
+	        }
+            printMessage("Done.", options.isQuiet());
+	        System.exit(0);
+	    }
 
     	// Start the web server
+        String myURI = removeFileNameUri(options.getMyURI());
     	try {
     	    SearsiaApplication app = new SearsiaApplication(index, engines);
             server = GrizzlyHttpServerFactory.createHttpServer(URI.create(myURI), app); 

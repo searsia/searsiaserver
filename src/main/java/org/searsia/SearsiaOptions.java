@@ -40,6 +40,7 @@ public class SearsiaOptions {
     private Boolean quiet;
     private Boolean help;
     private Boolean dontshare;
+    private Boolean export;
     private Boolean nohealth;
 	private int cacheSize;
     private int pollInterval;
@@ -58,6 +59,7 @@ public class SearsiaOptions {
     	Options options = new Options();
         options.addOption("c", "cache",    true,  "Set cache size (integer: number of result pages).");
         options.addOption("d", "dontshare",false, "Do not share resource definitions."); // TODO
+        options.addOption("e", "export",   false, "Export index to stdout and exit.");
         options.addOption("h", "help",     false, "Show help.");
         options.addOption("i", "interval", true,  "Set poll interval (integer: in seconds).");
         options.addOption("l", "log",      true,  "Set log level (0=off, 1=error, 2=warn=default, 3=info, 4=debug).");
@@ -69,7 +71,7 @@ public class SearsiaOptions {
         options.addOption("u", "url",      true,  "Set url of my web service endpoint.");
         setDefaults();
         parse(options, args);
-        if (myURI == null) {
+        if (myURI == null && motherTemplate != null) {
             myURI = "http://localhost:16842/searsia/" + lastDir(motherTemplate);
         }
     }
@@ -94,6 +96,7 @@ public class SearsiaOptions {
         help           = false;
         quiet          = false;
         dontshare      = false;
+        export         = false;
         nohealth       = false;
         cacheSize      = 500;
         pollInterval   = 120;
@@ -162,21 +165,17 @@ public class SearsiaOptions {
                 throw new IllegalArgumentException("Test output must be one of 'json', 'xml', 'response', or 'all'.");        	            	
             }
         }
-        try {
-            if (cmd.hasOption("i")) {
-                pollInterval = new Integer(cmd.getOptionValue("i"));
-                if (pollInterval < 10) {
-                  	pollInterval = 10;
-                }
+        if (cmd.hasOption("i")) {
+            pollInterval = new Integer(cmd.getOptionValue("i"));
+            if (pollInterval < 10) {
+              	pollInterval = 10;
             }
-            if (cmd.hasOption("l")) {
-                logLevel = new Integer(cmd.getOptionValue("l"));
-                if (logLevel < 0) {
-                	logLevel = 0;
-                }
+        }
+        if (cmd.hasOption("l")) {
+            logLevel = new Integer(cmd.getOptionValue("l"));
+            if (logLevel < 0) {
+            	logLevel = 0;
             }
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(e.getMessage());
         }
         if (cmd.hasOption("p")) {
             indexPath = cmd.getOptionValue("p");
@@ -186,6 +185,9 @@ public class SearsiaOptions {
         }
         if (cmd.hasOption("d")) {
             dontshare = true;
+        }
+        if (cmd.hasOption("e")) {
+            export = true;
         }
         if (cmd.hasOption("n")) {
             nohealth = true;
@@ -285,7 +287,11 @@ public class SearsiaOptions {
     public Boolean isNotShared() {
         return dontshare;
     }
-    
+
+    public Boolean isExport() {
+        return export;
+    }
+
     public Boolean isNoHealthReport() {
         return nohealth;
     }
