@@ -361,6 +361,10 @@ public class Main {
 	    
 	    // Export index and exit
 	    if (options.isExport()) {
+	        String encoding = System.getProperties().getProperty("file.encoding");
+	        if (encoding == null || !encoding.equals("UTF-8")) {
+	            printMessage("Warning: Unknown encoding. Set JVM encoding with '-Dfile.encoding=UTF-8'", options.isQuiet());
+	        }
             printMessage("Exporting index...", options.isQuiet());
 	        try {
     	        engines.dump();

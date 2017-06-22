@@ -56,7 +56,9 @@ public class TestSearchResultIndex {
         }
         JSONObject resource = json.getJSONObject("resource");
         result.setResourceId(resource.getString("id"));
-        result.setQuery(json.getString("query"));
+        if (json.has("query")) {
+            result.setQuery(json.getString("query"));
+        }
         return result;
     }
 

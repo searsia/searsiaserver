@@ -21,7 +21,6 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URLConnection;
@@ -590,7 +589,16 @@ public class Resource implements Comparable<Resource> {
         return connection;
     }
     
-    private InputStream httpConnect(URLConnection connection, String postString) throws IOException {
+    private String correctContentType(String contentType) { // TODO more charsets
+        if (contentType != null && contentType.toLowerCase().contains("charset=iso-8859-1")) {
+            contentType = "ISO-8859-1";
+        } else {
+            contentType = "UTF-8";
+        }
+        return contentType;
+    }
+    
+    private InputStreamReader httpConnect(URLConnection connection, String postString) throws IOException {
     	HttpURLConnection http = (HttpURLConnection) connection;
         http.setInstanceFollowRedirects(true);
         if (postString != null && !postString.equals("")) {
@@ -609,27 +617,28 @@ public class Resource implements Comparable<Resource> {
         if (responseCode == 301) { // FollowRedirects did not work?!        
             throw new IOException("Moved permanently");
         }
-        if (responseCode == 410) { // Gone: we will use this special error message.
+        if (responseCode == 410) { // Gone: we will use this special error message elsewhere in this code.
             throw new IOException(goneErrorMessage);
         }
-        return http.getInputStream();
+        String contentType = correctContentType(http.getHeaderField("Content-Type"));
+        return new InputStreamReader(http.getInputStream(), contentType);
     }
         
-    private InputStream fileConnect(URLConnection connection) throws IOException {
+    private InputStreamReader fileConnect(URLConnection connection) throws IOException {
     	String fileName = connection.getURL().getFile();
-    	return new FileInputStream(new File(fileName));
+    	return new InputStreamReader(new FileInputStream(new File(fileName)), "UTF-8");
     }
 
     private String getCompletePage(String urlString, String postString, Map<String, String> headers) throws IOException {
         URL url = new URL(urlString);
         URLConnection connection = setConnectionProperties(url, headers);
-        InputStream stream;
+        InputStreamReader reader;
         if (url.getProtocol().equals("file")) {
-        	stream = fileConnect(connection);
+        	reader = fileConnect(connection);
         } else {
-        	stream = httpConnect(connection, postString);
+        	reader = httpConnect(connection, postString);
         }
-        BufferedReader in = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+        BufferedReader in = new BufferedReader(reader);
         StringBuilder page = new StringBuilder();
         if (in != null) {
             String inputLine; 
