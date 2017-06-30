@@ -130,15 +130,23 @@ public class SearchResult {
 		}
 	}
 
+	/* ******************************************************************* 
+	 *  Code below reranks search results for resource selection
+	 * *******************************************************************/
+	
+	
 	/**
 	 * New resource ranker, adds rscore.
 	 * @param query
 	 * @param engines
 	 */
-	public void scoreResourceSelection(String query, ResourceIndex engines) {
-		final float boost = 1.0f;
-		Map<String, Float> maxScore   = new HashMap<String, Float>();
-		Map<String, Float> topEngines = engines.topValues(query, 10);
+	public void scoreResourceSelection(String query, ResourceIndex engines, int max, int start) {
+	    SearchResult newResult = new SearchResult();
+		final float boost = 0.05f;
+		final int maxSize = max + start;
+		Map<String, Float> maxScores   = new HashMap<String, Float>();
+        Map<String, Integer> resourceReturned = new HashMap<String, Integer>();
+		Map<String, Float> topEngines = engines.topValues(query, maxSize);
 		for (Hit hit: this.hits) {
 			String rid = hit.getString("rid");
 			if (rid != null) {
@@ -153,78 +161,69 @@ public class SearchResult {
     			    }
     			    topEngines.remove(rid);
 				}
+                Integer returned = resourceReturned.get(rid);
+                if (returned == null) {
+                    returned = 0;
+                }
+                resourceReturned.put(rid, returned + 1);
                 Float score = prior + hit.getScore() * boost;
-				Float max = maxScore.get(rid);
-				if (max == null || max < score) {
-                    max = score;
-					maxScore.put(rid, max);
-				} 
+				Float maxScore = maxScores.get(rid);
+				if (maxScore == null || maxScore < score) {
+                    maxScore = score;
+					maxScores.put(rid, maxScore);
+					returned = 0; // this is the best one, so we will add it below no matter what
+				}
                 hit.setScore(score);
-                hit.setResourceScore(max);
+                hit.setResourceScore(maxScore);
+                if (returned < 4) { // at most 4 results per resource
+                    newResult.addHit(hit);
+                }
 			} else {
 			    hit.setResourceScore(hit.getScore() * boost);
+	            newResult.addHit(hit);
 			}
 		}
-    	for (String rid: topEngines.keySet()) {
-   	        Hit hit = new Hit();
-            hit.put("rid", rid);
-            hit.setScore(topEngines.get(rid));
-            hit.setResourceScore(topEngines.get(rid));
-            this.hits.add(hit);
-		}
-	    Collections.sort(this.hits, Collections.reverseOrder());
-	}
-
-	/**
-     * Scoring follows these rules:
-     * (TODO: needs a proper implementation, refactoring, and research ;-) ) 
-     *   1. hits are ordered such that the first hit per rid determines the resource ranking;
-     *   2. if a resource has a exact query match, then these are ranked highest (given rule 1);
-     *   3. order by score (given rule 1 and rule 2);
-     *   4. TODO: not more than x (=10?) hits per resource;
-     *   5. stop after 20 resources.
-     * @param query
-     * @param engines
-     */
-    public void scoreResourceSelectionOld(String query, ResourceIndex engines) {
-        final float boost = 1.0f;
-        Map<String, Float> maxScore = new HashMap<String, Float>();
-        Map <String, Float> topEngines = engines.topValues(query, 20);
-        for (Hit hit: this.hits) {
-            String rid = hit.getString("rid");
-            if (rid != null) {
-                float prior = 0.0f;
-                if (engines.containsKey(rid)) {
-                    prior = engines.get(rid).getPrior();
-                }
-                float score = hit.getScore() * boost + prior;
-                Float top = topEngines.get(rid);
-                if (top != null) { 
-                    if (top > score) {
-                        score = top;
-                    }
-                    topEngines.remove(rid);
-                }
-                Float max = maxScore.get(rid);
-                if (max == null || max < score) {
-                    maxScore.put(rid, score);
-                    max = score;
-                } 
-                hit.setScore(score);
-                //hit.put("rscore", max);
-            }
-        }
         for (String rid: topEngines.keySet()) {
             Hit hit = new Hit();
             hit.put("rid", rid);
             hit.setScore(topEngines.get(rid));
-            //hit.put("rscore", topEngines.get(rid));
-            this.hits.add(hit);
+            hit.setResourceScore(topEngines.get(rid));
+            newResult.addHit(hit);
+        }           
+		this.hits = newResult.hits;
+	    Collections.sort(this.hits, Collections.reverseOrder());
+	    selectBestResources(max, start); // TODO: efficiently combine this with sort?
+	}
+	
+    /**
+     * Selects the 'max' best resources, starting at resource 'start'
+     * Hits MUST be sorted already on rid (rscore).
+     * @param max
+     * @param start
+     */
+	private void selectBestResources(int max, int start) {
+	    String rid, previousRid = null;
+        int rFound  = 0;
+	    int rNeeded = start + max;
+	    int first = 0, i = 0;
+        for (Hit hit: this.hits) {
+            rid = hit.getRid();
+            if (rid != null && !rid.equals(previousRid)) {
+                previousRid = rid;
+                if (start > 0 && rFound == start) { first = i; } 
+                rFound += 1;
+                if (rFound > rNeeded) { break; } 
+            }
+            i += 1;
         }
-        Collections.sort(this.hits, Collections.reverseOrder());
-    }
-
-
+        if (rFound <= start) {
+            this.hits.clear();
+        } else {
+    	    this.hits = this.hits.subList(first, i);
+        }
+	}
+	
+	
     public void scoreReranking(String query, String model) {
         if ("random".equals(model)) {
             scoreRerankingRandom();
@@ -269,6 +268,11 @@ public class SearchResult {
 		this.hits = newResult.getHits();
 		Collections.sort(this.hits, Collections.reverseOrder());
 	}
+
+	
+    /* ******************************************************************* 
+     *  End of reranking code
+     * *******************************************************************/
 
 	
 	public String randomTerm(String notThisOne) { // TODO: keep track of more previous random queries?

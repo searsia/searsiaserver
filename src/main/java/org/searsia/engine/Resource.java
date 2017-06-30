@@ -339,8 +339,9 @@ public class Resource implements Comparable<Resource> {
 		} catch (Exception e) {  // catch all, also runtime exceptions
 	        this.nrOfError += 1;
 	        this.lastUsedError = new Date().getTime();
-		    this.lastMessage = e.getMessage();
-			throw createPrivateSearchException(e);
+	        SearchException se = createPrivateSearchException(e);
+		    this.lastMessage = se.getMessage();
+			throw se;
 		}
 		result.setQuery(query);
         result.setResourceId(this.getId());
@@ -849,7 +850,7 @@ public class Resource implements Comparable<Resource> {
 	    		    score += 2.0f; // some arbitrary number	
 	    		}
 		    }
-         }
+        }
 		return score;
 	}
 	
@@ -862,7 +863,10 @@ public class Resource implements Comparable<Resource> {
 		}
 	}
 
-	
+	/**
+	 * Update resource
+	 * @param e2
+	 */
 	public void updateWith(Resource e2) { // TODO: bad idea in multi-threaded app!?
         setLastUpdatedToNow();
         if (!equals(e2)) {
@@ -870,6 +874,7 @@ public class Resource implements Comparable<Resource> {
             setUpSinceToNow();
             this.nrOfOk = 0;
             this.nrOfError = 0;
+            this.lastMessage = null;
             this.id       = e2.id;
             this.deleted  = e2.deleted;
             this.name     = e2.name;
@@ -891,6 +896,11 @@ public class Resource implements Comparable<Resource> {
             this.headers   = e2.headers;
             this.privateParameters = e2.privateParameters;          
         }
+	}
+	
+	public void updateAllowance(Resource e2) {
+	    if (this.id != null && !this.id.equals(e2.id)) throw new RuntimeException("Cannot update resource ID.");
+	    this.allowance = e2.allowance;
 	}
 
 

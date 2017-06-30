@@ -70,16 +70,39 @@ public class Search {
 
 	@GET
 	@Produces(SearchResult.SEARSIA_MIME_ENCODING)
-	public Response query(@PathParam("resourceid") String resourceid, @QueryParam("q") String query) {
+	public Response query(@PathParam("resourceid") String resourceid, 
+	                      @QueryParam("q")         String searchTerms, 
+                          @QueryParam("resources") String countResources, 
+	                      @QueryParam("page")      String pageOffset) {
 	    if (!resourceid.endsWith(".json")) {
 	        return  SearsiaApplication.responseError(404, "Not found: " + resourceid);
 	    }
         resourceid = resourceid.replaceAll("\\.json$", "");
 		Resource me = engines.getMyself();
 		if (!resourceid.equals(me.getId())) {
-		    return getRemoteResults(resourceid, query);
+		    return getRemoteResults(resourceid, searchTerms);
 		} else {
-		    return getLocalResults(query);
+		    Integer max = 10, start = 0;
+		    if (countResources != null) {
+		       try {
+		           max = Integer.parseInt(countResources);
+		       } catch (NumberFormatException e) {
+		           max = 10;
+		       }
+		       if (max > 1000) { max = 1000; }
+		       if (max < 1) { max = 1; }
+		    }
+            if (pageOffset != null) {
+                try {
+                    start = Integer.parseInt(pageOffset);
+                    start = (start - 1) * max; // openSearch standard default starts at 1
+                } catch (NumberFormatException e) {
+                    start = 0;
+                }
+                if (start > 99) { start = 99; }
+                if (start < 0) { start = 0; }
+            }
+		    return getLocalResults(searchTerms, max, start);
 		}
 	}
 
@@ -123,7 +146,7 @@ public class Search {
                     result = engine.search(query);
                     result.removeResource();     // only trust your mother
                     json = result.toJson();                         // first json for response, so
-                    result.addResourceDate(engine.getId()); // response will not have query + resource
+                    result.addResourceDate(engine.getId()); // response will not have resource id + date
                     index.offer(result);  //  maybe do this AFTER the http response is sent:  https://jersey.java.net/documentation/latest/async.html (11.1.1)
                     json.put("resource", engine.toJson());
                     LOGGER.info("Query " + resourceid + ": " + query);
@@ -142,7 +165,7 @@ public class Search {
         }
     }
 
-    private Response getLocalResults(String query) {
+    private Response getLocalResults(String query, int max, int start) {
         JSONObject json = null, healthJson = null;
         Resource mother = engines.getMother();
         Resource me     = engines.getMyself();
@@ -167,23 +190,23 @@ public class Search {
                     LOGGER.warn(e);
                 }
             } else {  // own results? Do resource ranking.
-                result.scoreResourceSelection(query, engines);
+                result.scoreResourceSelection(query, engines, max, start);
             }
+            LOGGER.info("Local: " + query);
         } else { // no query: create a 'resource only' result, plus health report
             result = new SearchResult();
-            result.scoreResourceSelection(query, engines);
+            result.scoreResourceSelection(null, engines, max, start);
             healthJson = engines.toJsonHealth();
             healthJson.put("requestsok", this.nrOfQueriesOk);
             healthJson.put("requestserr", this.nrOfQueriesError);
             healthJson.put("upsince", startTime);
-            LOGGER.info("Local:" + query);
+            LOGGER.info("Local.");
         }
         json = result.toJson();
         json.put("resource", me.toJson());
         if (healthJson != null) {
             json.put("health", healthJson);
         }
-        LOGGER.info("Local.");
         return SearsiaApplication.responseOk(json);
     }
 

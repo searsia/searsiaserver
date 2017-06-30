@@ -42,6 +42,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 import org.searsia.Hit;
@@ -101,6 +102,7 @@ public class SearchResultIndex {
     private void openReader() throws IOException {
         this.hitsReader   = DirectoryReader.open(FSDirectory.open(this.hitsDirectory));
         this.hitsSearcher = new IndexSearcher(this.hitsReader);
+        this.hitsSearcher.setSimilarity(new BM25Similarity(0.0f, 0.0f)); // simple idf scoring 
         //searcher.setSimilarity(new BM25Similarity(1.2f, 0.75f)); // k1, b
         //searcher.setSimilarity(new LMDirichletSimilarity(200f)); // mu
         //searcher.setSimilarity(new LMJelinekMercerSimilarity(0.5f)); // lambda
@@ -147,7 +149,7 @@ public class SearchResultIndex {
     }
     
     public SearchResult search (String queryString) throws IOException {
-        return search(queryString, 40);
+        return search(queryString, 80);
     }
     
     public SearchResult search (String queryString, int hitsPerPage) throws IOException  {

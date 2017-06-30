@@ -81,7 +81,7 @@ public class SearchTest {
     @Test // returns 'my' resource description
 	public void test() throws IOException {
 		Search search = new Search(index, engines);
-		Response response = search.query("wiki.json", "");
+		Response response = search.query("wiki.json", "", null, null);
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
 		JSONObject json = new JSONObject(entity);
@@ -93,7 +93,7 @@ public class SearchTest {
     @Test // returns local search results for 'searsia'
 	public void testQuery() throws IOException {
 		Search search = new Search(index, engines);
-		Response response = search.query("wiki.json", "searsia search for noobs");
+		Response response = search.query("wiki.json", "searsia search for noobs", null, null);
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
 		JSONObject json = new JSONObject(entity);
@@ -107,15 +107,15 @@ public class SearchTest {
 			}
 		}
 		Assert.assertEquals(200, status);
-		Assert.assertTrue(hits.length() > 0);
+		Assert.assertTrue(hits.length() == 3);
 		Assert.assertEquals("http://searsia.org", url);
-		Assert.assertNotNull(json.get("resource"));
+		Assert.assertNotNull(json.get("resource"));		
 	}
     
     @Test // returns local resource 'wrong' 
 	public void testResource() throws IOException, XPathExpressionException, JSONException {
 		Search search = new Search(index, engines);
-		Response response = search.query("wrong.json", "");
+		Response response = search.query("wrong.json", "", null, null);
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
 		JSONObject json = new JSONObject(entity);
@@ -127,7 +127,7 @@ public class SearchTest {
     @Test // returns resource 'wikididyoumean' (from mother)
 	public void testResourceUnknown() throws IOException {
 		Search search = new Search(index, engines);
-		Response response = search.query("wikididyoumean.json", "");
+		Response response = search.query("wikididyoumean.json", "", null, null);
 		int status = response.getStatus();
 		String entity = (String) response.getEntity();
 		JSONObject json = new JSONObject(entity);
@@ -139,7 +139,7 @@ public class SearchTest {
     @Test // returns results for the engine 'wrong' (which does not exist)
 	public void testError() throws IOException {
 		Search search = new Search(index, engines);
-		Response response = search.query("wrong.json", "testquery");
+		Response response = search.query("wrong.json", "testquery", null, null);
 		int status = response.getStatus();
 		Assert.assertEquals(503, status);
 	}
@@ -147,7 +147,7 @@ public class SearchTest {
     @Test // returns results for the engine 'wikifull1'
     public void testOk() throws IOException, XPathExpressionException, JSONException {
         Search search = new Search(index, engines);
-        Response response = search.query("wikifull1.json", "informat");
+        Response response = search.query("wikifull1.json", "informat", null, null);
         int status = response.getStatus();
         String entity = (String) response.getEntity();
         JSONObject json = new JSONObject(entity);
@@ -156,7 +156,7 @@ public class SearchTest {
         Assert.assertNotNull(json.get("resource"));
         LOGGER.trace("Query result: " + json);
         
-        response = search.query("wikifull1.json", "informat");
+        response = search.query("wikifull1.json", "informat", null, null);
         status = response.getStatus();
         entity = (String) response.getEntity();
         json = new JSONObject(entity);
@@ -166,7 +166,7 @@ public class SearchTest {
         LOGGER.trace("Cache result: " + json);
         
         engines.put(okDeleted());
-        response = search.query("wikifull1.json", "informat");
+        response = search.query("wikifull1.json", "informat", null, null);
         status = response.getStatus();
         entity = (String) response.getEntity();
         json = new JSONObject(entity);
