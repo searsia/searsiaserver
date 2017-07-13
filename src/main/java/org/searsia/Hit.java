@@ -113,23 +113,31 @@ public class Hit implements Comparable<Hit> {
 		}
 		return rid + "@" + result;
 	}
-	
+
+	private float getFloatValue(String field) {
+        Float score = 0.0f;
+        Object scoreObject = map.get(field);
+        if (scoreObject instanceof Float) {
+            score = (float) scoreObject;
+        } else if (scoreObject instanceof Double) {
+            score = new Float((double) scoreObject); 
+        } else if (scoreObject instanceof Integer) {
+            score = new Float((int) scoreObject); 
+        } else if (scoreObject instanceof String) {
+            try {
+                score = Float.parseFloat((String) scoreObject);
+            } catch (NumberFormatException e) { }
+        } 
+        return score;
+	}
+
+	    
 	public float getScore() {
-		Float score = (Float) map.get("score");
-		if (score == null) {
-			return 0.0f;
-		} else {
-			return score;
-		}
+	    return getFloatValue("score");
 	}
 	
     public float getResourceScore() {
-        Float score = (Float) map.get("rscore");
-        if (score == null) {
-            return 0.0f;
-        } else {
-            return score;
-        }
+        return getFloatValue("rscore");
     }
     
 	public Object get(String field) {
@@ -220,16 +228,15 @@ public class Hit implements Comparable<Hit> {
     	} else {
     	    String rid1 = getRid(); // if two resources the same score
     	    String rid2 = hit2.getRid();
-    	    if (rid1 != null && rid2 != null && rid1.compareTo(rid2) != 0) {
-    	        return compare = rid1.compareTo(rid2);
+    	    if (rid1 != null && rid2 != null) {
+    	        compare = rid1.compareTo(rid2);
+    	    }
+    	    if (compare != 0) {
+    	        return compare;
     	    } else {
-        		score1 = getScore();
+        		score1 = getScore(); // cannot be null
         		score2 = hit2.getScore();
-        		if (score1 != null && score2 != null) {
-        		    return score1.compareTo(score2);
-        		} else {
-        		    return 0;
-        		}
+      		    return score1.compareTo(score2);
     		}
     	}
     }

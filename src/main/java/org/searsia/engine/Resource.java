@@ -751,12 +751,22 @@ public class Resource implements Comparable<Resource> {
         return (int) currentAllowance;
 	}
 	
+    private float getExactPrior() {
+        float prior = 0.0f;
+        if (this.prior != null) {
+            prior = this.prior;
+        }
+        return prior;
+    }
+
 	public float getPrior() {
-		if (this.prior == null) {
-			return 0.0f; 
-		} else {
-			return this.prior;
-		}
+	    float prior = 0.0f;
+		if (this.prior != null) {
+            prior = this.prior;
+        }
+		prior += this.nrOfOk * 0.00001f; // add a tiny amount of success...
+        prior -= this.nrOfError * 0.00001f; 
+		return prior;
 	}
 
 	public int getNrOfErrors() {
@@ -1004,7 +1014,18 @@ public class Resource implements Comparable<Resource> {
     public int compareTo(Resource e2) {
         Float score1 = getPrior();
         Float score2 = e2.getPrior();
-        return score1.compareTo(score2);
+        int compare = score1.compareTo(score2);
+        if (compare != 0) {
+            return compare;
+        } else {
+            String rid1 = getId(); // we need a full ordering
+            String rid2 = e2.getId();
+            if (rid1 != null && rid2 != null) {
+                return rid1.compareTo(rid2);
+            } else {
+                return 0;
+            }
+        }
     }
 
    
@@ -1027,7 +1048,7 @@ public class Resource implements Comparable<Resource> {
     	if (!stringEquals(this.getUserTemplate(), e.getUserTemplate())) return false;
     	if (!stringEquals(this.getSuggestTemplate(), e.getSuggestTemplate())) return false;
     	if (this.getRate() != e.getRate()) return false;
-        if (Math.abs(this.getPrior() - e.getPrior()) > 0.0001f) return false;
+        if (Math.abs(this.getExactPrior() - e.getExactPrior()) > 0.001f) return false;
     	if (!listEquals(this.getExtractors(), e.getExtractors())) return false; 
     	if (!mapEquals(this.getHeaders(), e.getHeaders())) return false; 
     	return true;

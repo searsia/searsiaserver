@@ -68,7 +68,7 @@ public class ResourceIndex {
 	private String lastFlushed = null;
 
 	/**
-	 * Reads resources from index (if they exist)
+	 * Creates index or reads resources from index (if it exist)
 	 * @param path path where the Searsia index resides
 	 * @param filename index file name
 	 * @throws IOException
@@ -171,18 +171,25 @@ public class ResourceIndex {
         return this.me;
 	}
 	
-
+    /**
+     * Delete resource from index (not used, instead use resource.deleted)
+     * @param id
+     * @throws IOException
+     */
 	public void delete(String id) throws IOException {
 		Resource engine = get(id);
 		if (engine == null) {
-			throw new IOException("Resouce '" + id + "' not found");
+			throw new IOException("Resource '" + id + "' not found");
 		}
 		this.engines.remove(id);
 		this.writer.deleteDocuments(new Term("id", id));
         this.writer.commit();
 	}
-	
-		
+
+    /** 
+     * Adds resource to index or update it.
+     * @param engine
+     */
 	public void put(Resource engine) {
 		if (this.mother != null && engine.getId().equals(this.mother.getId())) {
 			throw new RuntimeException("Mother id conflict: " + engine.getId());
@@ -198,22 +205,35 @@ public class ResourceIndex {
 		}
 	}
 	
+	/**
+	 * Checks existence of resource
+	 * @param id
+	 * @return
+	 */
 	public boolean containsKey(String id) {
 		return this.engines.containsKey(id);
 	}
 	
-	
+	/**
+	 * Get resource
+	 * @param id
+	 * @return
+	 */
 	public Resource get(String id) {
    		return this.engines.get(id);
 	}
 	
+	/**
+	 * Get a random resource. If it is not there, return the mother.
+	 * @return
+	 */
 	public Resource getRandom() {
 	    Object[] keys = this.engines.keySet().toArray();
 	    if (keys.length > 0) {
             int nr = random.nextInt(keys.length);
             int i = nr + 1;
             Resource engine = this.engines.get(keys[nr]);
-            while (engine.isDeleted() && i != nr) {
+            while (engine.isDeleted() && i != nr) { // if deleted, pick next
                if (i >= keys.length) { i = 0; }
                engine = this.engines.get(keys[i]);
                i += 1;
@@ -226,17 +246,20 @@ public class ResourceIndex {
 	}
 	
 	// Efficiency can be gained here?
-	public Map<String, Float> topValues(String queryString, int max) {
-        Float[] topScores = new Float[max];
+	public Map<String, Float> topValuesNotDeleted(String queryString, int max) {
+        float[] topScores = new float[max];
 		Resource[] topEngines = new Resource[max];
 		int size = 0;
 		float lastScore = -99.0f;
+		String lastId = "";
 		for (Resource engine: this.engines.values()) {
+		    if (engine.isDeleted()) { continue; }
 		    float score = engine.score(queryString) + engine.getPrior();
-	        if (size < max || score > lastScore) {
+		    String id = engine.getId();
+	        if (size < max || (score > lastScore || (score == lastScore && id.compareTo(lastId) > 0))) {
 	            if (size < max) size++;
 	            int index = size - 1;
-	            while(index > 0 && topScores[index - 1] < score) {
+	            while(index > 0 && (topScores[index - 1] < score || (topScores[index - 1] == score && id.compareTo(topEngines[index - 1].getId()) > 0))) {
 	            	topScores[index]  = topScores[index - 1];
 	                topEngines[index] = topEngines[index - 1];
 	                index -= 1;
@@ -244,6 +267,7 @@ public class ResourceIndex {
 	            topScores[index] = score;
 	            topEngines[index] = engine;
 	            lastScore = topScores[size - 1];
+	            lastId = topEngines[size - 1].getId();
 	        }
 		}
 		Map<String, Float> result = new LinkedHashMap<String, Float>();
@@ -279,7 +303,7 @@ public class ResourceIndex {
 		float max = 0.0f;
 		for (Resource e: this.engines.values()) {
 		    if (e.getPrior() > max) {
-		        max = e.getPrior();	
+		        max = e.getPrior();
 		    }
 		}
         return max;
@@ -351,6 +375,7 @@ public class ResourceIndex {
 	    int countOk = 0,
 	        countError = 0;
 	    for (Resource engine: this.engines.values()) {
+            if (engine.isDeleted()) { continue; }
 	        String error = engine.getLastError();
 	        if (engine.isHealthy()) {
 	            countOk += 1;

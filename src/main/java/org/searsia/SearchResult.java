@@ -146,12 +146,14 @@ public class SearchResult {
 		final int maxSize = max + start;
 		Map<String, Float> maxScores   = new HashMap<String, Float>();
         Map<String, Integer> resourceReturned = new HashMap<String, Integer>();
-		Map<String, Float> topEngines = engines.topValues(query, maxSize);
+		Map<String, Float> topEngines = engines.topValuesNotDeleted(query, maxSize);
 		for (Hit hit: this.hits) {
 			String rid = hit.getString("rid");
 			if (rid != null) {
-				float prior = 0.0f;
-				if (engines.containsKey(rid)) {
+                Resource engine = engines.get(rid);
+                float prior = 0.0f;
+                if (engine != null) {
+                    if (engine.isDeleted()) { continue; } // cached result from a deleted resource	    
     				prior = engines.get(rid).getPrior();
 				}
                 Float top = topEngines.get(rid);
@@ -201,7 +203,7 @@ public class SearchResult {
      * @param max
      * @param start
      */
-	private void selectBestResources(int max, int start) {
+	public void selectBestResources(int max, int start) {
 	    String rid, previousRid = null;
         int rFound  = 0;
 	    int rNeeded = start + max;

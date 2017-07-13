@@ -76,8 +76,8 @@ public class TestResourceIndex {
     	Assert.assertTrue("No private parameters expected", e4.getJsonPrivateParameters() == null);
     	Resource e6 = engines.get(newby().getId());
     	Assert.assertTrue("Private parameters expected", e6.getJsonPrivateParameters() != null);
-    	Assert.assertTrue("Top 1", engines.topValues("anything", 1).size() == 1);
-    	Assert.assertTrue("Top 2", engines.topValues(null, 2).size() == 2);
+    	Assert.assertTrue("Top 1", engines.topValuesNotDeleted("anything", 1).size() == 1);
+    	Assert.assertTrue("Top 2", engines.topValuesNotDeleted(null, 2).size() == 2);
     }
 	
     @Test

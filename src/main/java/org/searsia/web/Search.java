@@ -189,9 +189,8 @@ public class Search {
                 } catch (Exception e) {
                     LOGGER.warn(e);
                 }
-            } else {  // own results? Do resource ranking.
-                result.scoreResourceSelection(query, engines, max, start);
             }
+            result.scoreResourceSelection(query, engines, max, start);
             LOGGER.info("Local: " + query);
         } else { // no query: create a 'resource only' result, plus health report
             result = new SearchResult();
