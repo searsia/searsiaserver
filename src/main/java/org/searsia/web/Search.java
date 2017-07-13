@@ -89,7 +89,7 @@ public class Search {
 		       } catch (NumberFormatException e) {
 		           max = 10;
 		       }
-		       if (max > 1000) { max = 1000; }
+		       if (max > 200) { max = 200; } // FedWeb14 has about 150
 		       if (max < 1) { max = 1; }
 		    }
             if (pageOffset != null) {
@@ -99,7 +99,6 @@ public class Search {
                 } catch (NumberFormatException e) {
                     start = 0;
                 }
-                if (start > 99) { start = 99; }
                 if (start < 0) { start = 0; }
             }
 		    return getLocalResults(searchTerms, max, start);
@@ -165,7 +164,7 @@ public class Search {
         }
     }
 
-    private Response getLocalResults(String query, int max, int start) {
+    private Response getLocalResults(String query, int max, int start) {  
         JSONObject json = null, healthJson = null;
         Resource mother = engines.getMother();
         Resource me     = engines.getMyself();
