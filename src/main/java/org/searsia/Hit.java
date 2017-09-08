@@ -51,7 +51,12 @@ public class Hit implements Comparable<Hit> {
 		Iterator<?> keys = json.keys();
 		while (keys.hasNext()) {
 			String key = (String) keys.next();
-			map.put(key, json.get(key));
+			Object value = json.get(key);
+			if (value instanceof String) {
+    			map.put(key, noHTML((String) value));
+			} else if (value instanceof Number || value instanceof Boolean) {
+				map.put(key, value);
+			}
 		}
 	}
 
@@ -165,8 +170,9 @@ public class Hit implements Comparable<Hit> {
 		return map.entrySet().toString();
 	}
 
-	private String noHTML(String value) {
-		value = value.replaceAll("<[^>]+>", ""); // no HTML
+	private String noHTML(String value) {  // TODO: also in TextExtractor??
+		value = value.replaceAll("(?i)</?span[^>]*>|</?b>|</?i>|</?em>|</?strong>", "");  // No HTML, please: spans removed 
+		value = value.replaceAll("<[^>]+>|&#?[0-9a-zA-Z]{1,9};", ""); // no HTML
 		return value.replaceAll("[<>]", "");
 	}
 

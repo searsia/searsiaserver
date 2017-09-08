@@ -66,6 +66,14 @@ public class ResourceTest {
 	}
 
 	@Test
+	public void testSearchXml3() throws XPathExpressionException, SearchException {
+		Resource se1 = new Resource("http://searsia.org/searsia/wiki/cse1{q}.json").updateFromAPI();
+		SearchResult result = se1.search("life");
+		Assert.assertEquals("application/xml", se1.getMimeType());
+		Assert.assertEquals(10, result.getHits().size());
+	}
+
+	@Test
 	public void testSearchJson() throws XPathExpressionException, SearchException {
 		Resource se = new Resource("file:src/test/resources/searsia.json").updateFromAPI();
 		String debug = "xml";
@@ -84,13 +92,22 @@ public class ResourceTest {
 	}
 
     @Test
-    public void testSearchJson3() throws XPathExpressionException, SearchException {
+    public void testSearchJsonStrangeKeys() throws XPathExpressionException, SearchException {
         Resource se = new Resource("http://searsia.org/searsia/wiki/wikifull1{q}.json");
         SearchResult result = se.search("strange keys");
         Assert.assertEquals(1, result.getHits().size());
     }
 
-	@Test
+    @Test
+    public void testSearchJsonHtmlAndlinks() throws XPathExpressionException, SearchException {
+        Resource se = new Resource("http://searsia.org/searsia/wiki/wikifull1{q}.json");
+        SearchResult result = se.search("html and links");
+        Assert.assertEquals(2, result.getHits().size());
+        Assert.assertEquals("Another test for Searsia", result.getHits().get(0).getTitle());
+        Assert.assertEquals("mailto:info@searsia.org", result.getHits().get(1).getString("url")); // TODO getUrl instead of getString
+    }
+
+    @Test
 	public void testSearchJavascript() throws XPathExpressionException, SearchException {
 		Resource se = new Resource("file:src/test/resources/javascript.json").updateFromAPI();
 		String debug = "xml";
