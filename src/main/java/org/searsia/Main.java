@@ -242,7 +242,11 @@ public class Main {
             System.out.flush();
         }
         if (result.getHits().isEmpty()) {
-            throw new SearchException("No results for test query.");
+        	String tip = "";
+        	if (mother.getRerank() != null) {
+        		tip = " Try removing rerank.";
+        	}
+            throw new SearchException("No results for test query." + tip);
         } 
         if (result.getHits().size() < 10) {
             printMessage("Warning: less than 10 results for query: " + result.getQuery() + "; see \"testquery\" or \"rerank\".", isQuiet);

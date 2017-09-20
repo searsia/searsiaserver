@@ -296,14 +296,12 @@ public class Resource implements Comparable<Resource> {
 
 
 	public SearchResult search(String query, String debug) throws SearchException {
-        if (rateLimitReached()) {
-            this.lastMessage = "Too many queries";
-            this.lastUsedError = new Date().getTime();
-            throw new SearchException(this.lastMessage);
-        }
         SearchResult result;
 		try {
-		    if (this.urlAPITemplate == null) {
+	        if (rateLimitReached()) {
+	            throw new SearchException("Too many queries");
+	        }
+	        if (this.urlAPITemplate == null) {
 		        throw new SearchException("No API Template");
 		    }
 			String url = fillTemplate(this.urlAPITemplate, URLEncoder.encode(query, "UTF-8"));

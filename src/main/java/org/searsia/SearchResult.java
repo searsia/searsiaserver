@@ -217,8 +217,8 @@ public class SearchResult {
                 if (rFound > rNeeded) { break; } 
             }
             i += 1;
-        }
-        if (rFound <= start) {
+        }		
+        if (rFound < start) {
             this.hits.clear();
         } else {
     	    this.hits = this.hits.subList(first, i);
