@@ -33,7 +33,7 @@ import org.searsia.index.ResourceIndex;
  * @author hiemstra
  *
  */
-@Path("{resourceid}/opensearch.xml")
+@Path("{resourceid}")
 public class OpenSearch {
 
 	private ResourceIndex engines;
@@ -42,7 +42,7 @@ public class OpenSearch {
 		this.engines  = engines;
 	}
 	
-	@GET
+	@GET @Path("opensearch.xml")
 	@Produces("application/opensearchdescription+xml; charset=utf-8")
 	public Response get(@PathParam("resourceid") String resourceid) {
         Resource engine;

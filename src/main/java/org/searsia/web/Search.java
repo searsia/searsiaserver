@@ -74,9 +74,6 @@ public class Search {
 	                      @QueryParam("q")         String searchTerms, 
                           @QueryParam("resources") String countResources, 
 	                      @QueryParam("page")      String pageOffset) {
-	    if (!resourceid.endsWith(".json")) {
-	        return  SearsiaApplication.responseError(404, "Not found: " + resourceid);
-	    }
         resourceid = resourceid.replaceAll("\\.json$", "");
 		Resource me = engines.getMyself();
 		if (!resourceid.equals(me.getId())) {
