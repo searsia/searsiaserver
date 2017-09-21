@@ -343,7 +343,7 @@ public class Main {
   	            testMother(mother, options.getTestOutput(), options.isQuiet());
                 printMessage("Test succeeded.", options.isQuiet());
   	        } catch (Exception e) {
-  	            fatalError("Test failed: " + e.getMessage());
+  	            fatalError("Test failed: " + e.getLocalizedMessage());
   	        }
         } else {
         	printMessage("Starting: " + myself.getName() + " (" + myself.getId() + ")", options.isQuiet());
