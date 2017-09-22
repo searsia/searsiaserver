@@ -32,6 +32,7 @@ import javax.ws.rs.core.Response;
 
 import org.json.JSONObject;
 import org.searsia.SearchResult;
+import org.searsia.SearsiaOptions;
 import org.searsia.index.SearchResultIndex;
 import org.searsia.index.ResourceIndex;
 import org.searsia.engine.Resource;
@@ -51,13 +52,15 @@ public class Search {
 	
 	private ResourceIndex engines;
     private SearchResultIndex index;
+    private SearsiaOptions options;
     private long nrOfQueriesOk = 0;
     private long nrOfQueriesError = 0;
 
 
-	public Search(SearchResultIndex index, ResourceIndex engines) throws IOException {
+	public Search(SearchResultIndex index, ResourceIndex engines, SearsiaOptions options) throws IOException {
 		this.engines  = engines;
-    	this.index = index;
+    	this.index    = index;
+    	this.options  = options;
 	}
 		
 	@OPTIONS
@@ -134,9 +137,7 @@ public class Search {
             if (result != null) {
                 boolean censorQueryResourceId = true;
                 json = result.toJson(censorQueryResourceId);
-                json.put("resource", engine.toJson());
                 LOGGER.info("Cache " + resourceid + ": " + query);
-                return SearsiaApplication.responseOk(json);
             } else {
                 try {
                     result = engine.search(query);
@@ -144,9 +145,7 @@ public class Search {
                     json = result.toJson();                         // first json for response, so
                     result.addResourceDate(engine.getId()); // response will not have resource id + date
                     index.offer(result);  //  maybe do this AFTER the http response is sent:  https://jersey.java.net/documentation/latest/async.html (11.1.1)
-                    json.put("resource", engine.toJson());
                     LOGGER.info("Query " + resourceid + ": " + query);
-                    return SearsiaApplication.responseOk(json);
                 } catch (Exception e) {
                     String message = "Resource " + resourceid + " unavailable: " + e.getMessage();
                     LOGGER.warn(message);
@@ -154,11 +153,18 @@ public class Search {
                 }
             }
         } else {
-            json = new JSONObject().put("resource", engine.toJson());
-            json.put("health", engine.toJsonHealth());
+            json = new JSONObject();
+            if (!options.isNoHealthReport()) {
+                json.put("health", engine.toJsonHealth());
+            }
             LOGGER.info("Resource " + resourceid + ".");
-            return SearsiaApplication.responseOk(json);
         }
+        if (options.isNotShared()) {
+            json.put("resource", engine.toJsonEngineDontShare());
+        } else {
+            json.put("resource", engine.toJson());
+        }
+        return SearsiaApplication.responseOk(json);
     }
 
     private Response getLocalResults(String query, int max, int start) {  
@@ -191,10 +197,12 @@ public class Search {
         } else { // no query: create a 'resource only' result, plus health report
             result = new SearchResult();
             result.scoreResourceSelection(null, engines, max, start);
-            healthJson = engines.toJsonHealth();
-            healthJson.put("requestsok", this.nrOfQueriesOk);
-            healthJson.put("requestserr", this.nrOfQueriesError);
-            healthJson.put("upsince", startTime);
+            if (!this.options.isNoHealthReport()) {
+                healthJson = engines.toJsonHealth();
+                healthJson.put("requestsok", this.nrOfQueriesOk);
+                healthJson.put("requestserr", this.nrOfQueriesError);
+                healthJson.put("upsince", startTime);
+            }
             LOGGER.info("Local.");
         }
         json = result.toJson();

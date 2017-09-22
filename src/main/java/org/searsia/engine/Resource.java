@@ -957,7 +957,7 @@ public class Resource implements Comparable<Resource> {
 
     public JSONObject toJsonEngineDontShare() {
         JSONObject engine = new JSONObject();
-        if (id != null)                  engine.put("id", id);
+        if (id != null) engine.put("id", id);
         if (deleted) {
             engine.put("deleted", true);
         } else {
@@ -994,17 +994,15 @@ public class Resource implements Comparable<Resource> {
      * @throws ParseException
      */
     public void updateHealth(JSONObject health) throws ParseException {
-        //try {
-            Integer num = health.getInt("requestsok");
-            if (num != null) this.nrOfOk = num;
-            num = health.getInt("requestserr");
-            if (num != null) this.nrOfError = num;
-            this.lastUsedOk  = dateFormat.parse(health.getString("lastsuccess")).getTime();
-            this.lastUsedError = dateFormat.parse(health.getString("lasterror")).getTime();
-            this.lastUpdated = dateFormat.parse(health.getString("lastupdated")).getTime();
-            this.upsince = dateFormat.parse(health.getString("upsince")).getTime();
-            if (health.has("lastmessage")) this.lastMessage   = health.getString("lastmessage");
-       // } catch (Exception e) { } // TODO: woops?
+        Integer num = health.getInt("requestsok");
+        if (num != null) this.nrOfOk = num;
+        num = health.getInt("requestserr");
+        if (num != null) this.nrOfError = num;
+        this.lastUsedOk  = dateFormat.parse(health.getString("lastsuccess")).getTime();
+        this.lastUsedError = dateFormat.parse(health.getString("lasterror")).getTime();
+        this.lastUpdated = dateFormat.parse(health.getString("lastupdated")).getTime();
+        this.upsince = dateFormat.parse(health.getString("upsince")).getTime();
+        if (health.has("lastmessage")) this.lastMessage   = health.getString("lastmessage");
     }
 
     

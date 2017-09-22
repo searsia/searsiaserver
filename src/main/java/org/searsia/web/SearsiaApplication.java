@@ -22,6 +22,7 @@ import javax.ws.rs.core.Response;
 
 import org.glassfish.jersey.server.ResourceConfig;
 import org.json.JSONObject;
+import org.searsia.SearsiaOptions;
 import org.searsia.index.SearchResultIndex;
 import org.searsia.index.ResourceIndex;
 
@@ -32,7 +33,7 @@ import org.searsia.index.ResourceIndex;
  */
 public class SearsiaApplication extends ResourceConfig {
 
-	public static final String VERSION = "v1.0.0";
+	public static final String VERSION = "v1.0.1";
 
 	protected static Response responseOk(JSONObject json) {
 		json.put("searsia", VERSION);
@@ -64,11 +65,16 @@ public class SearsiaApplication extends ResourceConfig {
 				.build();
 	}
 
-	public SearsiaApplication(SearchResultIndex index, ResourceIndex engines) throws IOException {
+	public SearsiaApplication(SearchResultIndex index, 
+			                  ResourceIndex engines, 
+			                  SearsiaOptions options) throws IOException {
 		super();
 		java.util.logging.Logger.getLogger("").setLevel(java.util.logging.Level.WARNING);
-		register(new Search(index, engines));
-		register(new OpenSearch(engines));
+		register(new Search(index, engines, options));
+		register(new OpenSearch(engines, options.isNotShared()));
+		if (options.isAnonymous()) {
+			register(new Proxy(engines));
+		}
         register(new Redirect(engines.getMyself().getId()));
 	}
 	

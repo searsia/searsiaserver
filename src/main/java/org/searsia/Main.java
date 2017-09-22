@@ -159,7 +159,7 @@ public class Main {
     private static String normalizedUriToTemplate(String uri, String rid) {
         if (uri != null) {
             if (uri.endsWith("/") ) {
-                uri += rid + ".json?q={q}";
+                uri += rid + "?q={q}";
             } else if (!uri.contains("{q")) { // check for tests on searsia.org
                 uri += "?q={q}";
             }
@@ -385,7 +385,7 @@ public class Main {
     	// Start the web server
         String myURI = removeFileNameUri(options.getMyURI());
     	try {
-    	    SearsiaApplication app = new SearsiaApplication(index, engines);
+    	    SearsiaApplication app = new SearsiaApplication(index, engines, options);
             server = GrizzlyHttpServerFactory.createHttpServer(URI.create(myURI), app); 
     	} catch (Exception e) {
             fatalError("Server failed: " + e.getMessage());

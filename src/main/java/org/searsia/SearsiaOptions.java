@@ -36,6 +36,7 @@ import org.apache.commons.cli.ParseException;
 public class SearsiaOptions {
 		
     /* See setDefaults() below */
+	private Boolean anonymous;
     private String test;
     private Boolean quiet;
     private Boolean help;
@@ -57,6 +58,7 @@ public class SearsiaOptions {
      */
      public SearsiaOptions(String[] args) throws IllegalArgumentException, MalformedURLException {
     	Options options = new Options();
+        options.addOption("a", "anonymous",false, "Anonymous traffic by proxying all calls."); // TODO
         options.addOption("c", "cache",    true,  "Set cache size (integer: number of result pages).");
         options.addOption("d", "dontshare",false, "Do not share resource definitions."); // TODO
         options.addOption("e", "export",   false, "Export index to stdout and exit.");
@@ -65,7 +67,7 @@ public class SearsiaOptions {
         options.addOption("l", "log",      true,  "Set log level (0=off, 1=error, 2=warn=default, 3=info, 4=debug).");
         options.addOption("m", "mother",   true,  "Set url of mother's web service end point.");
         options.addOption("n", "nohealth", false, "Do not share health report.");
-        options.addOption("p", "path",     true,  "Set directory path to store the index."); // TODO
+        options.addOption("p", "path",     true,  "Set directory path to store the index.");
         options.addOption("q", "quiet",    false, "No output to console.");
         options.addOption("t", "test",     true,  "Print test output and exit (string: 'json', 'xml', 'response', 'all').");
         options.addOption("u", "url",      true,  "Set url of my web service endpoint.");
@@ -75,7 +77,13 @@ public class SearsiaOptions {
             myURI = "http://localhost:16842/searsia/" + lastDir(motherTemplate);
         }
     }
-
+    
+    /** 
+     * Default options, to be used for unit tests only.
+     */
+    public SearsiaOptions() {
+    	setDefaults();
+    }
 
     private static String lastDir(String urlString) throws MalformedURLException {
         urlString = urlString.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", "");
@@ -92,6 +100,7 @@ public class SearsiaOptions {
 
 
     private void setDefaults() {
+    	anonymous      = false;
         test           = null; // no test 
         help           = false;
         quiet          = false;
@@ -117,10 +126,9 @@ public class SearsiaOptions {
     private String friendlyIndexPath() { 
     	String path;
     	String file = "searsia";
+    	String os   = System.getProperty("os.name").toLowerCase();
     	String home = System.getProperty("user.home");
     	if (home == null || !pathExists(home)) home = ".";
-    	
-    	String os   = System.getProperty("os.name").toLowerCase();
     	if (os.contains("win")) {  // On Windows
     	    path = System.getenv("AppData");
     	    if (!pathExists(path)) {
@@ -152,7 +160,9 @@ public class SearsiaOptions {
         } catch (ParseException e) {
             throw new IllegalArgumentException(e.getMessage() + " (use '-h' for help)");
         }
-        
+        if (cmd.hasOption("a")) {
+            anonymous = true;
+        }
         if (cmd.hasOption("c")) {
             cacheSize = new Integer(cmd.getOptionValue("c"));
             if (cacheSize < 30) {
@@ -200,7 +210,6 @@ public class SearsiaOptions {
             if (!motherTemplate.matches("^https?://.*|^file:.*")) {
                 motherTemplate = "file:" + motherTemplate.replace("\\", "/"); // TODO C:\file on Windows?
             }
-
         }
         if (cmd.hasOption("h") || cmd.getArgs().length < 0 || !cmd.hasOption("m")) {
             if (!cmd.hasOption("m")) {
@@ -280,6 +289,10 @@ public class SearsiaOptions {
     	return indexPath;
     }
     
+    public Boolean isAnonymous() {
+    	return anonymous;
+    }
+    
     public Boolean isQuiet() {
     	return quiet;
     }
@@ -310,6 +323,7 @@ public class SearsiaOptions {
     	result += "\n  Poll Interval = " + getPollInterval();
     	result += "\n  Cache Size    = " + getCacheSize();
     	result += "\n  Test Output   = " + getTestOutput();
+        result += "\n  Anonymous     = " + isAnonymous();
         result += "\n  Do Not Share  = " + isNotShared();
         result += "\n  No Health Rep.= " + isNoHealthReport();
     	return result;

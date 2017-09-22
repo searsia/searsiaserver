@@ -37,9 +37,11 @@ import org.searsia.index.ResourceIndex;
 public class OpenSearch {
 
 	private ResourceIndex engines;
+	private boolean dontshare;
 
-	public OpenSearch(ResourceIndex engines) throws IOException {
-		this.engines  = engines;
+	public OpenSearch(ResourceIndex engines, boolean dontshare) throws IOException {
+		this.engines   = engines;
+		this.dontshare = dontshare;
 	}
 	
 	@GET @Path("opensearch.xml")
@@ -87,7 +89,9 @@ public class OpenSearch {
         response += "<OpenSearchDescription xmlns=\"http://a9.com/-/spec/opensearch/1.1/\">\n";
         response += " <ShortName>" + xmlEncode(shortName) + "</ShortName>\n";
         response += " <Description>Search the web with " + xmlEncode(shortName) + "</Description>\n";
-        response += " <Url type=\"" + mimeType + "\" method=\"" + method + "\" template=\"" + templateEncode(apiTemplate) + "\"/>\n";
+        if(!dontshare) {
+        	response += " <Url type=\"" + mimeType + "\" method=\"" + method + "\" template=\"" + templateEncode(apiTemplate) + "\"/>\n";
+        }
         if (userTemplate != null) response += " <Url type=\"text/html\" method=\"GET\" template=\"" + templateEncode(userTemplate) + "\"/>\n";
         if (suggestTemplate != null) response += " <Url type=\"application/x-suggestions+json\" method=\"GET\" template=\"" + templateEncode(suggestTemplate) + "\"/>\n";
         if (testQuery != null) response += " <Query role=\"example\" searchTerms=\"" + xmlEncode(testQuery) + "\"/>\n";
