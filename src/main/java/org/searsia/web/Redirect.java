@@ -10,7 +10,7 @@ import javax.ws.rs.core.Response;
 import org.searsia.SearchResult;
 
 
-@Path("/")
+@Path("searsia")
 public class Redirect {
     
     String id;

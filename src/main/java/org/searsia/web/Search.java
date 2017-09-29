@@ -43,7 +43,8 @@ import org.searsia.engine.SearchException;
  * 
  * @author Dolf Trieschnigg and Djoerd Hiemstra
  */
-@Path("{resourceid}")
+
+@Path("searsia")
 public class Search {
 
 	private final static org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(Search.class);
@@ -52,18 +53,20 @@ public class Search {
 	
 	private ResourceIndex engines;
     private SearchResultIndex index;
-    private SearsiaOptions options;
+    private boolean health;
+    private boolean shared;
     private long nrOfQueriesOk = 0;
     private long nrOfQueriesError = 0;
 
 
 	public Search(SearchResultIndex index, ResourceIndex engines, SearsiaOptions options) throws IOException {
-		this.engines  = engines;
-    	this.index    = index;
-    	this.options  = options;
+		this.engines = engines;
+    	this.index   = index;
+    	this.health  = !options.isNoHealthReport();
+    	this.shared  = !options.isNotShared();
 	}
 		
-	@OPTIONS
+	@OPTIONS @Path("{resourceid}")
 	public Response options() {
 	    return Response.status(Response.Status.NO_CONTENT)
 				.header("Access-Control-Allow-Origin", "*")
@@ -71,12 +74,12 @@ public class Search {
         		.build();
 	}
 
-	@GET
+	@GET @Path("{resourceid}")
 	@Produces(SearchResult.SEARSIA_MIME_ENCODING)
-	public Response query(@PathParam("resourceid") String resourceid, 
-	                      @QueryParam("q")         String searchTerms, 
-                          @QueryParam("resources") String countResources, 
-	                      @QueryParam("page")      String pageOffset) {
+	public Response query(@PathParam("resourceid")  String resourceid, 
+	                      @QueryParam("q")          String searchTerms, 
+                          @QueryParam("resources")  String countResources, 
+	                      @QueryParam("page")       String pageOffset) {
         resourceid = resourceid.replaceAll("\\.json$", "");
 		Resource me = engines.getMyself();
 		if (!resourceid.equals(me.getId())) {
@@ -154,15 +157,15 @@ public class Search {
             }
         } else {
             json = new JSONObject();
-            if (!options.isNoHealthReport()) {
+            if (this.health) {
                 json.put("health", engine.toJsonHealth());
             }
             LOGGER.info("Resource " + resourceid + ".");
         }
-        if (options.isNotShared()) {
-            json.put("resource", engine.toJsonEngineDontShare());
-        } else {
+        if (this.shared) {
             json.put("resource", engine.toJson());
+        } else {
+            json.put("resource", engine.toJsonEngineDontShare());
         }
         return SearsiaApplication.responseOk(json);
     }
@@ -197,7 +200,7 @@ public class Search {
         } else { // no query: create a 'resource only' result, plus health report
             result = new SearchResult();
             result.scoreResourceSelection(null, engines, max, start);
-            if (!this.options.isNoHealthReport()) {
+            if (this.health) {
                 healthJson = engines.toJsonHealth();
                 healthJson.put("requestsok", this.nrOfQueriesOk);
                 healthJson.put("requestserr", this.nrOfQueriesError);

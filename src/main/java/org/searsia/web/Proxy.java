@@ -46,7 +46,7 @@ import org.searsia.index.ResourceIndex;
  * Provides a proxy for any (image) url 
  * and a special caching proxy for the resources' fav icons.
  */
-@Path("{resourceid}")
+@Path("images")
 public class Proxy {
 
     private ResourceIndex engines;
@@ -60,23 +60,25 @@ public class Proxy {
         this.engines  = engines;
     }
 
-    @GET @Path("proxy")
-    public Response query(@PathParam("resourceid") String resourceid, 
-    		              @QueryParam("url") String url, 
+    @GET
+    public Response query(@QueryParam("url") String url,
     		              @Context HttpHeaders headers) {
+    	if (url == null) {
+    		return Response.status(404).build();
+    	}
         try {
             if (headers.getRequestHeader("If-Modified-Since") != null 
                 || headers.getRequestHeader("If-None-Match") != null) {
                 return Response.notModified().build();
             } else {
-                return getStreamResponse(url);
+                return getStreamBuilder(url).build();
             }
         } catch (Exception e) {
             return Response.status(503).build();  // 503 = unavailable
         }
     }
     
-	@GET @Path("icon")
+	@GET @Path("{resourceid}")
 	public Response icon(@PathParam("resourceid") String resourceid, 
 			             @Context HttpHeaders headers) {
 		try {
@@ -125,12 +127,23 @@ public class Proxy {
   	        baos.write(buffer, 0, bytesRead);
   	    }
   	    return Response.ok(baos.toByteArray(), contentType)
-  	    	       .header("Last-Modified", lastModified);
+  	    	           .header("Last-Modified", lastModified);
     }
 
-    private Response getStreamResponse(String urlString) throws IOException {
+    private ResponseBuilder getStreamBuilder(String urlString) throws IOException {
     	HttpURLConnection http = getHttp(urlString);
-    	return getStreamBuilder(http).build();
+        ResponseBuilder builder = Response.ok(http.getInputStream());
+        String field = http.getHeaderField("Content-Type");
+        if (field != null) builder.header("Content-Type", field);
+        field = http.getHeaderField("Content-Length");
+        if (field != null) builder.header("Content-Length", field);
+        field = http.getHeaderField("Expires");
+        if (field != null) builder.header("Expires", field);
+        field = http.getHeaderField("Cache-Control");
+        if (field != null) builder.header("Cache-Control", field);
+        field = http.getHeaderField("Last-Modified");
+        if (field != null) builder.header("Last-Modified", field);
+        return builder;
 	}
 
     private HttpURLConnection getHttp(String urlString) throws IOException {
@@ -145,21 +158,6 @@ public class Proxy {
         http.setRequestMethod("GET");
         http.connect();
         return http;
-    }
-
-    private ResponseBuilder getStreamBuilder(HttpURLConnection http) throws IOException {
-        ResponseBuilder builder = Response.ok(http.getInputStream());
-        String field = http.getHeaderField("Content-Type");
-        if (field != null) builder.header("Content-Type", field);
-        field = http.getHeaderField("Content-Length");
-        if (field != null) builder.header("Content-Length", field);
-        field = http.getHeaderField("Expires");
-        if (field != null) builder.header("Expires", field);
-        field = http.getHeaderField("Cache-Control");
-        if (field != null) builder.header("Cache-Control", field);
-        field = http.getHeaderField("Last-Modified");
-        if (field != null) builder.header("Last-Modified", field);
-        return builder;        
     }
    
 }

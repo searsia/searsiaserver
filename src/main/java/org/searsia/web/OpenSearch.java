@@ -33,7 +33,7 @@ import org.searsia.index.ResourceIndex;
  * @author hiemstra
  *
  */
-@Path("{resourceid}")
+@Path("opensearch")
 public class OpenSearch {
 
 	private ResourceIndex engines;
@@ -44,18 +44,19 @@ public class OpenSearch {
 		this.dontshare = dontshare;
 	}
 	
-	@GET @Path("opensearch.xml")
+	@GET @Path("{resourceid}")
 	@Produces("application/opensearchdescription+xml; charset=utf-8")
 	public Response get(@PathParam("resourceid") String resourceid) {
-        Resource engine;
+        resourceid = resourceid.replaceAll("\\.xml$", "");
+        Resource engine = null;
         if (resourceid.equals(engines.getMyself().getId())) {
             engine = engines.getMyself();
         } else {
             engine = engines.get(resourceid);
         }
         if (engine != null) {
-    		String response = engineXML(engine);
-	    	return  Response.ok(response).build();
+    		String xmlString = engineXML(engine);
+	    	return  Response.ok(xmlString).build();
         } else {
             return SearsiaApplication.responseError(404, "Not found: " + resourceid);
         }
@@ -89,7 +90,7 @@ public class OpenSearch {
         response += "<OpenSearchDescription xmlns=\"http://a9.com/-/spec/opensearch/1.1/\">\n";
         response += " <ShortName>" + xmlEncode(shortName) + "</ShortName>\n";
         response += " <Description>Search the web with " + xmlEncode(shortName) + "</Description>\n";
-        if(!dontshare) {
+        if(!dontshare && apiTemplate != null) { // TODO: own api or foward API?
         	response += " <Url type=\"" + mimeType + "\" method=\"" + method + "\" template=\"" + templateEncode(apiTemplate) + "\"/>\n";
         }
         if (userTemplate != null) response += " <Url type=\"text/html\" method=\"GET\" template=\"" + templateEncode(userTemplate) + "\"/>\n";

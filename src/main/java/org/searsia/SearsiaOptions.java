@@ -73,8 +73,8 @@ public class SearsiaOptions {
         options.addOption("u", "url",      true,  "Set url of my web service endpoint.");
         setDefaults();
         parse(options, args);
-        if (myURI == null && motherTemplate != null) {
-            myURI = "http://localhost:16842/searsia/" + lastDir(motherTemplate);
+        if (myURI == null) {
+            myURI = "http://localhost:16842/";
         }
     }
     
@@ -85,19 +85,21 @@ public class SearsiaOptions {
     	setDefaults();
     }
 
-    private static String lastDir(String urlString) throws MalformedURLException {
+    private String rootDir() {
+    	String rootDir = "searsia";
+    	String urlString = getMotherTemplate();
         urlString = urlString.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", "");
-        URL url = new URL(urlString);
-        String path = url.getPath();
-        if (path != null && path.contains("/")) {
-            path = path.replaceAll("\\/[^\\/]*$", ""); // remove file
-            path = path.replaceAll("^.+\\/", ""); // remove trailing directories
-            return path + "/";
-        } else {
-            return "";
-        }
+        try {
+            URL url = new URL(urlString);
+            String path = url.getPath();
+            if (path != null && path.contains("/")) {
+                path = path.replaceAll("\\/[^\\/]*$", ""); // remove file
+                path = path.replaceAll("^.+\\/", ""); // remove trailing directories
+                rootDir = path + "/";
+            }
+        } catch (MalformedURLException e) { }
+        return rootDir;
     }
-
 
     private void setDefaults() {
     	anonymous      = false;

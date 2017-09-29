@@ -394,7 +394,8 @@ public class Main {
         
         // Start the update daemon if not testing
         if (options.getTestOutput() == null) {
-            printMessage("API end point: " + normalizedUriToTemplate(myURI, myself.getId()), options.isQuiet());
+        	String myAPI = normalizedUriToTemplate(myURI + "searsia/", myself.getId()); 
+            printMessage("API end point: " + myAPI, options.isQuiet());
             printMessage("Use Ctrl+c to stop.", options.isQuiet());
             try {
                 searsiaDaemon(index, engines, options);

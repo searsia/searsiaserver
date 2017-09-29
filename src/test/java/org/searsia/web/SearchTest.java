@@ -124,7 +124,21 @@ public class SearchTest {
 		JSONObject json = new JSONObject(entity);
 		JSONObject resource  = (JSONObject) json.get("resource");
 		Assert.assertEquals(200, status);
+		Assert.assertTrue(json.has("health"));
 		Assert.assertEquals(wrong().getAPITemplate(), resource.get("apitemplate"));
+	}
+    
+    @Test // returns local resource 'wrong' without apitemplate and health 
+	public void testResourceNoSharing() throws IOException, XPathExpressionException, JSONException {
+        String[] args = {"-d", "-n", "-m=http://searsia.org/searsia/wiki/wiki{q}.json"};
+    	SearsiaOptions newOptions = new SearsiaOptions(args);
+		Search search = new Search(index, engines, newOptions);
+		Response response = search.query("wrong.json", "", null, null);
+		String entity = (String) response.getEntity();
+		JSONObject json = new JSONObject(entity);
+		JSONObject resource  = (JSONObject) json.get("resource");
+		Assert.assertFalse(json.has("health"));
+		Assert.assertFalse(resource.has("apitemplate"));
 	}
     
     @Test // returns resource 'wikididyoumean' (from mother)
