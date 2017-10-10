@@ -20,9 +20,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.ParseException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
+
+import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -72,16 +75,20 @@ public class ResourceIndex {
 	 * @param path path where the Searsia index resides
 	 * @param filename index file name
 	 * @throws IOException
-	 * @throws JSONException 
 	 */
-	public ResourceIndex(String path, String filename) throws IOException, JSONException {
+	public ResourceIndex(String path, String filename) throws IOException {
 		this.meFile   = Paths.get(path, filename + ".json");
 		this.indexDir = Paths.get(path, filename + "_sources");
 		if (meFile.toFile().exists()) {
-    		this.me = readMyselfFile(meFile);
+			try {
+        		this.me = readMyselfFile(meFile);
+			} catch (IOException e) {
+				LOGGER.warn("Myself not found: " + e.getMessage());
+        		meFile.toFile().delete();
+        	}
 		}
 		if (this.indexDir.toFile().exists()) {
-			readResourceIndex();			
+ 			readResourceIndex();
 		} else {
 			this.indexDir.toFile().mkdir();
 		}
@@ -98,13 +105,15 @@ public class ResourceIndex {
 	}
 
 
-	private Resource readMyselfFile(Path meFile) throws IOException, JSONException {
+	private Resource readMyselfFile(Path meFile) throws IOException {
 		String content = new String(Files.readAllBytes(meFile));
 		Resource me = null;
 		try {
 			JSONObject json = new JSONObject(content);
 			me = new Resource(json);
 		} catch (javax.xml.xpath.XPathExpressionException e) {
+			throw new IOException(e);
+		} catch (JSONException e) {
 			throw new IOException(e);
 		}
 		return me;
@@ -126,21 +135,24 @@ public class ResourceIndex {
             ScoreDoc[] hits = searcher.search(new MatchAllDocsQuery(), MAX_SOURCE_CACHE).scoreDocs;
             for (ScoreDoc hit: hits) {
                 Document doc = searcher.doc(hit.doc);
-                JSONObject json = new JSONObject(doc.get("json"));
-                Resource engine = new Resource((JSONObject) json.get("resource"));
-                if (json.has("health")) {
-                    engine.updateHealth((JSONObject) json.get("health"));
-                    String lastUpdated = engine.getLastUpdatedString();
-                    if (this.lastFlushed == null || this.lastFlushed.compareTo(lastUpdated) < 0) {
-                        this.lastFlushed = lastUpdated;
+                try{
+                    JSONObject json = new JSONObject(doc.get("json"));
+                    Resource engine = new Resource((JSONObject) json.get("resource"));
+                    if (json.has("health")) {
+                        engine.updateHealth((JSONObject) json.get("health"));
+                        String lastUpdated = engine.getLastUpdatedString();
+                        if (this.lastFlushed == null || this.lastFlushed.compareTo(lastUpdated) < 0) {
+                            this.lastFlushed = lastUpdated;
+                        }
                     }
+                    this.engines.put(engine.getId(), engine);
+                } catch (XPathExpressionException | JSONException | ParseException e) { 
+                  LOGGER.warn("Garbled index: " + e.getLocalizedMessage());	
                 }
-                this.engines.put(engine.getId(), engine);
             }
-        } catch (Exception e) {
-        	throw new IOException(e.getMessage());
-        }
-        finally {
+        } catch (IOException e) {
+        	throw new IOException(e);
+        } finally {
             reader.close(); 
         }
 	}
