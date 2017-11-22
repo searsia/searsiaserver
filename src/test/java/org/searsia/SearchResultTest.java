@@ -37,11 +37,11 @@ public class SearchResultTest {
     	String term = sr.randomTerm(notThis);
         Assert.assertFalse("Same random term", term.equals(notThis));
 		Assert.assertTrue("Index contains random term: " + term, terms.contains(term));
-        Assert.assertEquals("Total nr of hits", sr.getHits().size(), 2);
+        Assert.assertEquals("Total nr of hits", 2, sr.getHits().size());
         sr.scoreReranking("test", "or");
-        Assert.assertEquals("Nr of hits after reranking", sr.getHits().size(), 2);
+        Assert.assertEquals("Nr of hits after reranking", 2, sr.getHits().size());
 		sr.scoreReranking("doesnotmatch", "or");
-		Assert.assertEquals("Query matches zero results", sr.getHits().size(), 0);
+		Assert.assertEquals("Query matches zero results", 0, sr.getHits().size());
 	}
 	
 	@Test

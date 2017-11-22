@@ -229,11 +229,21 @@ public class SearchResult {
     public void scoreReranking(String query, String model) {
         if ("random".equals(model)) {
             scoreRerankingRandom();
+        } else if ("bestrandom".equals(model)) {
+            scoreRerankingBestRandom(query);
         } else {
             scoreRerankingRest(query);
         }
     }
 
+	private void scoreRerankingBestRandom(String query) {
+	    scoreRerankingRandom();
+	    scoreRerankingGeneral(query, 10);
+	}
+
+	private void scoreRerankingRest(String query) {
+	    scoreRerankingGeneral(query, 0);
+	}
 
     private void scoreRerankingRandom() {
         Hit hit;
@@ -247,20 +257,27 @@ public class SearchResult {
         }
     }
 
-
-	private void scoreRerankingRest(String query) {
+	private void scoreRerankingGeneral(String query, int count) {
         SearchResult newResult = new SearchResult();
         Map<String, Float> queryTerms  = new HashMap<String, Float>();
         for (String term: query.toLowerCase().split(TOKENIZER)) {
-        	queryTerms.put(term, 0.01f); // TODO df from Lucene index?
+        	queryTerms.put(term, 0.1f); // TODO idf from Lucene index
         };
 		for (Hit hit: this.hits) {
 	        float score = 0.0f;
 			String text = hit.toIndexVersion();
+			for (String term: queryTerms.keySet()) {
+			    queryTerms.put(term, 0.1f);
+			}
 			for (String term: text.toLowerCase().split(TOKENIZER)) {
 	        	if (queryTerms.containsKey(term)) {
-	        		score += 1.0f; // TODO: single query term multiple times?
+	        		score += queryTerms.get(term);
+	        		queryTerms.put(term, 0.0f);
 	        	}
+			}
+			if (count > 0) {
+			    score += 0.01f;
+			    count -= 1;
 			}
 			if (score > 0.001f) {
 				hit.put("score", score);

@@ -80,6 +80,7 @@ public class Resource implements Comparable<Resource> {
 	private String urlSuggestTemplate = null;
     private String mimeType = null;
     private String postString = null;
+    private String signature = null;
     private String postQueryEncode = null;
     private String favicon = null;
     private String banner = null;
@@ -121,6 +122,7 @@ public class Resource implements Comparable<Resource> {
 		if (jo.has("mimetype"))        this.mimeType        = jo.getString("mimetype");
 		if (jo.has("post"))            this.postString      = jo.getString("post");
 		if (jo.has("postencode"))      this.postQueryEncode = jo.getString("postencode");
+		if (jo.has("signature"))       this.signature       = jo.getString("signature");
 		if (jo.has("name"))            this.name            = jo.getString("name");
 		if (jo.has("testquery"))       this.testQuery       = jo.getString("testquery");
 		if (jo.has("urltemplate"))     this.urlUserTemplate = jo.getString("urltemplate");
@@ -533,6 +535,10 @@ public class Resource implements Comparable<Resource> {
 		    String param = url.substring(url.indexOf("{"), url.indexOf("}") + 1);
 			throw new SearchException("Missing url parameter " + param);
 		}        
+  		String signature = getSignatureName();
+        if (signature != null) {
+   			url = Signatures.sign(url, signature, getSignatureKey());
+   		}
         return url;
 	}
 
@@ -657,6 +663,35 @@ public class Resource implements Comparable<Resource> {
 	
 	public String getName() {
 		return this.name;
+	}
+	
+	public String getSignature() {
+		return this.signature;
+	}
+	
+	public String getSignatureName() {
+		if (this.signature == null) {
+			return null;
+		}
+		int begin = this.signature.indexOf("(");
+		if (begin == -1) {
+		    return this.signature;
+		} else {
+			return this.signature.substring(0, begin);
+		}
+	}
+	
+	public String getSignatureKey() {
+		int begin = this.signature.indexOf("(");
+		if (begin == -1) {
+		    return null;
+		} else {
+			String key = this.signature.substring(begin + 1, this.signature.length() -1);
+			if (key.startsWith("{")) {
+				key = this.privateParameters.get(key.substring(1, key.length() - 1));
+			}
+			return key;
+		}
 	}
 	
 	public String getUserTemplate() {
@@ -817,7 +852,7 @@ public class Resource implements Comparable<Resource> {
     }
     
     public boolean isHealthy() {
-        return this.lastUsedOk >= this.lastUsedError;
+        return this.lastUsedOk >= this.lastUsedError || this.nrOfError == 0;
     }
 
 
@@ -886,6 +921,7 @@ public class Resource implements Comparable<Resource> {
             this.id       = e2.id;
             this.deleted  = e2.deleted;
             this.name     = e2.name;
+            this.signature = e2.signature;
             this.urlUserTemplate = e2.urlUserTemplate;
             this.favicon  = e2.favicon;
             this.banner   = e2.banner;
@@ -923,6 +959,7 @@ public class Resource implements Comparable<Resource> {
             engine.put("deleted", true);
         } else {
             if (name != null)                engine.put("name", name);
+            if (signature != null)           engine.put("signature", signature);
             if (urlUserTemplate != null)     engine.put("urltemplate", urlUserTemplate);
             if (favicon != null)             engine.put("favicon", favicon);
             if (banner != null)              engine.put("banner", banner);
@@ -1032,6 +1069,7 @@ public class Resource implements Comparable<Resource> {
     	if (!stringEquals(this.getId(), e.getId())) return false;
     	if (this.isDeleted() != e.isDeleted()) return false;
     	if (!stringEquals(this.getName(), e.getName())) return false;
+    	if (!stringEquals(this.getSignature(), e.getSignature())) return false;
     	if (!stringEquals(this.getMimeType(), e.getMimeType())) return false;
         if (!stringEquals(this.getRerank(), e.getRerank())) return false;
     	if (!stringEquals(this.getFavicon(), e.getFavicon())) return false;
