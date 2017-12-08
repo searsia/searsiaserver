@@ -22,6 +22,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import org.apache.log4j.Appender;
@@ -159,9 +161,9 @@ public class Main {
     private static String normalizedUriToTemplate(String uri, String rid) {
         if (uri != null) {
             if (uri.endsWith("/") ) {
-                uri += rid + "?q={q}";
-            } else if (!uri.contains("{q")) { // check for tests on searsia.org
-                uri += "?q={q}";
+                uri += rid + "?q={searchTerms}&page={startPage?}";
+            } else if (!uri.contains("{q") && !uri.contains("{searchTerms")) { // check for tests on searsia.org
+                uri += "?q={searchTerms}&page={startPage?}";
             }
             
         }
@@ -207,25 +209,45 @@ public class Main {
     
     private static void testAll(Resource mother, SearchResult result, Boolean isQuiet) throws SearchException {
         int nrFailed = 0;
-        for (Hit hit: result.getHits()) {
-            if (hit.getRid() != null) {
-                try {
-                    Resource engine = mother.searchResource(hit.getRid());
-                    testMother(engine, "none", isQuiet);
-                } catch (Exception e) {
-                    nrFailed += 1;
-                    printMessage("Test failed: " + e.getMessage(), isQuiet);
+        boolean isDone = false;
+    	int startPage = mother.getIndexOffset();
+    	Map<String, Boolean> tested = new HashMap<String, Boolean>();
+    	tested.put(mother.getId(), true);
+    	while (!result.getHits().isEmpty() && !isDone) {
+    		isDone = true;
+            for (Hit hit: result.getHits()) {
+            	String rid = hit.getRid();
+                if (rid != null && !tested.containsKey(rid)) {
+                	tested.put(rid,  true);
+                	isDone = false;
+                	Resource engine = null;
+                    try {
+                        engine = mother.searchResource(hit.getRid());
+                        testEngine(engine, "none", isQuiet);
+                    } catch (Exception e) {
+                        nrFailed += 1;
+                        if (engine == null) { // resource not found, so test did not even start
+                            printMessage("Testing: " + hit.getRid(), isQuiet);
+                        } 
+                        printMessage("Test failed: " + e.getMessage(), isQuiet);                        	
+                    }
                 }
-            }                    
-        }
+            }
+            startPage += 1;
+            try {
+                result = mother.search(mother.getTestQuery(), "all", startPage);
+            } catch (Exception e) {
+            	throw new SearchException("Mother error: " + e.getMessage());
+            }
+    	}
         if (nrFailed > 0) {
             throw new SearchException(nrFailed + " engines failed.");
         }
     }
     
     
-	private static void testMother(Resource mother, String debugInfo, Boolean isQuiet) throws SearchException {
-        printMessage("Testing: " + mother.getName() + " (" + mother.getId() + ")", isQuiet);
+	private static void testEngine(Resource mother, String debugInfo, Boolean isQuiet) throws SearchException {
+        printMessage("Testing: " + mother.getId() + " (" + mother.getName() + ")", isQuiet);
         SearchResult result = null;
         result = mother.search(mother.getTestQuery(), debugInfo);
         if (!isQuiet) {
@@ -249,12 +271,22 @@ public class Main {
             throw new SearchException("No results for test query." + tip);
         } 
         if (result.getHits().size() < 10) {
-            printMessage("Warning: less than 10 results for query: " + result.getQuery() + "; see \"testquery\" or \"rerank\".", isQuiet);
+            printMessage("Warning: less than 10 results for query '" + result.getQuery() + "'; see \"testquery\" or \"rerank\".", isQuiet);
         } else if (result.getHits().size() > 49) {
-            printMessage("Warning: more than 49 results for query: " + result.getQuery(), isQuiet);
+            printMessage("Warning: more than 49 results for query '" + result.getQuery() + "'", isQuiet);
         }
         if (debugInfo.equals("all")) {
-            testAll(mother, result, isQuiet);
+        	String rid = null;
+        	if (result.getResource() != null) {
+        		rid = result.getResource().getId();
+        	}
+        	if (rid != null && rid.equals(mother.getId())) { // do not trust resources if the mother API provides another ID than the mother ID
+                testAll(mother, result, isQuiet);
+        	} else if (rid == null ){
+        		printMessage("Warning: no resources available.", isQuiet);
+        	} else {
+        		printMessage("Warning: no resources. ID '" + mother.getId() + "' changed to '" + rid + "'", isQuiet);        		
+        	}
         }
     }
 
@@ -317,15 +349,20 @@ public class Main {
         if (!options.getMotherTemplate().matches(".*" + mother.getId() + "[^/]*$")) {
             fatalError("API Template (" + options.getMotherTemplate() + "): file name must contain id (" + mother.getId() +")");
         }
-        if (version != null && !version.startsWith("v1")) {
-            fatalError("Wrong major Searsia version " + version + ": Must be v1.0.0 or higher.");
+        if (version == null || !version.startsWith("v1")) {
+            fatalError("Wrong major Searsia version. Must be v1.x.x.");
         }
 
 
         if (mother.getAPITemplate() == null) {
             mother.setUrlAPITemplate(options.getMotherTemplate());
-        } else if (!sameTemplates(mother.getAPITemplate(), options.getMotherTemplate(), mother.getId())) {
-            printMessage("Warning: Mother changed to " + mother.getAPITemplate(), options.isQuiet()); 
+        } else {
+            if (!sameTemplates(mother.getAPITemplate(), options.getMotherTemplate(), mother.getId())) {
+                printMessage("Warning: Mother changed to " + mother.getAPITemplate(), options.isQuiet()); 
+            }
+            if (mother.getAPITemplate().contains("{q")) {
+                printMessage("Warning: API Template parameter {q} is deprecated. Use {searchTerms}.", options.isQuiet());
+            }
         }
         myself = mother.getLocalResource();
         String fileName = myself.getId() + "_" + getHashString(mother.getAPITemplate());
@@ -340,7 +377,7 @@ public class Main {
   	            path = tmpDir;
   	        }
   	        try {
-  	            testMother(mother, options.getTestOutput(), options.isQuiet());
+  	            testEngine(mother, options.getTestOutput(), options.isQuiet());
                 printMessage("Test succeeded.", options.isQuiet());
   	        } catch (Exception e) {
   	            fatalError("Test failed: " + e.getLocalizedMessage());

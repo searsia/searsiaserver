@@ -70,7 +70,7 @@ public class OpenSearch {
 	}
 
 	private String templateEncode(String url) {
-		url = url.replaceAll("\\{q", "{searchTerms");
+		url = url.replaceAll("\\{q", "{searchTerms"); // backwards compatible with Searsia v0.x
         return xmlEncode(url);		
 	}
 

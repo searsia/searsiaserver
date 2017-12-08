@@ -37,15 +37,15 @@ public class SearchTest {
 
 
     private static Resource wiki() throws XPathExpressionException, JSONException {
-    	return new Resource(new JSONObject("{\"apitemplate\":\"http://searsia.org/searsia/wiki/wiki{q}.json\", \"id\":\"wiki\"}"));
+    	return new Resource(new JSONObject("{\"apitemplate\":\"http://searsia.org/searsia/wiki/wiki{searchTerms}.json\", \"id\":\"wiki\"}"));
     }
  
     private static Resource wrong() throws XPathExpressionException, JSONException {
-    	return new Resource(new JSONObject("{\"apitemplate\":\"http://reallyreallydoesnotexist.com/wrong?q={q}\", \"id\":\"wrong\"}"));
+    	return new Resource(new JSONObject("{\"apitemplate\":\"http://reallyreallydoesnotexist.com/wrong?q={searchTerms}\", \"id\":\"wrong\"}"));
     }
     
     private static Resource ok() throws XPathExpressionException, JSONException {
-        return new Resource(new JSONObject("{\"apitemplate\":\"http://searsia.org/searsia/wiki/wikifull1{q}.json\", \"id\":\"wikifull1\"}"));
+        return new Resource(new JSONObject("{\"apitemplate\":\"http://searsia.org/searsia/wiki/wikifull1{searchTerms}.json\", \"id\":\"wikifull1\"}"));
     }
     
     private static Resource okDeleted() throws XPathExpressionException, JSONException {
@@ -53,7 +53,7 @@ public class SearchTest {
     }
     
     private static Resource me() throws XPathExpressionException, JSONException {
-    	return new Resource(new JSONObject("{\"apitemplate\":\"http://me.org?q={q}\", \"id\":\"wiki\"}"));
+    	return new Resource(new JSONObject("{\"apitemplate\":\"http://me.org?q={searchTerms}\", \"id\":\"wiki\"}"));
     }
 
     @BeforeClass
@@ -130,7 +130,7 @@ public class SearchTest {
     
     @Test // returns local resource 'wrong' without apitemplate and health 
 	public void testResourceNoSharing() throws IOException, XPathExpressionException, JSONException {
-        String[] args = {"-d", "-n", "-m=http://searsia.org/searsia/wiki/wiki{q}.json"};
+        String[] args = {"-d", "-n", "-m=http://searsia.org/searsia/wiki/wiki{searchTerms}.json"};
     	SearsiaOptions newOptions = new SearsiaOptions(args);
 		Search search = new Search(index, engines, newOptions);
 		Response response = search.query("wrong.json", "", null, null);

@@ -39,21 +39,21 @@ public class TestResourceIndex {
      
     private static Resource utwente() throws XPathExpressionException, JSONException {
         JSONObject json = new JSONObject(
-            "{\"apitemplate\":\"http://utwente.nl/search?q={q}\",\"id\":\"567\",\"name\":\"UT\"}"
+            "{\"apitemplate\":\"http://utwente.nl/search?q={searchTerms}\",\"id\":\"567\",\"name\":\"UT\"}"
         );
     	return new Resource(json);
     }
     
     private static Resource searsia() throws XPathExpressionException, JSONException {
         JSONObject json = new JSONObject(
-            "{\"apitemplate\":\"http://searsia.com/?q={q}\",\"id\":\"1234\",\"privateparameters\":{\"api\":\"topsecret\"}}"
+            "{\"apitemplate\":\"http://searsia.com/?q={searchTerms}\",\"id\":\"1234\",\"privateparameters\":{\"api\":\"topsecret\"}}"
         );
     	return new Resource(json);
     }
     
     private static Resource newby() throws XPathExpressionException, JSONException {
         JSONObject json = new JSONObject(
-            "{\"apitemplate\":\"http://new.com/?q={q}\",\"id\":\"new\",\"privateparameters\":{\"apikey\":\"secret\"}}"
+            "{\"apitemplate\":\"http://new.com/?q={searchTerms}\",\"id\":\"new\",\"privateparameters\":{\"apikey\":\"secret\"}}"
         );
     	return new Resource(json);
     }

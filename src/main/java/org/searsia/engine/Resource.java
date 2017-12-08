@@ -70,7 +70,7 @@ public class Resource implements Comparable<Resource> {
     private final static int defaultPER = 86400000; // unit: miliseconds (86400000 miliseconds is one day)
     private final static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
     
-	// TODO: private static final Pattern queryPattern = Pattern.compile("\\{q\\??\\}");
+	// TODO: private static final Pattern queryPattern = Pattern.compile("\\{searchTerms\??\\}");
 
     // data to be set by JSON
 	private String id = null;
@@ -293,11 +293,15 @@ public class Resource implements Comparable<Resource> {
 
 
 	public SearchResult search(String query) throws SearchException {
-        return search(query, null);
+        return search(query, null, null);
 	}
 
 
 	public SearchResult search(String query, String debug) throws SearchException {
+        return search(query, debug, null);
+	}
+
+	public SearchResult search(String query, String debug, Integer startPage) throws SearchException {
         SearchResult result;
 		try {
 	        if (rateLimitReached()) {
@@ -306,7 +310,7 @@ public class Resource implements Comparable<Resource> {
 	        if (this.urlAPITemplate == null) {
 		        throw new SearchException("No API Template");
 		    }
-			String url = fillTemplate(this.urlAPITemplate, URLEncoder.encode(query, "UTF-8"));
+			String url = fillTemplate(this.urlAPITemplate, URLEncoder.encode(query, "UTF-8"), startPage);
 			String postString = "";
 			String postQuery;
 			if (this.postString != null && !this.postString.equals("")) {
@@ -321,7 +325,7 @@ public class Resource implements Comparable<Resource> {
 				} else {
 					postQuery = URLEncoder.encode(query, "UTF-8");
 				}
-				postString = fillTemplate(this.postString, postQuery);
+				postString = fillTemplate(this.postString, postQuery, startPage);
 			}
 			String page = getCompletePage(url, postString, this.headers);
             if (this.mimeType != null && this.mimeType.equals(SearchResult.SEARSIA_MIME_TYPE)) {
@@ -376,7 +380,7 @@ public class Resource implements Comparable<Resource> {
         try {
             String newRid = URLEncoder.encode(resourceid, "UTF-8");
             url = url.substring(0, lastIndex) + url.substring(lastIndex).replaceFirst(rid, newRid);
-            url = url.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}|\\{q\\}", ""); // remove optional parameters and query 
+            url = fillTemplate(url, "", null);
        		String jsonPage = getCompletePage(url, this.postString, this.headers);
     		JSONObject json = new JSONObject(jsonPage);
     		if (json.has("resource")) {
@@ -462,7 +466,7 @@ public class Resource implements Comparable<Resource> {
 		}
 		XPathFactory xFactory = XPathFactory.newInstance();
 		XPath xpath = xFactory.newXPath();
-		NodeList xmlNodeList = (NodeList) xpath.evaluate(itemXpath, document, XPathConstants.NODESET);
+		NodeList xmlNodeList = (NodeList) xpath.evaluate(this.itemXpath, document, XPathConstants.NODESET);
 		for (int i = 0; i < xmlNodeList.getLength() && i < 30; i++) {
 			Node item = xmlNodeList.item(i);
 			result.addHit(extractHit(item));
@@ -525,11 +529,22 @@ public class Resource implements Comparable<Resource> {
     }
 
     private String fillTemplate(String template, String query) throws SearchException {
+    	return fillTemplate(template, query, null);
+    }
+    
+    private String fillTemplate(String template, String query, Integer startPage) throws SearchException {
   		String url = template;
    		for (String param: getPrivateParameterKeys()) {
    			url = url.replaceAll("\\{" + param + "\\??\\}", getPrivateParameter(param));
    		}
-   		url = url.replaceAll("\\{q\\??\\}", query);
+   		url = url.replaceAll("\\{searchTerms\\??\\}", query); // opensearch standard
+   		url = url.replaceAll("\\{q\\??\\}", query); // old Searsia
+   		if (startPage == null) {
+   			startPage = this.getIndexOffset();
+   	   		url = url.replaceAll("\\{startPage\\}", startPage.toString());
+   		} else {
+       		url = url.replaceAll("\\{startPage\\??\\}", startPage.toString());
+   		}
         url = url.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", ""); // remove optional parameters
 		if (url.matches(".*\\{[0-9A-Za-z\\-_]+\\}.*")) {
 		    String param = url.substring(url.indexOf("{"), url.indexOf("}") + 1);
@@ -544,6 +559,7 @@ public class Resource implements Comparable<Resource> {
 
     private SearchException createPrivateSearchException(Exception e) {
   		String message = e.toString();
+  		message = message.replaceAll("java\\.[a-z]+\\.", "");
    		for (String param: getPrivateParameterKeys()) {
    			message = message.replaceAll(getPrivateParameter(param), "{" + param + "}");
    		}
@@ -570,11 +586,10 @@ public class Resource implements Comparable<Resource> {
         }
     }
 
-
     private URLConnection setConnectionProperties(URL url, Map<String, String> headers) throws IOException {
         URLConnection connection = url.openConnection();
         connection.setRequestProperty("User-Agent", "Searsia/1.0");
-        connection.setRequestProperty("Accept", this.mimeType); //TODO: "*/*"
+        connection.setRequestProperty("Accept", this.mimeType + "; q=1.0, */*; q=0.5");
         connection.setRequestProperty("Accept-Language", "en-US,en;q=0.5"); // TODO: from browser?
         for (Map.Entry<String, String> entry : headers.entrySet()) {
         	String value = entry.getValue();
@@ -849,6 +864,10 @@ public class Resource implements Comparable<Resource> {
 
     public Long getLastUsedSecondsAgo() {
         return secondsAgo(this.lastUsed);
+    }
+    
+    public int getIndexOffset() {
+    	return 1; // TODO: indexOffSet of opensearch url template syntax
     }
     
     public boolean isHealthy() {

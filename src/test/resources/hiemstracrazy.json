@@ -1,7 +1,7 @@
 {
     "resource": {
         "id": "hiemstrapost",
-        "apitemplate": "http://wwwhome.cs.utwente.nl/~hiemstra/?s={q}&api={apikey}&p={p?}",
+        "apitemplate": "http://wwwhome.cs.utwente.nl/~hiemstra/?s={searchTerms}&api={apikey}&paged={startPage?}",
         "extractors": {
             "description": "./h3/following-sibling::text()",
             "title": "./h3",
@@ -24,6 +24,6 @@
             "apikey": "SECRET!!"
         },
         "testquery": "searsia",
-        "urltemplate": "http://wwwhome.cs.utwente.nl/~hiemstra/?s={q}&api={apikey}&p={p?}"
+        "urltemplate": "http://wwwhome.cs.utwente.nl/~hiemstra/?s={searchTerms}&api={apikey}&paged={startPage?}"
     }
 }

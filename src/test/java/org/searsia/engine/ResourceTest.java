@@ -48,7 +48,7 @@ public class ResourceTest {
 
 	@Test
 	public void testSearchXml() throws XPathExpressionException, SearchException {
-		Resource se1 = new Resource("http://searsia.org/searsia/wiki/index{q}.json").updateFromAPI();
+		Resource se1 = new Resource("http://searsia.org/searsia/wiki/index{searchTerms}.json").updateFromAPI();
         Resource se2 = se1.searchResource("wikifull1");
 		SearchResult result = se2.search("informat");
 		Assert.assertEquals("application/xml", se2.getMimeType());
@@ -67,7 +67,7 @@ public class ResourceTest {
 
 	@Test
 	public void testSearchXml3() throws XPathExpressionException, SearchException {
-		Resource se1 = new Resource("http://searsia.org/searsia/wiki/cse1{q}.json").updateFromAPI();
+		Resource se1 = new Resource("http://searsia.org/searsia/wiki/cse1{searchTerms}.json").updateFromAPI();
 		SearchResult result = se1.search("life");
 		Assert.assertEquals("application/xml", se1.getMimeType());
 		Assert.assertEquals(10, result.getHits().size());
@@ -85,7 +85,7 @@ public class ResourceTest {
 
 	@Test
 	public void testSearchJson2() throws XPathExpressionException, SearchException {
-        Resource se = new Resource("http://searsia.org/searsia/wiki/wikifull1{q}.json");
+        Resource se = new Resource("http://searsia.org/searsia/wiki/wikifull1{searchTerms}.json");
 		SearchResult result = se.search("json");
 		Assert.assertEquals(1, result.getHits().size());
 		Assert.assertEquals("extra content", result.getHits().get(0).getString("content"));
@@ -93,14 +93,14 @@ public class ResourceTest {
 
     @Test
     public void testSearchJsonStrangeKeys() throws XPathExpressionException, SearchException {
-        Resource se = new Resource("http://searsia.org/searsia/wiki/wikifull1{q}.json");
+        Resource se = new Resource("http://searsia.org/searsia/wiki/wikifull1{searchTerms}.json");
         SearchResult result = se.search("strange keys");
         Assert.assertEquals(1, result.getHits().size());
     }
 
     @Test
     public void testSearchJsonHtmlAndlinks() throws XPathExpressionException, SearchException {
-        Resource se = new Resource("http://searsia.org/searsia/wiki/wikifull1{q}.json");
+        Resource se = new Resource("http://searsia.org/searsia/wiki/wikifull1{searchTerms}.json");
         SearchResult result = se.search("html and links");
         Assert.assertEquals(2, result.getHits().size());
         Assert.assertEquals("Another test for Searsia", result.getHits().get(0).getTitle());
@@ -118,7 +118,7 @@ public class ResourceTest {
 
 	@Test
 	public void testSearchSearsiaEmpty() throws XPathExpressionException, SearchException {
-		Resource se = new Resource("http://searsia.org/searsia/wiki/index{q}.json").updateFromAPI();
+		Resource se = new Resource("http://searsia.org/searsia/wiki/index{searchTerms}.json").updateFromAPI();
 		SearchResult result = se.searchWithoutQuery();
 		Assert.assertTrue(result.getHits().size() > 0);
 	}

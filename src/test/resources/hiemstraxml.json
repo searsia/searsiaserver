@@ -1,7 +1,7 @@
 {
     "resource": {
         "id": "hiemstraxml",
-        "apitemplate": "http://wwwhome.cs.utwente.nl/~hiemstra/?s={q}&p={p?}",
+        "apitemplate": "http://wwwhome.cs.utwente.nl/~hiemstra/?s={searchTerms}&paged={startPage?}",
         "extractors": {
             "description": "./h3/following-sibling::text()",
             "title": "./h3",
@@ -12,6 +12,6 @@
         "mimetype": "application/xml",
         "prior": 0.3,
         "testquery": "searsia",
-        "urltemplate": "http://wwwhome.cs.utwente.nl/~hiemstra/?s={q}&api={apikey}&p={p?}"
+        "urltemplate": "http://wwwhome.cs.utwente.nl/~hiemstra/?s={searchTerms}&api={apikey}&paged={startPage?}"
     }
 }

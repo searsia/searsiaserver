@@ -74,12 +74,14 @@ public class Search {
         		.build();
 	}
 
+	// TODO: gives 406 not acceptable whith "Accept: application/json"
+	
 	@GET @Path("{resourceid}")
 	@Produces(SearchResult.SEARSIA_MIME_ENCODING)
 	public Response query(@PathParam("resourceid")  String resourceid, 
 	                      @QueryParam("q")          String searchTerms, 
                           @QueryParam("resources")  String countResources, 
-	                      @QueryParam("page")       String pageOffset) {
+	                      @QueryParam("page")       String startPage) {
         resourceid = resourceid.replaceAll("\\.json$", "");
 		Resource me = engines.getMyself();
 		if (!resourceid.equals(me.getId())) {
@@ -95,10 +97,10 @@ public class Search {
 		       if (max > 200) { max = 200; } // FedWeb14 has about 150
 		       if (max < 1) { max = 1; }
 		    }
-            if (pageOffset != null) {
+            if (startPage != null) {
                 try {
-                    start = Integer.parseInt(pageOffset);
-                    start = (start - 1) * max; // openSearch standard default starts at 1
+                    start = Integer.parseInt(startPage);
+                    start = (start - me.getIndexOffset()) * max; // openSearch standard default starts at 1
                 } catch (NumberFormatException e) {
                     start = 0;
                 }

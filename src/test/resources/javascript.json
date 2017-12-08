@@ -1,7 +1,7 @@
 {
   "resource": {
     "id": "javascript",
-    "apitemplate": "http://searsia.org/searsia/wiki/wikifull1{q}.js",
+    "apitemplate": "http://searsia.org/searsia/wiki/wikifull1{searchTerms}.js",
     "itempath": "//hits",
     "extractors": {
         "description": "./description",
@@ -9,6 +9,6 @@
         "url": "./url"
     },
     "mimetype": "application/x-javascript",
-    "name": "Wiki Full 1",
+    "name": "Wiki Full 1"
   }
 }

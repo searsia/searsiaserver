@@ -18,7 +18,6 @@ package org.searsia;
 
 import java.io.File;
 import java.net.MalformedURLException;
-import java.net.URL;
 
 import org.apache.log4j.Level;
 import org.apache.commons.cli.DefaultParser;
@@ -36,7 +35,6 @@ import org.apache.commons.cli.ParseException;
 public class SearsiaOptions {
 		
     /* See setDefaults() below */
-	private Boolean anonymous;
     private String test;
     private Boolean quiet;
     private Boolean help;
@@ -58,19 +56,18 @@ public class SearsiaOptions {
      */
      public SearsiaOptions(String[] args) throws IllegalArgumentException, MalformedURLException {
     	Options options = new Options();
-        options.addOption("a", "anonymous",false, "Anonymous traffic by proxying all calls."); // TODO
         options.addOption("c", "cache",    true,  "Set cache size (integer: number of result pages).");
-        options.addOption("d", "dontshare",false, "Do not share resource definitions."); // TODO
+        options.addOption("d", "dontshare",false, "Do not share resource definitions.");
         options.addOption("e", "export",   false, "Export index to stdout and exit.");
         options.addOption("h", "help",     false, "Show help.");
         options.addOption("i", "interval", true,  "Set poll interval (integer: in seconds).");
         options.addOption("l", "log",      true,  "Set log level (0=off, 1=error, 2=warn=default, 3=info, 4=debug).");
-        options.addOption("m", "mother",   true,  "Set url of mother's web service end point.");
+        options.addOption("m", "mother",   true,  "Set url of mother's api web service end point.");
         options.addOption("n", "nohealth", false, "Do not share health report.");
         options.addOption("p", "path",     true,  "Set directory path to store the index.");
         options.addOption("q", "quiet",    false, "No output to console.");
         options.addOption("t", "test",     true,  "Print test output and exit (string: 'json', 'xml', 'response', 'all').");
-        options.addOption("u", "url",      true,  "Set url of my web service endpoint.");
+        options.addOption("u", "url",      true,  "Set url of my api web service endpoint.");
         setDefaults();
         parse(options, args);
         if (myURI == null) {
@@ -85,24 +82,7 @@ public class SearsiaOptions {
     	setDefaults();
     }
 
-    private String rootDir() {
-    	String rootDir = "searsia";
-    	String urlString = getMotherTemplate();
-        urlString = urlString.replaceAll("\\{[0-9A-Za-z\\-_]+\\?\\}", "");
-        try {
-            URL url = new URL(urlString);
-            String path = url.getPath();
-            if (path != null && path.contains("/")) {
-                path = path.replaceAll("\\/[^\\/]*$", ""); // remove file
-                path = path.replaceAll("^.+\\/", ""); // remove trailing directories
-                rootDir = path + "/";
-            }
-        } catch (MalformedURLException e) { }
-        return rootDir;
-    }
-
     private void setDefaults() {
-    	anonymous      = false;
         test           = null; // no test 
         help           = false;
         quiet          = false;
@@ -162,9 +142,6 @@ public class SearsiaOptions {
         } catch (ParseException e) {
             throw new IllegalArgumentException(e.getMessage() + " (use '-h' for help)");
         }
-        if (cmd.hasOption("a")) {
-            anonymous = true;
-        }
         if (cmd.hasOption("c")) {
             cacheSize = new Integer(cmd.getOptionValue("c"));
             if (cacheSize < 30) {
@@ -215,7 +192,7 @@ public class SearsiaOptions {
         }
         if (cmd.hasOption("h") || cmd.getArgs().length < 0 || !cmd.hasOption("m")) {
             if (!cmd.hasOption("m")) {
-                System.out.println("Please provide mother's url template (use '-m').");
+                System.out.println("Please provide mother's api url template (use '-m').");
             }
             help(options);
             help = true;
@@ -291,10 +268,6 @@ public class SearsiaOptions {
     	return indexPath;
     }
     
-    public Boolean isAnonymous() {
-    	return anonymous;
-    }
-    
     public Boolean isQuiet() {
     	return quiet;
     }
@@ -325,7 +298,6 @@ public class SearsiaOptions {
     	result += "\n  Poll Interval = " + getPollInterval();
     	result += "\n  Cache Size    = " + getCacheSize();
     	result += "\n  Test Output   = " + getTestOutput();
-        result += "\n  Anonymous     = " + isAnonymous();
         result += "\n  Do Not Share  = " + isNotShared();
         result += "\n  No Health Rep.= " + isNoHealthReport();
     	return result;

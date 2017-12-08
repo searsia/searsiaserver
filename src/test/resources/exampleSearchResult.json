@@ -53,7 +53,7 @@
   ],
   "resource": {
     "id": "nl.utwente.hiemstra",
-    "urltemplate": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/?s={q}",
+    "urltemplate": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/?s={searchTerms}",
     "favicon": "http:\/\/wwwhome.cs.utwente.nl\/~hiemstra\/images\/ut.ico",
     "name": "Djoerd Hiemstra"
   },
