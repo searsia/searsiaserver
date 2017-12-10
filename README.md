@@ -1,5 +1,5 @@
-Searsia Server
-==============
+Searsia Server Version 1
+========================
 http://searsia.org
 
 Usage:
