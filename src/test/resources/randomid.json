@@ -1,0 +1,8 @@
+{
+  "resource": {
+    "apitemplate": "http://searsia.org/searsia/wiki/wikididyoumean{searchTerms?}.json",
+    "id": "randomid",
+    "mimetype": "application/searsia+json",
+    "testquery": "searsia"
+  }
+}

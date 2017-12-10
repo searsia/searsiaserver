@@ -1,0 +1,22 @@
+{
+    "resource": {
+        "id": "hiemstra",
+        "apitemplate": "http://wwwhome.cs.utwente.nl/~hiemstra/",
+        "post": "s={searchTerms}&api={apikey}&paged={startPage?}",
+        "extractors": {
+            "description": "./h3/following-sibling::text()",
+            "title": "./h3",
+            "url": "./h3/a/@href"
+        },
+        "favicon": "http://wwwhome.cs.utwente.nl/~hiemstra/images/ut.ico",
+        "itempath": "//div[@class='post']",
+        "maxqueriesperday": 133,
+        "mimetype": "application/xml",
+        "prior": 0.3,
+        "privateparameters": {
+            "apikey": "SECRET!!"
+        },
+        "testquery": "searsia",
+        "urltemplate": "http://wwwhome.cs.utwente.nl/~hiemstra/?s={searchTerms}&api={apikey}&paged={startPage?}"
+    }
+}

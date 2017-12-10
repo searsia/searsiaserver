@@ -1,5 +1,6 @@
 /*
- * Copyright Walter Kasper
+ * Jsoup2DOM Copyright Walter Kasper
+ * Json2DOC  Copyright Searsia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +17,6 @@
 
 package org.searsia.engine;
 
-import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.HashMap;
@@ -31,15 +31,19 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.InputSource;
 
 /**
- * Returns a W3C DOM for a Jsoup parsed document.
+ * Returns a W3C DOM for a Jsoup parsed document or a Json parsed document.
  * 
- * @author <a href="mailto:kasper@dfki.de">Walter Kasper</a>
+ * @author Walter Kasper
+ * @author Djoerd Hiemstra
+ * 
  */
 public class DOMBuilder {
 
@@ -47,9 +51,9 @@ public class DOMBuilder {
    * Returns a W3C DOM that exposes the content as the supplied XML string. 
    * @param xmlString The XML string to parse.
    * @return A W3C Document.
-   * @throws   
+   * @throws RuntimeException if not well-formed
    */
-  public static Document string2DOM(String xmlString) throws IOException {
+  public static Document string2DOM(String xmlString) {
 
     Document document = null;
 
@@ -65,18 +69,27 @@ public class DOMBuilder {
         DocumentBuilder docBuilder = factory.newDocumentBuilder();
         document  =  docBuilder.parse(new InputSource(new StringReader(xmlString)));
     } catch (Exception e) {
-        throw new IOException(e);
+        throw new RuntimeException(e);
     }
     return document;
   }
 
   
+  /**
+   * Returns an XML string for a W3C Document 
+   * @param document A W3C Document
+   * @return XML string
+   */
   public static String DOM2String(Document document) {
       TransformerFactory tf = TransformerFactory.newInstance();
       Transformer transformer;
       try {
           transformer = tf.newTransformer();
           transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+          transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+          transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+          transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+          transformer.setOutputProperty(OutputKeys.INDENT, "yes");
           StringWriter writer = new StringWriter();
           transformer.transform(new DOMSource(document), new StreamResult(writer));
           String output = writer.getBuffer().toString();
@@ -104,7 +117,7 @@ public class DOMBuilder {
       
       /* Create a document to contain the content. */
       document = docBuilder.newDocument();
-      createDOM(jsoupDocument, document, document, new HashMap<String,String>());
+      createDOMfromJsoup(jsoupDocument, document, document, new HashMap<String,String>());
       
     } catch (ParserConfigurationException pce) {
       throw new RuntimeException(pce);
@@ -112,24 +125,52 @@ public class DOMBuilder {
     
     return document;
   }
+
   
+  /**
+   * Returns a W3C DOM that exposes the same content as the supplied JSON Object into a W3C DOM.
+   * @param jsonDocument The JSON Object to convert.
+   * @return A W3C Document.
+   */
+  public static Document json2DOM(JSONObject jsonDocument) {
+    
+    Document document = null;
+
+    try {
+
+      /* Obtain the document builder for the configured XML parser. */
+      DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
+      DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
+     
+      /* Create a document to contain the content. */
+      document = docBuilder.newDocument();
+      org.w3c.dom.Element _e = document.createElement("root");
+      document.appendChild(_e);
+      createDOMfromJSONObject(jsonDocument, _e, document);
+    } catch (ParserConfigurationException pce) {
+      throw new RuntimeException(pce);
+    }      
+    return document;
+  }
+  
+
   /**
    * The internal helper that copies content from the specified Jsoup <tt>Node</tt> into a W3C {@link Node}.
    * @param node The Jsoup node containing the content to copy to the specified W3C {@link Node}.
    * @param out The W3C {@link Node} that receives the DOM content.
    */
-  private static void createDOM(org.jsoup.nodes.Node node, Node out, Document doc, Map<String,String> ns) {
+  private static void createDOMfromJsoup(org.jsoup.nodes.Node node, Node out, Document doc, Map<String,String> ns) {
     if (node instanceof org.jsoup.nodes.Document) {
       
       org.jsoup.nodes.Document d = ((org.jsoup.nodes.Document) node);
       for (org.jsoup.nodes.Node n : d.childNodes()) {
-        createDOM(n, out,doc,ns);
+        createDOMfromJsoup(n, out,doc,ns);
       }
       
     } else if (node instanceof org.jsoup.nodes.Element) {
       
       org.jsoup.nodes.Element e = ((org.jsoup.nodes.Element) node);
-      org.w3c.dom.Element _e = doc.createElement(e.tagName());
+      org.w3c.dom.Element _e = doc.createElement(correctXML(e.tagName()));
       out.appendChild(_e);
       org.jsoup.nodes.Attributes atts = e.attributes();
       
@@ -153,14 +194,14 @@ public class DOMBuilder {
           }
         }
         try {
-            _e.setAttribute(attName, a.getValue());
+          _e.setAttribute(attName, a.getValue());
         } catch (DOMException domExcept) {
-             continue;
+           continue;
         }
       }
       
       for (org.jsoup.nodes.Node n : e.childNodes()) {
-        createDOM(n, _e, doc,ns);
+        createDOMfromJsoup(n, _e, doc,ns);
       }
       
     } else if (node instanceof org.jsoup.nodes.TextNode) {
@@ -193,4 +234,68 @@ public class DOMBuilder {
     return name;
   }
 
-}
+  /**
+   * The internal helpers that copy content from the specified JSON Object into a W3C {@link Node}.
+   * @param json The JSON object containing the content to copy to the specified W3C {@link Node}.
+   * @param out The W3C {@link Node} that receives the DOM content.
+   */
+  private static void createDOMfromJSONObject(JSONObject json, Node out, Document doc) {
+    String [] names = JSONObject.getNames(json);
+    if (names != null) {
+      for (String name : names) {
+        Object object = json.get(name);
+        if (object instanceof JSONArray) {
+          createDOMfromJSONArray((JSONArray) object, out, doc, name);
+        } else if (object instanceof JSONObject) {
+          org.w3c.dom.Element _e = doc.createElement(correctXML(name));
+          out.appendChild(_e);
+          createDOMfromJSONObject((JSONObject) object, _e, doc);
+        } else {
+          createDOMfromJSONPrimitive(object, out, doc, name);
+        }
+      }
+    }
+  }
+
+  private static void createDOMfromJSONArray(JSONArray json, Node out, Document doc, String name) {
+    for (Object o: json) {
+      if (o instanceof JSONArray) {
+        org.w3c.dom.Element _e = doc.createElement(correctXML(name));
+        out.appendChild(_e);
+        createDOMfromJSONArray((JSONArray) o, _e, doc, "list");
+      } else if (o instanceof JSONObject) {
+        org.w3c.dom.Element _e = doc.createElement(correctXML(name));
+        out.appendChild(_e);
+        createDOMfromJSONObject((JSONObject) o, _e, doc);
+      } else {
+        createDOMfromJSONPrimitive(o, out, doc, name);          
+      }
+    }
+  }
+
+  private static void createDOMfromJSONPrimitive(Object object, Node out, Document doc, String name) {
+    org.w3c.dom.Element _e = doc.createElement(correctXML(name));
+    out.appendChild(_e);
+    if (object instanceof String) {
+      _e.appendChild(doc.createTextNode((String) object));
+    } else if (object instanceof Boolean) {
+      _e.appendChild(doc.createTextNode(object.toString()));
+    } else if (object instanceof Integer) {
+      _e.appendChild(doc.createTextNode(Integer.toString((Integer) object)));
+    } else if (object instanceof Double) {
+      _e.appendChild(doc.createTextNode(Double.toString((Double) object)));
+    }
+  }
+  
+  /**
+   * XML Element names can contain letters, digits, hyphens, underscores, and periods
+   * Element names must start with a letter or underscore
+   * @param name XML element name
+   * @return correct XML element name
+   */
+  private static String correctXML(String name) {
+    name = name.replaceAll("[^A-Z0-9a-z\\-_\\.]|^([^A-Za-z_])", "_$1");
+    return name;
+  }
+  
+}  

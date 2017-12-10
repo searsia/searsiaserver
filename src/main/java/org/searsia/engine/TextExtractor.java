@@ -27,13 +27,18 @@ import org.w3c.dom.NodeList;
 
 import org.searsia.Hit;
 
+/**
+ * Manage XPath queries and extract the hit fields.
+ * 
+ * @author Dolf Trieschnigg 
+ * @author Djoerd Hiemstra
+ */
 public class TextExtractor {
 
 	private String field;
 	private String xpath;
 	private XPathExpression compiledXpath;
-	
-	private boolean trim = true;
+
 
 	public TextExtractor(String field, String xpath) throws XPathExpressionException {
 		this.field = field;
@@ -45,8 +50,14 @@ public class TextExtractor {
 	}
 
 
+	/**
+	 * Modifies hit by adding result for the text extractor
+	 * @param item An XML context element
+	 * @param hit An updated hit
+	 * @throws XPathExpressionException
+	 */
 	public void extract(Node item, Hit hit) throws XPathExpressionException {
-        String resultString = "";
+        String resultString = ""; // TODO: StringBuilder
 		try {
             NodeList nodeList = (NodeList) this.compiledXpath.evaluate(item, XPathConstants.NODESET);
             if (nodeList != null) {
@@ -66,32 +77,30 @@ public class TextExtractor {
 		}
 	}
 
-	/**
-	 * processes the match found with the XPath
-	 * 
-	 * By default, uses the trim attribute to indicate whether the match should be trimmed
-	 * Note: the string can be null
-	 * 
-	 * @param s
-	 * @return
-	 */
 	private String processMatch(String s) {
 		s = s.replaceAll("(?i)</?span[^>]*>|</?b>|</?i>|</?em>|</?strong>", "");  // No HTML, please: spans removed 
-		s = s.replaceAll("<[^>]+>", " ");  // all other tags replaced by a space 
-		if (trim) {
-			s = s.trim();
-		}
+		s = s.replaceAll("<[^>]+>|\ufffd", " ");  // all other tags or unicode replace character replaced by a space 
+    	s = s.trim();  // TODO multiple spaces, \\s ?
 		return s;
 	}
 	
+	/**
+	 * Get the field for the text extractor
+	 * @return field
+	 */
 	public String getField() {
 		return field;
 	}
 
+	/**
+	 * Get the XPath query for the text extractor
+	 * @return XPath query
+	 */
 	public String getPath() {
 		return xpath;
 	}
 	
+    @Override
 	public boolean equals(Object o) {
 		TextExtractor e = (TextExtractor) o;
 		if (!getField().equals(e.getField())) return false;

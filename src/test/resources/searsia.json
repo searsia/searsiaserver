@@ -1,0 +1,16 @@
+{
+  "resource": {
+    "id": "searsia",
+    "apitemplate": "http://searsia.org/searsia/search.json",
+    "itempath": "//hits",
+    "extractors": {
+        "description": "./description",
+        "title": "./title",
+        "url": "./url"
+    },
+    "favicon": "http://searsia.org/images/searsia.png",
+    "mimetype": "application/json",
+    "name": "Searsia",
+    "urltemplate": "http://searsia.org/searsia/search.json"
+  }
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Searsia
+ * Copyright 2016-2017 Searsia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,13 @@ import org.json.JSONObject;
 import org.searsia.index.ResourceIndex;
 import org.searsia.engine.Resource;
 
+/**
+ * A Searsia Search result page, 
+ * consisting of "hits", a "query" and a "resource".
+ * 
+ * @author Djoerd Hiemstra and Dolf Trieschnigg
+ */
+
 public class SearchResult {
 	public  static final String SEARSIA_MIME_TYPE     = "application/searsia+json";
 	public  static final String SEARSIA_MIME_ENCODING = SEARSIA_MIME_TYPE + "; charset=utf-8";
@@ -39,8 +46,10 @@ public class SearchResult {
 	private List<Hit> hits;
 	private Random random;
 	private Resource resource;
-	private String xmlOut;
+	private String debugOut;
 	private String query;
+    private String resourceId;
+	private String version;
 	
 	public SearchResult() {
 		this(null);
@@ -51,7 +60,8 @@ public class SearchResult {
 		this.random = new Random();
 		this.resource = null;
 		this.query = null;
-		this.xmlOut = null;
+		this.version = null;
+		this.debugOut = null;
 		if (hit != null) {
 			this.hits.add(hit);
 		}
@@ -72,13 +82,29 @@ public class SearchResult {
 	public Resource getResource() {
 		return this.resource;
 	}
+	
+    public void setResourceId(String resourceId) {
+        this.resourceId = resourceId;
+    }
 
-	public void setXmlOut(String xmlOut) {
-		this.xmlOut = xmlOut;
+    public String getResourceId() {
+        return this.resourceId;
+    }
+
+	public String getVersion() {
+	    return this.version;
 	}
 
-	public String getXmlOut() {
-		return this.xmlOut;
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
+	public void setDebugOut(String debugOut) {
+		this.debugOut = debugOut;
+	}
+
+	public String getDebugOut() {
+		return this.debugOut;
 	}
 
 	public void setQuery(String query) {
@@ -90,83 +116,168 @@ public class SearchResult {
 	}
 
 	// TODO: maybe a list of query-resource pairs, if result found by multiple engines for multiple queries.
-	public void addQueryResourceRankDate(String resourceID) {
-		int rank = 1;
-		String query = getQuery();
+	public void addResourceDate(String resourceID) {
 		for (Hit hit: this.hits) {
-			hit.putIfEmpty("query", query);
 			hit.putIfEmpty("rid", resourceID);  // TODO: if unknown rid, then replace!
-			hit.putIfEmpty("rank", rank++);
 			hit.putIfEmpty("foundBefore", df.format(new Date()));
 		}
 	}
 	
-	public void removeResourceRank() {
+	public void removeResource() {
 		for (Hit hit: this.hits) {
 			hit.remove("rid");
-			hit.remove("rank");
+			hit.remove("query"); // for legacy reasons, we added the query to the result before
 		}
 	}
+
+	/* ******************************************************************* 
+	 *  Code below reranks search results for resource selection
+	 * *******************************************************************/
 	
-	// TODO: needs a proper implementation, refactoring, and research ;-) 
-	// Scoring follows these rules:
-	//   1. hits are ordered such that the first hit per rid determines the resource ranking
-	//   2. if a resource has a exact query match, then these are ranked highest (given rule 1) 
-	//   3. order by score (given rule 1 and rule 2)
-	//   4. TODO: not more than x (=10?) hits per resource
-	//   5. stop after 20 resources
-	public void scoreResourceSelection(String query, ResourceIndex engines) {
-		final float bias = 1.0f;
-		Map<String, Float> maxScore = new HashMap<String, Float>();
-		Map <String, Float> topEngines = engines.topValues(query, 20);
+	
+	/**
+	 * New resource ranker, adds rscore.
+	 * @param query
+	 * @param engines
+	 */
+	public void scoreResourceSelection(String query, ResourceIndex engines, int max, int start) {
+	    SearchResult newResult = new SearchResult();
+		final float boost = 0.05f;
+		final int maxSize = max + start;
+		Map<String, Float> maxScores   = new HashMap<String, Float>();
+        Map<String, Integer> resourceReturned = new HashMap<String, Integer>();
+		Map<String, Float> topEngines = engines.topValuesNotDeleted(query, maxSize);
 		for (Hit hit: this.hits) {
 			String rid = hit.getString("rid");
 			if (rid != null) {
-				float prior = 0.0f;
-				if (engines.containsKey(rid)) {
+                Resource engine = engines.get(rid);
+                float prior = 0.0f;
+                if (engine != null) {
+                    if (engine.isDeleted()) { continue; } // cached result from a deleted resource	    
     				prior = engines.get(rid).getPrior();
 				}
-    			float score = hit.getScore() * bias + prior;
-				Float top = topEngines.get(rid);
-				if (top != null) { 
-					if (top > score) {
-       					score = top;
-					}
-					topEngines.remove(rid);
+                Float top = topEngines.get(rid);
+    			if (top != null) { 
+    			    if (top > prior) {
+    			        prior = top;
+    			    }
+    			    topEngines.remove(rid);
 				}
-				Float max = maxScore.get(rid);
-				if (max == null || max < score) {
-					maxScore.put(rid, score);
-					max = score;
-				} 
+                Integer returned = resourceReturned.get(rid);
+                if (returned == null) {
+                    returned = 0;
+                }
+                resourceReturned.put(rid, returned + 1);
+                Float score = prior + hit.getScore() * boost;
+				Float maxScore = maxScores.get(rid);
+				if (maxScore == null || maxScore < score) {
+                    maxScore = score;
+					maxScores.put(rid, maxScore);
+					returned = 0; // this is the best one, so we will add it below no matter what
+				}
                 hit.setScore(score);
-                //hit.put("rscore", max);
+                hit.setResourceScore(maxScore);
+                if (returned < 4) { // at most 4 results per resource
+                    newResult.addHit(hit);
+                }
+			} else {
+			    hit.setResourceScore(hit.getScore() * boost);
+	            newResult.addHit(hit);
 			}
 		}
-    	for (String rid: topEngines.keySet()) {
-   	        Hit hit = new Hit();
+        for (String rid: topEngines.keySet()) {
+            Hit hit = new Hit();
             hit.put("rid", rid);
             hit.setScore(topEngines.get(rid));
-            //hit.put("rscore", topEngines.get(rid));
-            this.hits.add(hit);
-		}
+            hit.setResourceScore(topEngines.get(rid));
+            newResult.addHit(hit);
+        }           
+		this.hits = newResult.hits;
 	    Collections.sort(this.hits, Collections.reverseOrder());
+	    selectBestResources(max, start); // TODO: efficiently combine this with sort?
+	}
+	
+    /**
+     * Selects the 'max' best resources, starting at resource 'start'
+     * Hits MUST be sorted already on rid (rscore).
+     * @param max
+     * @param start
+     */
+	public void selectBestResources(int max, int start) {
+	    String rid, previousRid = null;
+        int rFound  = 0;
+	    int rNeeded = start + max;
+	    int first = 0, i = 0;
+        for (Hit hit: this.hits) {
+            rid = hit.getRid();
+            if (rid != null && !rid.equals(previousRid)) {
+                previousRid = rid;
+                if (start > 0 && rFound == start) { first = i; } 
+                rFound += 1;
+                if (rFound > rNeeded) { break; } 
+            }
+            i += 1;
+        }		
+        if (rFound < start) {
+            this.hits.clear();
+        } else {
+    	    this.hits = this.hits.subList(first, i);
+        }
 	}
 	
 	
-	public void scoreReranking(String query, String model) { // TODO use model
+    public void scoreReranking(String query, String model) {
+        if ("random".equals(model)) {
+            scoreRerankingRandom();
+        } else if ("bestrandom".equals(model)) {
+            scoreRerankingBestRandom(query);
+        } else {
+            scoreRerankingRest(query);
+        }
+    }
+
+	private void scoreRerankingBestRandom(String query) {
+	    scoreRerankingRandom();
+	    scoreRerankingGeneral(query, 10);
+	}
+
+	private void scoreRerankingRest(String query) {
+	    scoreRerankingGeneral(query, 0);
+	}
+
+    private void scoreRerankingRandom() {
+        Hit hit;
+        int i, j,
+            size = this.hits.size();
+        for (i = 0; i < size; i += 1) {
+            j = random.nextInt(size);
+            hit = this.hits.get(i);
+            this.hits.set(i, this.hits.get(j));
+            this.hits.set(j, hit);
+        }
+    }
+
+	private void scoreRerankingGeneral(String query, int count) {
         SearchResult newResult = new SearchResult();
         Map<String, Float> queryTerms  = new HashMap<String, Float>();
         for (String term: query.toLowerCase().split(TOKENIZER)) {
-        	queryTerms.put(term, 0.01f); // TODO df from Lucene index?
+        	queryTerms.put(term, 0.1f); // TODO idf from Lucene index
         };
 		for (Hit hit: this.hits) {
 	        float score = 0.0f;
 			String text = hit.toIndexVersion();
+			for (String term: queryTerms.keySet()) {
+			    queryTerms.put(term, 0.1f);
+			}
 			for (String term: text.toLowerCase().split(TOKENIZER)) {
 	        	if (queryTerms.containsKey(term)) {
-	        		score += 1.0f;
+	        		score += queryTerms.get(term);
+	        		queryTerms.put(term, 0.0f);
 	        	}
+			}
+			if (count > 0) {
+			    score += 0.01f;
+			    count -= 1;
 			}
 			if (score > 0.001f) {
 				hit.put("score", score);
@@ -178,25 +289,48 @@ public class SearchResult {
 	}
 
 	
-	public String randomTerm() {
+    /* ******************************************************************* 
+     *  End of reranking code
+     * *******************************************************************/
+
+	
+	public String randomTerm(String notThisOne) { // TODO: keep track of more previous random queries?
         int size = this.hits.size();
         if (size > 0) {
     		int nr = random.nextInt(this.hits.size());
-    		String text = this.hits.get(nr).toIndexVersion();
+    		String text = this.hits.get(nr).toTitleDescriptionIndexVersion().toLowerCase();
     		String terms[] = text.split(TOKENIZER); // TODO Lucene tokenizer?
     		nr = random.nextInt(terms.length);
-    		return terms[nr];
+    		String thisOne = terms[nr];
+    		int i = nr;
+    		while (thisOne.length() < 1 || notThisOne.equals(thisOne)) {
+    		    if (i + 1 >= terms.length) { i = 0; }
+    		    else { i += 1; }
+    		    if (i == nr) { return null; }
+                thisOne = terms[i];
+    		}
+    		return thisOne;
         } else {
         	return null;
         }
 	}
 	
-	public JSONObject toJson() {
+    public JSONObject toJson() {
+        return toJson(false);
+    }
+
+	public JSONObject toJson(boolean censorQueryResourceId) {
 		JSONObject r = new JSONObject();
 		r.put("hits", new JSONArray());
 		for (Hit hit: hits) {
-			r.append("hits", hit.toJson());
+		    if (censorQueryResourceId) {
+                r.append("hits", hit.toJsonNoQueryResourceId());
+		    } else {
+     			r.append("hits", hit.toJson());
+		    }
 		}
 		return r;
 	}
+
+
 }

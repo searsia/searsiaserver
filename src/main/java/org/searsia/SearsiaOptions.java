@@ -17,8 +17,9 @@
 package org.searsia;
 
 import java.io.File;
-import org.apache.log4j.Level;
+import java.net.MalformedURLException;
 
+import org.apache.log4j.Level;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -27,57 +28,73 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 /**
- * Searsia Server options
+ * Searsia Server options.
  * @author Djoerd Hiemstra
  *
  */
 public class SearsiaOptions {
 		
     /* See setDefaults() below */
-    private Boolean openWide;
-    private Boolean exit;
+    private String test;
     private Boolean quiet;
+    private Boolean help;
+    private Boolean dontshare;
+    private Boolean export;
+    private Boolean nohealth;
 	private int cacheSize;
     private int pollInterval;
     private int logLevel;
     private String myURI;
     private String motherTemplate;
     private String indexPath; 
-    private String myName;
 
     /**
-     * Takes command line options and sensible defaults
-     * 
+     * Takes command line options and sensible defaults.
+     * @param args Command Line options
+     * @throws IllegalArgumentException
+     * @throws MalformedURLException 
      */
-    public SearsiaOptions(String[] args) throws IllegalArgumentException {
+     public SearsiaOptions(String[] args) throws IllegalArgumentException, MalformedURLException {
     	Options options = new Options();
         options.addOption("c", "cache",    true,  "Set cache size (integer: number of result pages).");
-        options.addOption("e", "exit",     false, "Exit immediately after startup.");
+        options.addOption("d", "dontshare",false, "Do not share resource definitions.");
+        options.addOption("e", "export",   false, "Export index to stdout and exit.");
         options.addOption("h", "help",     false, "Show help.");
         options.addOption("i", "interval", true,  "Set poll interval (integer: in seconds).");
         options.addOption("l", "log",      true,  "Set log level (0=off, 1=error, 2=warn=default, 3=info, 4=debug).");
-        options.addOption("m", "mother",   true,  "Set api template of the mother. ('none' for standalone)");
-        options.addOption("n", "name",     true,  "Set my id (name).");
-        options.addOption("o", "open",     false, "Open the system for on-line updates (be careful!)");
-        options.addOption("p", "path",     true,  "Set index path.");
-        options.addOption("q", "quiet",    false, "No output on console.");
-        options.addOption("u", "url",      true,  "Set url of my web service endpoint.");
+        options.addOption("m", "mother",   true,  "Set url of mother's api web service end point.");
+        options.addOption("n", "nohealth", false, "Do not share health report.");
+        options.addOption("p", "path",     true,  "Set directory path to store the index.");
+        options.addOption("q", "quiet",    false, "No output to console.");
+        options.addOption("t", "test",     true,  "Print test output and exit (string: 'json', 'xml', 'response', 'all').");
+        options.addOption("u", "url",      true,  "Set url of my api web service endpoint.");
         setDefaults();
         parse(options, args);
+        if (myURI == null) {
+            myURI = "http://localhost:16842/";
+        }
+    }
+    
+    /** 
+     * Default options, to be used for unit tests only.
+     */
+    public SearsiaOptions() {
+    	setDefaults();
     }
 
-    
     private void setDefaults() {
-        openWide       = false;
-        exit           = false;
+        test           = null; // no test 
+        help           = false;
         quiet          = false;
+        dontshare      = false;
+        export         = false;
+        nohealth       = false;
         cacheSize      = 500;
         pollInterval   = 120;
         logLevel       = 2;
-        myURI          = "http://localhost:16842/searsia/";
-        motherTemplate = "https://search.utwente.nl/searsia/search?q={q?}&r={r?}";
+        myURI          = null; // is set in constructor
+        motherTemplate = null;
         indexPath      = friendlyIndexPath();
-        myName         = null;
     }
     
     
@@ -91,10 +108,9 @@ public class SearsiaOptions {
     private String friendlyIndexPath() { 
     	String path;
     	String file = "searsia";
+    	String os   = System.getProperty("os.name").toLowerCase();
     	String home = System.getProperty("user.home");
     	if (home == null || !pathExists(home)) home = ".";
-    	
-    	String os   = System.getProperty("os.name").toLowerCase();
     	if (os.contains("win")) {  // On Windows
     	    path = System.getenv("AppData");
     	    if (!pathExists(path)) {
@@ -124,49 +140,31 @@ public class SearsiaOptions {
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
-            help(options);
-            throw new IllegalArgumentException(e);
+            throw new IllegalArgumentException(e.getMessage() + " (use '-h' for help)");
         }
-        
         if (cmd.hasOption("c")) {
             cacheSize = new Integer(cmd.getOptionValue("c"));
             if (cacheSize < 30) {
             	cacheSize = 30;
             }
         }
-        if (cmd.hasOption("e")) {
-            exit =  true;
-        }
-        if (cmd.hasOption("h") || cmd.getArgs().length > 0) {
-          	help(options);
-            throw new IllegalArgumentException("Help!"); // misusing exceptions :-(
-        }
-        try {
-            if (cmd.hasOption("i")) {
-                pollInterval = new Integer(cmd.getOptionValue("i"));
-                if (pollInterval < 5) {
-                  	pollInterval = 5;
-                }
+        if (cmd.hasOption("t")) {
+            test = cmd.getOptionValue("t").toLowerCase();
+            if (!(test.equals("json") || test.equals("xml") || test.equals("response") || test.equals("all"))) {
+                throw new IllegalArgumentException("Test output must be one of 'json', 'xml', 'response', or 'all'.");        	            	
             }
-            if (cmd.hasOption("l")) {
-                logLevel = new Integer(cmd.getOptionValue("l"));
-                if (logLevel < 0) {
-                	logLevel = 0;
-                }
+        }
+        if (cmd.hasOption("i")) {
+            pollInterval = new Integer(cmd.getOptionValue("i"));
+            if (pollInterval < 10) {
+              	pollInterval = 10;
             }
-        } catch (IllegalArgumentException e) {
-            help(options);
-            throw new IllegalArgumentException(e);        	
         }
-        if (cmd.hasOption("m")) {
-            motherTemplate = cmd.getOptionValue("m");
-            if (motherTemplate.equals("none")) motherTemplate = null;
-        }
-        if (cmd.hasOption("n")) {
-            myName    = cmd.getOptionValue("n");
-        }
-        if (cmd.hasOption("o")) {
-            openWide =  true;
+        if (cmd.hasOption("l")) {
+            logLevel = new Integer(cmd.getOptionValue("l"));
+            if (logLevel < 0) {
+            	logLevel = 0;
+            }
         }
         if (cmd.hasOption("p")) {
             indexPath = cmd.getOptionValue("p");
@@ -174,29 +172,70 @@ public class SearsiaOptions {
         if (cmd.hasOption("q")) {
             quiet = true;
         }
+        if (cmd.hasOption("d")) {
+            dontshare = true;
+        }
+        if (cmd.hasOption("e")) {
+            export = true;
+        }
+        if (cmd.hasOption("n")) {
+            nohealth = true;
+        }
         if (cmd.hasOption("u")) {
             myURI  = cmd.getOptionValue("u");
+        }
+        if (cmd.hasOption("m")) {
+            motherTemplate = cmd.getOptionValue("m");
+            if (!motherTemplate.matches("^https?://.*|^file:.*")) {
+                motherTemplate = "file:" + motherTemplate.replace("\\", "/"); // TODO C:\file on Windows?
+            }
+        }
+        if (cmd.hasOption("h") || cmd.getArgs().length < 0 || !cmd.hasOption("m")) {
+            if (!cmd.hasOption("m")) {
+                System.out.println("Please provide mother's api url template (use '-m').");
+            }
+            help(options);
+            help = true;
         }
     }
     
     
     private void help(Options options) {
         HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp("SearsiaServer", options);
+        formatter.printHelp("searsiaserver", options);
      }
     
+    /**
+     * Get the size of the SearchResult cache.
+     * @return cache size
+     */
     public int getCacheSize() {
     	return cacheSize;
     }
 
-    public Boolean isExit() {
-    	return exit;
+    /**
+     * Get the test that needs to be executed.
+     * Possible values: "json", "xml", "response", "all", or null (no test)
+     * @return test
+     */
+    public String getTestOutput() {
+    	return test;
     }
     
+    /**
+     * Get log level, a value between 0 and 5
+     * Possible values: 0=off, 1=error, 2=warn (default), 3=info, 4=debug, 5=trace
+     * @return log level
+     */
     public int getLogLevel() {
     	return logLevel;
     }
     
+    /**
+     * Get the log4j level.
+     * Possible values: off, error, warn (default), info, debug, trace
+     * @return log4j level
+     */
     public Level getLoggerLevel() {
     	switch(logLevel) {
         	case 0 : return Level.OFF; 
@@ -209,6 +248,10 @@ public class SearsiaOptions {
     	}
     }
     
+    /**
+     * Get poll interval (in seconds).
+     * @return poll interval.
+     */
     public int getPollInterval() {
     	return pollInterval;
     }
@@ -225,29 +268,38 @@ public class SearsiaOptions {
     	return indexPath;
     }
     
-    public String getMyName() {
-    	return myName;
-    }
-    
-    public Boolean openedWide() {
-    	return openWide;
-    }
-
     public Boolean isQuiet() {
     	return quiet;
     }
     
+    public Boolean isNotShared() {
+        return dontshare;
+    }
+
+    public Boolean isExport() {
+        return export;
+    }
+
+    public Boolean isNoHealthReport() {
+        return nohealth;
+    }
+    
+    public Boolean isHelp() {
+        return help;
+    }
+
     @Override
     public String toString() {
     	String result = "SearsiaOptions:";
     	result += "\n  Log Level     = " + getLoggerLevel();
     	result += "\n  Base Url      = " + getMyURI();
     	result += "\n  Mother        = " + getMotherTemplate();
-    	result += "\n  Index Name    = " + getMyName();
     	result += "\n  Index Path    = " + getIndexPath();
     	result += "\n  Poll Interval = " + getPollInterval();
-    	result += "\n  Allows update = " + openedWide();
     	result += "\n  Cache Size    = " + getCacheSize();
+    	result += "\n  Test Output   = " + getTestOutput();
+        result += "\n  Do Not Share  = " + isNotShared();
+        result += "\n  No Health Rep.= " + isNoHealthReport();
     	return result;
     }
 

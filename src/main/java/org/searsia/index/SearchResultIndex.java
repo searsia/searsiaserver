@@ -1,7 +1,24 @@
+/*
+ * Copyright 2016-2017 Searsia
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.searsia.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import org.apache.log4j.Logger;
@@ -25,9 +42,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
-
 import org.searsia.Hit;
 import org.searsia.SearchResult;
 
@@ -85,6 +102,7 @@ public class SearchResultIndex {
     private void openReader() throws IOException {
         this.hitsReader   = DirectoryReader.open(FSDirectory.open(this.hitsDirectory));
         this.hitsSearcher = new IndexSearcher(this.hitsReader);
+        this.hitsSearcher.setSimilarity(new BM25Similarity(0.0f, 0.0f)); // simple idf scoring 
         //searcher.setSimilarity(new BM25Similarity(1.2f, 0.75f)); // k1, b
         //searcher.setSimilarity(new LMDirichletSimilarity(200f)); // mu
         //searcher.setSimilarity(new LMJelinekMercerSimilarity(0.5f)); // lambda
@@ -126,11 +144,12 @@ public class SearchResultIndex {
     }
     
     public void offer(SearchResult result) {
+        // assert(result.getQuery() != null && result.getResourceId() != null);
     	this.queue.offer(result);
     }
     
     public SearchResult search (String queryString) throws IOException {
-        return search(queryString, 40);
+        return search(queryString, 80);
     }
     
     public SearchResult search (String queryString, int hitsPerPage) throws IOException  {
@@ -159,7 +178,12 @@ public class SearchResultIndex {
         return result;
     }
     
-    
+    /**
+     * Get Hit by Lucene id. Used for tests only
+     * @param hitId
+     * @return hit
+     * @throws IOException
+     */
     protected Hit getHit(String hitId) throws IOException {
     	Term term = new Term("id", hitId);
     	Query query = new TermQuery(term);
@@ -176,29 +200,48 @@ public class SearchResultIndex {
     	}
     }
 
+    /**
+     * Searches the queue for a cached result
+     * TODO: Is this thread safe in case of a concurrent cash flush?  See:
+     * https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/package-summary.html#Weakly
+     * @param query
+     * @return search result page
+     */
+    public SearchResult cacheSearch(String query, String resourceId) {
+        if (query != null && resourceId != null) {  // TODO: make more efficient with initial HashMap check query+id
+            Iterator<SearchResult> iterator = this.queue.iterator();
+            while (iterator.hasNext()) {
+                SearchResult result = iterator.next();
+                if (query.equals(result.getQuery()) && resourceId.equals(result.getResourceId())) {
+                    return result;
+                }
+            }
+        }
+        return null;
+    }
 
     /**
      * Flushes the queue with updates to disk
      * @throws IOException
      */
     public void flush() throws IOException {
-        while (queue.size() > 0) {
-            SearchResult result = queue.poll();
+        while (this.queue.size() > 0) {
+            SearchResult result = this.queue.poll();
             storeSearchResult(result);
-        } 
+        }
         this.hitsWriter.commit();
         closeReader();
-        LOGGER.info("{\"message\":\"Flushed cache to index.\"}");
+        LOGGER.info("Flushed cache to index.");
     }
     
     /**
      * Checks if the queue is full (its size is larger than 'limit')
      * If so, it flushes the updates to disk.
-     * @return true is queue was flushed.
+     * @return true if queue was flushed.
      * @throws IOException
      */
-    public boolean check() throws IOException {
-    	boolean full = queue.size() > limit;
+    public boolean checkFlush() throws IOException {
+    	boolean full = this.queue.size() > limit;
         if (full) {
             flush();
         } 

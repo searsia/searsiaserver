@@ -16,7 +16,9 @@
 
 package org.searsia.engine;
 
-
+/**
+ * A Searsia Search Exception
+ */
 public class SearchException extends Exception {
 
 	private static final long serialVersionUID = -7429746644586456271L;
@@ -29,4 +31,17 @@ public class SearchException extends Exception {
 		super(message);
 	}
 	
+	@Override
+	public String getMessage() {
+		String message = super.getMessage();
+		message = message.replaceAll("^[A-Za-z\\.]*\\.", ""); // removes Java package names
+		message = message.replaceAll(":? ?https?:[^ ]+", ""); // removes URLs (which may contain API keys)
+        return message;
+	}
+
+	@Override
+	public String getLocalizedMessage() { // misusing Localization for full error message
+		return super.getMessage();
+	}
+
 }
