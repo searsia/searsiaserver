@@ -269,7 +269,14 @@ public class Main {
         		tip = " Try removing rerank.";
         	}
             throw new SearchException("No results for test query." + tip);
-        } 
+        } else {
+            for (Hit hit: result.getHits()) {
+                if ((hit.getTitle() == null || hit.getTitle().equals("")) && 
+                	(hit.getRid() == null || hit.getRid().equals(""))) {
+                	throw new SearchException("Search result must have a title or a rid.");
+                }
+            }
+        }
         if (result.getHits().size() < 10) {
             printMessage("Warning: less than 10 results for query '" + result.getQuery() + "'; see \"testquery\" or \"rerank\".", isQuiet);
         } else if (result.getHits().size() > 49) {
@@ -432,7 +439,7 @@ public class Main {
         // Start the update daemon if not testing
         if (options.getTestOutput() == null) {
         	String myAPI = normalizedUriToTemplate(myURI + "searsia/", myself.getId()); 
-            printMessage("API end point: " + myAPI, options.isQuiet());
+            printMessage("API template: " + myAPI, options.isQuiet());
             printMessage("Use Ctrl+c to stop.", options.isQuiet());
             try {
                 searsiaDaemon(index, engines, options);
