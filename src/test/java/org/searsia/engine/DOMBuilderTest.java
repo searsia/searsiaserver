@@ -27,6 +27,10 @@ public class DOMBuilderTest {
         return result;
     }
 
+    /**
+     *  Only run tests if files test.json/test.html are present in resources
+     */
+    
     @Test
     public void testJsonFileIfExists() {
         String jsonString = null;

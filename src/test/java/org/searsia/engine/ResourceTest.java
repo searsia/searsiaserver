@@ -84,6 +84,14 @@ public class ResourceTest {
 	}
 
 	@Test
+	public void testSearchHtmlPlusJson() throws XPathExpressionException, SearchException {
+		Resource se = new Resource("http://searsia.org/searsia/wiki/cse2.json").updateFromAPI();
+		SearchResult result = se.search(se.getTestQuery());
+		Assert.assertEquals("application/html+json", se.getMimeType());
+		Assert.assertTrue("Result size 3", result.getHits().size() == 3);
+	}
+
+	@Test
 	public void testSearchJson2() throws XPathExpressionException, SearchException {
         Resource se = new Resource("http://searsia.org/searsia/wiki/wikifull1{searchTerms}.json");
 		SearchResult result = se.search("json");

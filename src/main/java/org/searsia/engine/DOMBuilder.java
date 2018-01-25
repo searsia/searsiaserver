@@ -106,11 +106,8 @@ public class DOMBuilder {
    * @return A W3C Document.
    */
   public static Document jsoup2DOM(org.jsoup.nodes.Document jsoupDocument) {
-    
     Document document = null;
-    
     try {
-      
       /* Obtain the document builder for the configured XML parser. */
       DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
       DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
@@ -118,11 +115,9 @@ public class DOMBuilder {
       /* Create a document to contain the content. */
       document = docBuilder.newDocument();
       createDOMfromJsoup(jsoupDocument, document, document, new HashMap<String,String>());
-      
     } catch (ParserConfigurationException pce) {
       throw new RuntimeException(pce);
     }
-    
     return document;
   }
 
@@ -133,11 +128,22 @@ public class DOMBuilder {
    * @return A W3C Document.
    */
   public static Document json2DOM(JSONObject jsonDocument) {
-    
+    return json2DOMparseOption(jsonDocument, false);	 
+  }
+
+  /**
+   * Returns a W3C DOM that exposes the same content as the supplied JSON Object into a W3C DOM.
+   * Additionally parses JSON strings into XML.
+   * @param jsonDocument The JSON Object to convert.
+   * @return A W3C Document.
+   */
+  public static Document jsonAndHtml2DOM(JSONObject jsonDocument) {
+    return json2DOMparseOption(jsonDocument, true);	 
+  }
+ 
+  private static Document json2DOMparseOption(JSONObject jsonDocument, boolean parseHTML) {
     Document document = null;
-
     try {
-
       /* Obtain the document builder for the configured XML parser. */
       DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
       DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
@@ -146,7 +152,7 @@ public class DOMBuilder {
       document = docBuilder.newDocument();
       org.w3c.dom.Element _e = document.createElement("root");
       document.appendChild(_e);
-      createDOMfromJSONObject(jsonDocument, _e, document);
+      createDOMfromJSONObject(jsonDocument, _e, document, parseHTML);
     } catch (ParserConfigurationException pce) {
       throw new RuntimeException(pce);
     }      
@@ -239,44 +245,48 @@ public class DOMBuilder {
    * @param json The JSON object containing the content to copy to the specified W3C {@link Node}.
    * @param out The W3C {@link Node} that receives the DOM content.
    */
-  private static void createDOMfromJSONObject(JSONObject json, Node out, Document doc) {
+  private static void createDOMfromJSONObject(JSONObject json, Node out, Document doc, boolean parseHTML) {
     String [] names = JSONObject.getNames(json);
     if (names != null) {
       for (String name : names) {
         Object object = json.get(name);
         if (object instanceof JSONArray) {
-          createDOMfromJSONArray((JSONArray) object, out, doc, name);
+          createDOMfromJSONArray((JSONArray) object, out, doc, name, parseHTML);
         } else if (object instanceof JSONObject) {
           org.w3c.dom.Element _e = doc.createElement(correctXML(name));
           out.appendChild(_e);
-          createDOMfromJSONObject((JSONObject) object, _e, doc);
+          createDOMfromJSONObject((JSONObject) object, _e, doc, parseHTML);
         } else {
-          createDOMfromJSONPrimitive(object, out, doc, name);
+          createDOMfromJSONPrimitive(object, out, doc, name, parseHTML);
         }
       }
     }
   }
 
-  private static void createDOMfromJSONArray(JSONArray json, Node out, Document doc, String name) {
+  private static void createDOMfromJSONArray(JSONArray json, Node out, Document doc, String name, boolean parseHTML) {
     for (Object o: json) {
       if (o instanceof JSONArray) {
         org.w3c.dom.Element _e = doc.createElement(correctXML(name));
         out.appendChild(_e);
-        createDOMfromJSONArray((JSONArray) o, _e, doc, "list");
+        createDOMfromJSONArray((JSONArray) o, _e, doc, "list", parseHTML);
       } else if (o instanceof JSONObject) {
         org.w3c.dom.Element _e = doc.createElement(correctXML(name));
         out.appendChild(_e);
-        createDOMfromJSONObject((JSONObject) o, _e, doc);
+        createDOMfromJSONObject((JSONObject) o, _e, doc, parseHTML);
       } else {
-        createDOMfromJSONPrimitive(o, out, doc, name);          
+        createDOMfromJSONPrimitive(o, out, doc, name, parseHTML);
       }
     }
   }
 
-  private static void createDOMfromJSONPrimitive(Object object, Node out, Document doc, String name) {
-    org.w3c.dom.Element _e = doc.createElement(correctXML(name));
+  private static void createDOMfromJSONPrimitive(Object object, Node out, Document doc, String name, boolean parseHTML) {
+	org.w3c.dom.Element _e = doc.createElement(correctXML(name));
     out.appendChild(_e);
-    if (object instanceof String) {
+    if (object instanceof String && parseHTML) {
+        org.jsoup.nodes.Document jsoupDoc = org.jsoup.Jsoup.parse((String) object);
+  		Document xmlDoc = jsoup2DOM(jsoupDoc);
+        _e.appendChild(doc.importNode(xmlDoc.getDocumentElement(), true));
+    } else if (object instanceof String) {
       _e.appendChild(doc.createTextNode((String) object));
     } else if (object instanceof Boolean) {
       _e.appendChild(doc.createTextNode(object.toString()));

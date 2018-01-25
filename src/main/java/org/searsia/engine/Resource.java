@@ -442,15 +442,17 @@ public class Resource implements Comparable<Resource> {
 		if (this.mimeType == null) {
 		    throw new IOException("No MIME Type provided.");
 		}
-		if (this.mimeType.equals("application/json")) {
-		   document = parseDocumentJSON(page);
-		} else if (this.mimeType.equals("application/x-javascript")) {
-		    document = parseDocumentJavascript(page);
-		} else if (this.mimeType.equals("application/xml")) {
+		if (this.mimeType.equals("application/xml")) {
 		    document = parseDocumentXML(page);
 		} else if (this.mimeType.equals("text/html")) {
 		    document = parseDocumentHTML(page, url);
-		} else {
+		} else if (this.mimeType.equals("application/json")) {
+			document = parseDocumentJSON(page);
+	    } else if (this.mimeType.equals("application/x-javascript")) {
+			document = parseDocumentJavascript(page);
+	    } else if (this.mimeType.equals("application/html+json")) { // html with a json wrapper, yes that's done on the web 
+			document = parseDocumentJSONandHTML(page);
+	    } else {
 		    throw new IOException("MIME Type not supported: " + this.mimeType);
 		}
 		if (document == null) {
@@ -522,6 +524,13 @@ public class Resource implements Comparable<Resource> {
         	jsonString = "{\"list\":" + jsonString + "}";
         }
         return DOMBuilder.json2DOM(new JSONObject(jsonString));
+    }
+	
+    private Document parseDocumentJSONandHTML(String jsonString) {
+        if (jsonString.startsWith("[")) {  // turn lists into objects    
+        	jsonString = "{\"list\":" + jsonString + "}";
+        }
+        return DOMBuilder.jsonAndHtml2DOM(new JSONObject(jsonString));
     }
 	
     private Document parseDocumentXML(String xmlString) {
