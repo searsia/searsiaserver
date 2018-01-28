@@ -18,7 +18,10 @@ package org.searsia.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import org.apache.log4j.Logger;
@@ -34,6 +37,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
@@ -58,11 +62,19 @@ import org.searsia.SearchResult;
  */
 public class SearchResultIndex {
 
-    public static final Hit SEARSIA_HIT = 
+    public static final Hit SEARSIA_HIT  = 
   	    new Hit("Searsia", "Search for noobs", "http://searsia.org", "http://searsia.org/images/searsia.png");
-    private final static Logger LOGGER = Logger.getLogger(SearchResultIndex.class.getName());
-    private final static Version version = Version.LUCENE_4_10_4;
-
+    private final static Logger LOGGER   = Logger.getLogger(SearchResultIndex.class.getName());
+    private final static Version VERSION = Version.LUCENE_4_10_4;
+    private final static String[] FIELDS = { "title", "terms" };
+    private final static Map<String, Float> BOOSTS;
+    static {
+        Map<String, Float> boosts = new HashMap<String, Float>();
+        boosts.put("terms",  1.0f);
+        boosts.put("title",  0.02f); // title matches get a little bit extra
+        BOOSTS = Collections.unmodifiableMap(boosts);
+    }
+    	
     private ArrayBlockingQueue<SearchResult> queue;
     private int           limit;
     
@@ -92,7 +104,7 @@ public class SearchResultIndex {
     
     private void openWriter() throws IOException { 
     	StandardAnalyzer indexAnalyzer   = new StandardAnalyzer();
-    	IndexWriterConfig indexConfig    = new IndexWriterConfig(version, indexAnalyzer);
+    	IndexWriterConfig indexConfig    = new IndexWriterConfig(VERSION, indexAnalyzer);
         indexConfig.setOpenMode(OpenMode.CREATE_OR_APPEND);
         this.hitsWriter = new IndexWriter(FSDirectory.open(this.hitsDirectory), indexConfig);
         storeSearchResult(new SearchResult(SEARSIA_HIT));
@@ -133,10 +145,12 @@ public class SearchResultIndex {
         for (Hit hit: result.getHits()) {
             String id = hit.getId();
             String terms = hit.toIndexVersion();
+            String title = hit.getTitle();
             Document doc = new Document();
-            if (id != null && hit.getTitle() != null) { // must have a title
+            if (id != null && title != null) { // must have a title
                 doc.add(new StringField("id", id, Field.Store.YES)); // unique identifier
                 doc.add(new TextField("terms", terms, Field.Store.NO));
+                doc.add(new TextField("title", title, Field.Store.NO));
                 doc.add(new StoredField("result", hit.toJson().toString()));
                 this.hitsWriter.updateDocument(new Term("id", id), doc);
             }
@@ -157,9 +171,11 @@ public class SearchResultIndex {
     	result.setQuery(queryString);
         TopScoreDocCollector collector;
         ScoreDoc[] docs;
+        
         Query query;
         try { // new Query parser, because it is not thread safe
-            query = new QueryParser("terms", new StandardAnalyzer()).parse(QueryParser.escape(queryString));
+            // query = new QueryParser("terms", new StandardAnalyzer()).parse(QueryParser.escape(queryString));
+        	query = new MultiFieldQueryParser(FIELDS, new StandardAnalyzer(), BOOSTS).parse(QueryParser.escape(queryString));
         } catch (ParseException e) {
             throw new IOException(e);
         }

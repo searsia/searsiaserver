@@ -93,7 +93,9 @@ public class TestSearchResultIndex {
     @Test
     public void testSearch3() throws Exception {
         SearchResult result = index.search("retrieval");
+        Hit hit1 = result.getHits().get(0);
 		Assert.assertEquals(6, result.getHits().size());
+		Assert.assertTrue(hit1.getTitle().startsWith("Ilya")); // title match gets boost
     }
     
     @Test  // test hit lookup (not used currently)
@@ -118,7 +120,7 @@ public class TestSearchResultIndex {
         result = index.cacheSearch("nope", resourceId);
         Assert.assertTrue(result == null);
     }
-
+    
     /** 
      *  Can also be used from the command line to test an existing index
      *  @param args query
