@@ -73,6 +73,9 @@ public class SearsiaOptions {
         if (myURI == null) {
             myURI = "http://localhost:16842/";
         }
+        if (!myURI.endsWith("/")) {
+        	myURI += "/";
+        }
     }
     
     /** 

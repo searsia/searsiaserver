@@ -821,6 +821,9 @@ public class Resource implements Comparable<Resource> {
 		if (this.prior != null) {
             prior = this.prior;
         }
+        long timePassed = new Date().getTime() - this.upsince; // in milisceconds
+        if (timePassed < 604800000) { timePassed = 604800000; } // min one week
+        timePassed /= 6000; // in 10-seconds
 		prior += this.nrOfOk * 0.00001f; // add a tiny amount of success...
         prior -= this.nrOfError * 0.00001f; 
 		return prior;
