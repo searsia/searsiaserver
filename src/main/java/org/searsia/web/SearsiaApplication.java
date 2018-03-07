@@ -69,7 +69,7 @@ public class SearsiaApplication extends ResourceConfig {
 			                  ResourceIndex engines, 
 			                  SearsiaOptions options) throws IOException {
 		super();
-		java.util.logging.Logger.getLogger("").setLevel(java.util.logging.Level.WARNING);
+		java.util.logging.Logger.getLogger("").setLevel(java.util.logging.Level.OFF);
 		register(new Search(index, engines, options));
 		register(new OpenSearch(engines, options.isNotShared()));
         register(new Redirect(engines.getMyself().getId()));

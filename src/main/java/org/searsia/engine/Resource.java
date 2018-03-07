@@ -816,16 +816,16 @@ public class Resource implements Comparable<Resource> {
         return prior;
     }
 
-	public float getPrior() {
-	    float prior = 0.0f;
-		if (this.prior != null) {
+    public float getPrior() {
+        float prior = 0.0f;
+        if (this.prior != null) {
             prior = this.prior;
         }
         long timePassed = new Date().getTime() - this.upsince; // in milisceconds
-        if (timePassed < 604800000) { timePassed = 604800000; } // min one week
+        if (timePassed < 604800000l) { timePassed = 604800000l; } // minimum one week
         timePassed /= 6000; // in 10-seconds
-		prior += this.nrOfOk * 0.00001f; // add a tiny amount of success...
-        prior -= this.nrOfError * 0.00001f; 
+		prior += (float) this.nrOfOk / timePassed; // add a tiny amount of success...
+        prior -= (float) this.nrOfError / timePassed; 
 		return prior;
 	}
 
