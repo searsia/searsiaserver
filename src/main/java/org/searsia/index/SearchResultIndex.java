@@ -142,6 +142,8 @@ public class SearchResultIndex {
     }
     
     private void storeSearchResult(SearchResult result)  throws IOException { 
+        String foundBefore = result.getDate();
+        String resourceId  = result.getResourceId();
         for (Hit hit: result.getHits()) {
             String id = hit.getId();
             String terms = hit.toIndexVersion();
@@ -151,7 +153,7 @@ public class SearchResultIndex {
                 doc.add(new StringField("id", id, Field.Store.YES)); // unique identifier
                 doc.add(new TextField("terms", terms, Field.Store.NO));
                 doc.add(new TextField("title", title, Field.Store.NO));
-                doc.add(new StoredField("result", hit.toJson().toString()));
+                doc.add(new StoredField("result", hit.toJsonIndex(foundBefore, resourceId).toString()));
                 this.hitsWriter.updateDocument(new Term("id", id), doc);
             }
         }

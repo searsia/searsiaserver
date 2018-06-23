@@ -91,8 +91,7 @@ public class Main {
                     	engine = engines.getRandom();
                         LOGGER.trace("Next sample: " + engine.getId());
                        	result = engine.randomSearch();
-        				result.removeResource();     // only trust your mother
-        				result.addResourceDate(engine.getId());
+        				result.removeHitsResourceId();     // only trust your mother
                 	}
                		index.offer(result);
                		LOGGER.info("Sampled " + engine.getId() + ": " + result.getQuery());
@@ -334,7 +333,7 @@ public class Main {
     	if (options.isHelp()) { 
     	    System.exit(0); 
     	}
-        printMessage("Searsia server " + SearsiaApplication.VERSION, options.isQuiet());
+        printMessage("Searsia server " + SearsiaApplication.SEARSIAVERSION, options.isQuiet());
        
         
     	// Connect to the mother engine and gather information from the mother.

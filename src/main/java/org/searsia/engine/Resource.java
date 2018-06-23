@@ -48,7 +48,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
-import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.searsia.Hit;
@@ -67,6 +67,7 @@ public class Resource implements Comparable<Resource> {
 
     // For rate limiting: Default = 1000 queries per day
     private final static int defaultRATE = 1000;    // unit: queries
+    private final static int defaultSHELFLIFE = 336; // unit: hours (336 hours = 2 weeks)
     private final static int defaultPER = 86400000; // unit: miliseconds (86400000 miliseconds is one day)
     private final static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
     
@@ -92,6 +93,7 @@ public class Resource implements Comparable<Resource> {
 	private Float prior = null;
 	private String rerank = null;
 	private int rate = defaultRATE;
+	private int shelflifehours = defaultSHELFLIFE;
 	private boolean deleted = false;
 	
 	// internal data shared for health report
@@ -134,6 +136,7 @@ public class Resource implements Comparable<Resource> {
         if (jo.has("deleted"))         this.deleted         = jo.getBoolean("deleted");
 		if (jo.has("prior"))           this.prior           = new Float(jo.getDouble("prior"));
 		if (jo.has("maxqueriesperday")) this.rate           = jo.getInt("maxqueriesperday");
+        if (jo.has("shelflifehours"))  this.shelflifehours  = jo.getInt("shelflifehours");
 		if (jo.has("extractors")) {
 			JSONObject json = (JSONObject) jo.get("extractors");
 			Iterator<?> keys = json.keys();
@@ -438,37 +441,37 @@ public class Resource implements Comparable<Resource> {
 
 	private SearchResult xpathSearch(String url, String page, String debug)
 			throws IOException, XPathExpressionException {
-		Document document = null;
+		DOMBuilder builder = null;
 		if (this.mimeType == null) {
 		    throw new IOException("No MIME Type provided.");
 		}
 		if (this.mimeType.equals("application/xml")) {
-		    document = parseDocumentXML(page);
+		    builder = parseDocumentXML(page);
 		} else if (this.mimeType.equals("text/html")) {
-		    document = parseDocumentHTML(page, url);
+		    builder = parseDocumentHTML(page, url);
 		} else if (this.mimeType.equals("application/json")) {
-			document = parseDocumentJSON(page);
+			builder = parseDocumentJSON(page);
 	    } else if (this.mimeType.equals("application/x-javascript")) {
-			document = parseDocumentJavascript(page);
+			builder = parseDocumentJavascript(page);
 	    } else if (this.mimeType.equals("application/html+json")) { // html with a json wrapper, yes that's done on the web 
-			document = parseDocumentJSONandHTML(page);
+			builder = parseDocumentJSONandHTML(page);
 	    } else {
 		    throw new IOException("MIME Type not supported: " + this.mimeType);
 		}
-		if (document == null) {
+		if (builder == null) {
 			throw new IOException("Error parsing document. Wrong mimetype?");
 		}
 		SearchResult result = new SearchResult();
 		if (debug != null) {
 			if (debug.equals("xml")) {
-    			result.setDebugOut(DOMBuilder.DOM2String(document));
+    			result.setDebugOut(builder.toString());
 			} else if (debug.equals("response")) {
 				result.setDebugOut(page);
 			}
 		}
 		XPathFactory xFactory = XPathFactory.newInstance();
 		XPath xpath = xFactory.newXPath();
-		NodeList xmlNodeList = (NodeList) xpath.evaluate(this.itemXpath, document, XPathConstants.NODESET);
+		NodeList xmlNodeList = (NodeList) xpath.evaluate(this.itemXpath, builder.getDocument(), XPathConstants.NODESET);
 		for (int i = 0; i < xmlNodeList.getLength() && i < 30; i++) {
 			Node item = xmlNodeList.item(i);
 			result.addHit(extractHit(item));
@@ -484,9 +487,9 @@ public class Resource implements Comparable<Resource> {
 		return hit;
 	}
 
-	private Document parseDocumentHTML(String htmlString, String urlString) {
+	private DOMBuilder parseDocumentHTML(String htmlString, String urlString) {
         org.jsoup.nodes.Document jsoupDoc = Jsoup.parse(htmlString, urlString);
-        return DOMBuilder.jsoup2DOM(jsoupDoc);
+        return new DOMBuilder().fromJsoup(jsoupDoc);
     }
 
 	/**
@@ -495,7 +498,7 @@ public class Resource implements Comparable<Resource> {
 	 * @return Document
 	 * @throws IOException
 	 */
-	private Document parseDocumentJavascript(String scriptString) {
+	private DOMBuilder parseDocumentJavascript(String scriptString) {
 		int nrOfCurly = 0;
 		int first = -1;
 		JSONArray array = new JSONArray();
@@ -516,25 +519,25 @@ public class Resource implements Comparable<Resource> {
 		}
 		JSONObject object = new JSONObject();
 		object.put("list", array);
-        return DOMBuilder.json2DOM(object);
+        return new DOMBuilder().fromJSON(object);
 	}
 	
-    private Document parseDocumentJSON(String jsonString) {
+    private DOMBuilder parseDocumentJSON(String jsonString) {
         if (jsonString.startsWith("[")) {  // turn lists into objects    
         	jsonString = "{\"list\":" + jsonString + "}";
         }
-        return DOMBuilder.json2DOM(new JSONObject(jsonString));
+        return new DOMBuilder().fromJSON(new JSONObject(jsonString));
     }
 	
-    private Document parseDocumentJSONandHTML(String jsonString) {
+    private DOMBuilder parseDocumentJSONandHTML(String jsonString) {
         if (jsonString.startsWith("[")) {  // turn lists into objects    
         	jsonString = "{\"list\":" + jsonString + "}";
         }
-        return DOMBuilder.jsonAndHtml2DOM(new JSONObject(jsonString));
+        return new DOMBuilder().fromJSONandHTML(new JSONObject(jsonString));
     }
 	
-    private Document parseDocumentXML(String xmlString) {
-        return DOMBuilder.string2DOM(xmlString);
+    private DOMBuilder parseDocumentXML(String xmlString) {
+        return new DOMBuilder().fromXMLString(xmlString);
     }
 
     private String fillTemplate(String template, String query) throws SearchException {
@@ -795,6 +798,10 @@ public class Resource implements Comparable<Resource> {
 		return this.rate;
 	}
 	
+    public int getShelflife() {
+        return this.shelflifehours;
+    }
+    
 	public boolean isDeleted() {
 	    return this.deleted;
 	}
@@ -966,6 +973,7 @@ public class Resource implements Comparable<Resource> {
             if (e2.testQuery == null) { this.testQuery = defaultTestQuery; } else { this.testQuery = e2.testQuery; }
             this.prior = e2.prior;
             this.rate = e2.rate;
+            this.shelflifehours = e2.shelflifehours;
             this.itemXpath = e2.itemXpath;
             this.extractors = e2.extractors;
             this.headers   = e2.headers;
@@ -1003,6 +1011,7 @@ public class Resource implements Comparable<Resource> {
             if (testQuery != null)           engine.put("testquery", testQuery);
             if (prior != null)               engine.put("prior", prior);
             if (rate != defaultRATE)         engine.put("maxqueriesperday", rate);
+            if (shelflifehours != defaultSHELFLIFE) engine.put("shelflifehours", shelflifehours);
             if (itemXpath != null)           engine.put("itempath", itemXpath);
             if (extractors != null && extractors.size() > 0) {
                 JSONObject json = new JSONObject();
@@ -1022,7 +1031,20 @@ public class Resource implements Comparable<Resource> {
         return engine;
     }
 
+    
+    public Element toXml(DOMBuilder builder) {
+        return builder.createElement("TODO"); // TODO
+    }
 
+    public Element toXmlEngineDontShare(DOMBuilder builder) {
+        return builder.createElement("TODO"); // TODO
+    }
+
+    public Element toXmlHealth(DOMBuilder builder) {
+        return builder.createElement("TODO"); // TODO
+    }
+
+    
     public JSONObject toJsonEngineDontShare() {
         JSONObject engine = new JSONObject();
         if (id != null) engine.put("id", id);
@@ -1037,6 +1059,7 @@ public class Resource implements Comparable<Resource> {
                                              engine.put("mimetype", mimeType);
             if (rerank != null)              engine.put("rerank", rerank);
             if (rate != defaultRATE)         engine.put("maxqueriesperday", rate);
+            if (shelflifehours != defaultSHELFLIFE) engine.put("shelflifehours", shelflifehours);
         }
         return engine;
     }
@@ -1113,6 +1136,7 @@ public class Resource implements Comparable<Resource> {
     	if (!stringEquals(this.getUserTemplate(), e.getUserTemplate())) return false;
     	if (!stringEquals(this.getSuggestTemplate(), e.getSuggestTemplate())) return false;
     	if (this.getRate() != e.getRate()) return false;
+        if (this.getShelflife() != e.getShelflife()) return false;
         if (Math.abs(this.getExactPrior() - e.getExactPrior()) > 0.001f) return false;
     	if (!listEquals(this.getExtractors(), e.getExtractors())) return false; 
     	if (!mapEquals(this.getHeaders(), e.getHeaders())) return false; 

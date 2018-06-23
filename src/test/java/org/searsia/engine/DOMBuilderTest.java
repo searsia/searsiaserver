@@ -7,7 +7,10 @@ import java.io.IOException;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.junit.Test;
-import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Text;
+
+import org.junit.Assert;
 
 import org.searsia.engine.DOMBuilder;
 
@@ -26,9 +29,23 @@ public class DOMBuilderTest {
         }
         return result;
     }
+    
+    @Test
+    public void testXMLCreate() {
+        DOMBuilder builder = new DOMBuilder();
+        builder.newDocument();
+        Element root = builder.createElement("rss");
+        builder.setRoot(root);
+        root.setAttribute("version", "2.0");
+        Element message = builder.createTextElement("message", "hello, world!");
+        root.appendChild(message);
+        String actualXML = builder.toString();
+        String expectedXML = "<rss version=\"2.0\"><message>hello, world!</message></rss>";
+        Assert.assertEquals(expectedXML, actualXML);
+    }
 
     /**
-     *  Only run tests if files test.json/test.html are present in resources
+     *  Only run tests if files test.json/test.html/test.xml are present in resources
      */
     
     @Test
@@ -42,8 +59,8 @@ public class DOMBuilderTest {
                 jsonString = "{\"list\":" + jsonString + "}";
             }
             JSONObject json = new JSONObject(jsonString);
-            Document doc = DOMBuilder.json2DOM(json);
-            String xml = DOMBuilder.DOM2String(doc);
+            DOMBuilder builder = new DOMBuilder().fromJSON(json);
+            String xml = builder.toString();
             System.out.println(xml);
         }
     }
@@ -56,11 +73,23 @@ public class DOMBuilderTest {
         } catch (IOException e) { }
         if (htmlString != null) {
             org.jsoup.nodes.Document jsoup = Jsoup.parse(htmlString);
-            Document doc = DOMBuilder.jsoup2DOM(jsoup);
-            String xml = DOMBuilder.DOM2String(doc);
+            DOMBuilder builder = new DOMBuilder().fromJsoup(jsoup);
+            String xml = builder.toString();
             System.out.println(xml);
         }
     }
 
+    @Test
+    public void testXmlFileIfExists() {
+        String xmlString = null;
+        try {
+            xmlString = readFile("test.xml");
+        } catch (IOException e) { }
+        if (xmlString != null) {
+            DOMBuilder builder = new DOMBuilder().fromXMLString(xmlString);
+            String xml = builder.toString();
+            System.out.println(xml);
+        }
+    }
     
 }

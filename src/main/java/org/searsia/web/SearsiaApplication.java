@@ -22,9 +22,12 @@ import javax.ws.rs.core.Response;
 
 import org.glassfish.jersey.server.ResourceConfig;
 import org.json.JSONObject;
+import org.w3c.dom.Element;
+
 import org.searsia.SearsiaOptions;
 import org.searsia.index.SearchResultIndex;
 import org.searsia.index.ResourceIndex;
+import org.searsia.engine.DOMBuilder;
 
 /**
  * Searsia Web API application.
@@ -33,37 +36,71 @@ import org.searsia.index.ResourceIndex;
  */
 public class SearsiaApplication extends ResourceConfig {
 
-	public static final String VERSION = "v1.1.0";
+	public static final String SEARSIAVERSION  = "v1.2.0";
+    public static final String RSSVERSION      = "2.0";
+    public static final String MIMEXML         = "application/json";
+    public static final String MIMEJSON        = "application/xml";
+    
 
-	protected static Response responseOk(JSONObject json) {
-		json.put("searsia", VERSION);
-		return  Response
-				.ok(json.toString())
-				.header("Access-Control-Allow-Origin", "*")
-				.build();
-	}
+    protected static Response responseError(int status, String error, boolean isJson) {
+        if (isJson) {
+            return jsonResponseError(status, error);
+        } else {
+            return xmlResponseError(status, error);
+        }
+    }
 
-	protected static Response responseError(int status, String error) {
+	protected static Response jsonResponseError(int status, String error) {
 		JSONObject json = new JSONObject();
-		json.put("searsia", VERSION);
+		json.put("searsia", SEARSIAVERSION);
 		json.put("error", error);
 		String entity = json.toString();
 		return  Response
 				.status(status)
 				.entity(entity)
 				.header("Access-Control-Allow-Origin", "*")
+                .header("Mime-type", MIMEJSON)
 				.build();
 	}
-	
+
+    private static Response xmlResponseError(int status, String error) {
+        DOMBuilder builder = new DOMBuilder();
+        builder.newDocument();
+        Element root = builder.createElement("rss");
+        root.setAttribute("version", "2.0");
+        Element message = builder.createElement("message");
+        message.setAttribute("error", error);
+        builder.setRoot(root);
+        String entity = builder.toString();
+        return  Response
+                .status(status)
+                .entity(entity)
+                .header("Access-Control-Allow-Origin", "*")
+                .header("Mime-type", MIMEXML)
+                .build();
+    }
+    
 	protected static Response jsonResponse(int status, JSONObject json) {
-		json.put("searsia", VERSION);
+		json.put("searsia", SEARSIAVERSION);
 		String entity = json.toString();
 		return  Response
 				.status(status)
 				.entity(entity)
 				.header("Access-Control-Allow-Origin", "*")
+                .header("Mime-type", SearsiaApplication.MIMEJSON)
 				.build();
 	}
+
+    protected static Response xmlResponse(int status, DOMBuilder builder) {
+        builder.getDocumentElement().setAttribute("searsia", SEARSIAVERSION);
+        String entity = builder.toString();
+        return  Response
+                .status(status)
+                .entity(entity)
+                .header("Access-Control-Allow-Origin", "*")
+                .header("Mime-type", SearsiaApplication.MIMEXML)
+                .build();
+    }
 
 	public SearsiaApplication(SearchResultIndex index, 
 			                  ResourceIndex engines, 
@@ -71,7 +108,6 @@ public class SearsiaApplication extends ResourceConfig {
 		super();
 		java.util.logging.Logger.getLogger("").setLevel(java.util.logging.Level.OFF);
 		register(new Search(index, engines, options));
-		register(new OpenSearch(engines, options.isNotShared()));
         register(new Redirect(engines.getMyself().getId()));
 	}
 	

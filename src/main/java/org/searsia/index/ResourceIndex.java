@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
@@ -47,7 +48,9 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.searsia.engine.DOMBuilder;
 import org.searsia.engine.Resource;
+import org.w3c.dom.Element;
 
 /**
  * Stores resources in a Lucene index
@@ -383,35 +386,57 @@ public class ResourceIndex {
 	
 	
 	public JSONObject toJsonHealth() {
-	    String lastMessage = null;
-	    int countOk = 0,
-	        countError = 0;
-	    for (Resource engine: this.engines.values()) {
+	    Map<String, Object> health = getHealth();
+	    JSONObject stats = new JSONObject();
+	    stats.put("enginesok", (int) health.get("countOk"));
+        stats.put("engineserr", (int) health.get("countError"));
+        String lastMessage = (String) health.get("lastMessage");
+        if (lastMessage != null) {
+            stats.put("lastmessage", lastMessage);
+        }
+	    return stats;
+	}
+	
+    public Element toXmlHealth(DOMBuilder builder) {
+        Map<String, Object> health = getHealth();
+        Element stats = builder.createElement("health");
+        stats.appendChild(builder.createTextElement("enginsok", Integer.toString((int) health.get("countOk"))));
+        stats.appendChild(builder.createTextElement("enginserr", Integer.toString((int) health.get("countError"))));
+        String lastMessage = (String) health.get("lastMessage");
+        if (lastMessage != null) {
+            stats.appendChild(builder.createTextElement("lastmessage", lastMessage));
+        }
+        return stats;
+    }
+    
+	private Map<String, Object> getHealth() {
+        String lastMessage = null;
+        int countOk = 0,
+            countError = 0;
+        for (Resource engine: this.engines.values()) {
             if (engine.isDeleted()) { continue; }
-	        String error = engine.getLastError();
-	        if (engine.isHealthy()) {
-	            countOk += 1;
-	        } else {
+            String error = engine.getLastError();
+            if (engine.isHealthy()) {
+                countOk += 1;
+            } else {
                 countError += 1;
                 lastMessage = engine.getId() + ": " + error;
-	        }
-	        if (countError == 0 && lastMessage == null && error != null) {
-	            lastMessage = engine.getId() + ": " + error; // last error of any engine
-	        }
-	    }
+            }
+            if (countError == 0 && lastMessage == null && error != null) {
+                lastMessage = engine.getId() + ": " + error; // last error of any engine
+            }
+        }
         if (this.mother.isHealthy()) {
             countOk += 1;
         } else {
             countError += 1;
             lastMessage = this.mother.getId() + " (mother): " + this.mother.getLastError();
         }
-	    JSONObject stats = new JSONObject();
-	    stats.put("enginesok", countOk);
-        stats.put("engineserr", countError);
-        if (lastMessage != null) {
-            stats.put("lastmessage", lastMessage);
-        }
-	    return stats;
+        Map<String, Object> result = new HashMap<String, Object>();
+        result.put("countOk", countOk);
+        result.put("countError", countError);
+        result.put("lastMessage", lastMessage);
+        return result;
 	}
 
 }

@@ -29,6 +29,8 @@ import java.util.Random;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.searsia.index.ResourceIndex;
+import org.w3c.dom.Element;
+import org.searsia.engine.DOMBuilder;
 import org.searsia.engine.Resource;
 
 /**
@@ -50,6 +52,7 @@ public class SearchResult {
 	private String query;
     private String resourceId;
 	private String version;
+	private String date;
 	
 	public SearchResult() {
 		this(null);
@@ -62,6 +65,7 @@ public class SearchResult {
 		this.query = null;
 		this.version = null;
 		this.debugOut = null;
+		this.date = df.format(new Date());
 		if (hit != null) {
 			this.hits.add(hit);
 		}
@@ -114,21 +118,18 @@ public class SearchResult {
 	public String getQuery() {
 		return this.query;
 	}
-
-	// TODO: maybe a list of query-resource pairs, if result found by multiple engines for multiple queries.
-	public void addResourceDate(String resourceID) {
-		for (Hit hit: this.hits) {
-			hit.putIfEmpty("rid", resourceID);  // TODO: if unknown rid, then replace!
-			hit.putIfEmpty("foundBefore", df.format(new Date()));
-		}
-	}
 	
-	public void removeResource() {
+	public String getDate() {
+	    return this.date;
+	}
+
+	public void removeHitsResourceId() {
 		for (Hit hit: this.hits) {
 			hit.remove("rid");
 			hit.remove("query"); // for legacy reasons, we added the query to the result before
 		}
 	}
+	
 
 	/* ******************************************************************* 
 	 *  Code below reranks search results for resource selection
@@ -149,14 +150,14 @@ public class SearchResult {
 		Map<String, Float> topEngines = engines.topValuesNotDeleted(query, maxSize);
 		for (Hit hit: this.hits) {
 			String rid = hit.getString("rid");
-			if (rid != null) {
+			if (rid != null) {  // a result from another engine
                 Resource engine = engines.get(rid);
                 float prior = 0.0f;
                 if (engine != null) {
                     if (engine.isDeleted()) { continue; } // cached result from a deleted resource	    
     				prior = engines.get(rid).getPrior();
 				}
-                Float top = topEngines.get(rid);
+                Float top = topEngines.get(rid); // prior scores
     			if (top != null) { 
     			    if (top > prior) {
     			        prior = top;
@@ -178,7 +179,7 @@ public class SearchResult {
                 hit.setScore(score);
                 hit.setResourceScore(maxScore);
                 if (returned < 4) { // at most 4 results per resource
-                    newResult.addHit(hit);
+                    newResult.addHit(hit); // TODO: not if shelflife is over?
                 }
 			} else {
 			    hit.setResourceScore(hit.getScore() * boost);
@@ -316,21 +317,24 @@ public class SearchResult {
 	}
 	
     public JSONObject toJson() {
-        return toJson(false);
-    }
-
-	public JSONObject toJson(boolean censorQueryResourceId) {
 		JSONObject r = new JSONObject();
 		r.put("hits", new JSONArray());
 		for (Hit hit: hits) {
-		    if (censorQueryResourceId) {
-                r.append("hits", hit.toJsonNoQueryResourceId());
-		    } else {
-     			r.append("hits", hit.toJson());
-		    }
+            r.append("hits", hit.toJson());
 		}
 		return r;
 	}
+	
+    public DOMBuilder toXml() {
+        DOMBuilder builder = new DOMBuilder();
+        builder.newDocument();
+        Element root = builder.createElement("rss");
+        builder.setRoot(root);
+        for (Hit hit: hits) {
+            root.appendChild(hit.toXml(builder));
+        }
+        return builder;
+    }
 
 
 }

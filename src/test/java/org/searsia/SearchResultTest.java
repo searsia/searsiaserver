@@ -6,23 +6,43 @@ import org.searsia.Hit;
 import org.searsia.SearchResult;
 
 public class SearchResultTest {
-
+ 
+    private SearchResult boo() {
+        SearchResult sr = new SearchResult();
+        Hit h = new Hit();
+        h.put("title", "boo");
+        sr.addHit(h);
+        return sr;
+    }
+    
 	@Test
-	public void testSimple() {
-		SearchResult sr = new SearchResult();
-		Hit h = new Hit();
-		h.put("title", "boo");
-		sr.addHit(h);
-		Assert.assertEquals("{\"hits\":[{\"title\":\"boo\"}]}", sr.toJson().toString());
+	public void testSimpleJson() {
+		Assert.assertEquals("{\"hits\":[{\"title\":\"boo\"}]}", boo().toJson().toString());
 	}
 
+    @Test
+    public void testSimpleIndexJson() {
+        Assert.assertEquals("{\"foundBefore\":\"2024-01-01\"}", new Hit().toJsonIndex("2024-01-01", null).toString());
+    }
+
+    @Test
+    public void testSimpleXml() {
+        Assert.assertEquals("<rss><item><title>boo</title></item></rss>", boo().toXml().toString());
+    }
+
 	@Test
-	public void testEmpty() {
+	public void testEmptyJson() {
 		SearchResult sr = new SearchResult();
 		Assert.assertEquals("{\"hits\":[]}", sr.toJson().toString());
 	}
 
-	@Test
+    @Test
+    public void testEmptyXml() {
+        SearchResult sr = new SearchResult();
+        Assert.assertEquals("<rss/>", sr.toXml().toString());
+    }
+
+    @Test
 	public void testSampleAndRerank() {
 		SearchResult sr = new SearchResult();
 		Hit h = new Hit("The ultimate test", "Oh yeah", "http://searsia.org", 

@@ -34,7 +34,10 @@ import org.json.JSONObject;
 import org.searsia.SearchResult;
 import org.searsia.SearsiaOptions;
 import org.searsia.index.SearchResultIndex;
+import org.w3c.dom.Element;
+import org.w3c.dom.Text;
 import org.searsia.index.ResourceIndex;
+import org.searsia.engine.DOMBuilder;
 import org.searsia.engine.Resource;
 import org.searsia.engine.SearchException;
 
@@ -66,7 +69,7 @@ public class Search {
     	this.shared  = !options.isNotShared();
 	}
 		
-	@OPTIONS @Path("{resourceid}")
+	@OPTIONS @Path("{filename}")
 	public Response options() {
 	    return Response.status(Response.Status.NO_CONTENT)
 				.header("Access-Control-Allow-Origin", "*")
@@ -74,18 +77,91 @@ public class Search {
         		.build();
 	}
 
-	// TODO: gives 406 not acceptable whith "Accept: application/json"
+	@GET @Path("{filename}")
+	public Response query(@PathParam("filename")   String filename, 
+	                      @QueryParam("q")         String searchTerms, 
+                          @QueryParam("resources") String countResources, 
+	                      @QueryParam("page")      String startPage) {
+	    String[] parts = filename.split("\\.");
+	    String resourceid = parts[0];
+	    String format = "json";
+	    if (parts.length > 1) {
+	        format = parts[1].toLowerCase();
+	    }
+	    if (format.equals("odsx")) {
+	        return openSearchDescriptionXml(resourceid);
+	    }
+        if (format.equals("json") || format.equals("xml")) {
+            boolean isJson = format.equals("json");
+            return queryFormat(resourceid, isJson, searchTerms, countResources, startPage);
+        } else {
+            return SearsiaApplication.jsonResponseError(404, "Format " + format + " not supported.");
+        }
+	}
 	
-	@GET @Path("{resourceid}")
-	@Produces(SearchResult.SEARSIA_MIME_ENCODING)
-	public Response query(@PathParam("resourceid")  String resourceid, 
-	                      @QueryParam("q")          String searchTerms, 
-                          @QueryParam("resources")  String countResources, 
-	                      @QueryParam("page")       String startPage) {
-        resourceid = resourceid.replaceAll("\\.json$", "");
+
+    private Response jsonResponseOk(Resource engine, SearchResult result, String searchTerms) {
+        if (result == null) {
+            result = new SearchResult();    
+        }
+        JSONObject json = result.toJson();
+        json.put("searsia", SearsiaApplication.SEARSIAVERSION);
+        if (this.shared) {
+            json.put("resource", engine.toJson());
+        } else {
+            json.put("resource", engine.toJsonEngineDontShare());
+        }
+        if (this.health && (searchTerms == null || searchTerms.equals(""))) {
+            Resource me = this.engines.getMyself();
+            if (engine.getId().equals(me.getId())) {
+                JSONObject healthJson = this.engines.toJsonHealth();
+                healthJson.put("requestsok", this.nrOfQueriesOk);
+                healthJson.put("requestserr", this.nrOfQueriesError);
+                healthJson.put("upsince", startTime);
+                json.put("health", healthJson);
+            } else {
+                json.put("health", engine.toJsonHealth());
+            }
+        }
+        return SearsiaApplication.jsonResponse(200, json);
+    }
+    
+    private Response xmlResponseOk(Resource engine, SearchResult result, String searchTerms) {
+        DOMBuilder builder = result.toXml();
+        Element root = builder.getDocumentElement();
+        root.setAttribute("version", SearsiaApplication.RSSVERSION);
+        if (this.shared) {
+            root.appendChild(engine.toXml(builder));
+        } else {
+            root.appendChild(engine.toXmlEngineDontShare(builder));                
+        }
+        if (this.health && (searchTerms == null || searchTerms.equals(""))) {
+            Resource me = this.engines.getMyself();
+            if (engine.getId().equals(me.getId())) {
+                Element healthXml = this.engines.toXmlHealth(builder);
+                healthXml.appendChild(builder.createTextElement("requestok", Long.toString(this.nrOfQueriesOk)));
+                healthXml.appendChild(builder.createTextElement("requesterr", Long.toString(this.nrOfQueriesError)));
+                healthXml.appendChild(builder.createTextElement("upsince", startTime));
+            } else {
+                root.appendChild(engine.toXmlHealth(builder));
+            }
+        }
+        return SearsiaApplication.xmlResponse(200, builder);
+    }
+
+    private Response responseOk(Resource engine, SearchResult result, String searchTerms, boolean isJson) {
+        if (isJson) {
+            return jsonResponseOk(engine, result, searchTerms);
+        } else {
+            return xmlResponseOk(engine, result, searchTerms);
+        }
+    }
+
+	
+	private Response queryFormat(String resourceid, boolean isJson, String searchTerms, String countResources, String startPage) {	    
 		Resource me = engines.getMyself();
 		if (!resourceid.equals(me.getId())) {
-		    return getRemoteResults(resourceid, searchTerms);
+		    return getRemoteResults(resourceid, isJson, searchTerms);
 		} else {
 		    Integer max = 10, start = 0;
 		    if (countResources != null) {
@@ -106,14 +182,13 @@ public class Search {
                 }
                 if (start < 0) { start = 0; }
             }
-		    return getLocalResults(searchTerms, max, start);
+		    return getLocalResults(searchTerms, isJson, max, start);
 		}
 	}
 
-    private Response getRemoteResults(String resourceid, String query) {
+    private Response getRemoteResults(String resourceid, boolean isJson, String query) {
         Resource engine = engines.get(resourceid);
         Resource mother = engines.getMother();
-        JSONObject json = null;
         if (engine == null || engine.getLastUpdatedSecondsAgo() > 9600) {  // unknown or really old? ask your mother
             if (mother != null) {     // TODO: option for 9600 and similar value (7200) in Main
                 try {
@@ -129,93 +204,130 @@ public class Search {
             if (engine == null) {
                 String message = "Not found: " + resourceid;
                 LOGGER.warn(message);
-                return SearsiaApplication.responseError(404, message);
+                return SearsiaApplication.responseError(404, message, isJson);
             }
         }
         if (engine.isDeleted()) {
             String message = "Gone: " + resourceid;
             LOGGER.warn(message);
-            return SearsiaApplication.responseError(410, message);
+            return SearsiaApplication.responseError(410, message, isJson);
         }
+        SearchResult result = null;
         if (query != null && query.trim().length() > 0) {
-            SearchResult result = index.cacheSearch(query, engine.getId());
+            result = index.cacheSearch(query, engine.getId());
             if (result != null) {
-                boolean censorQueryResourceId = true;
-                json = result.toJson(censorQueryResourceId);
+                result.removeHitsResourceId(); // only trust mother, remove resource ID from each hit
                 LOGGER.info("Cache " + resourceid + ": " + query);
             } else {
                 try {
                     result = engine.search(query);
-                    result.removeResource();     // only trust your mother
-                    json = result.toJson();                         // first json for response, so
-                    result.addResourceDate(engine.getId()); // response will not have resource id + date
+                    result.removeHitsResourceId();     // only trust your mother
+                    assert(result.getResourceId() != null);
                     index.offer(result);  //  maybe do this AFTER the http response is sent:  https://jersey.java.net/documentation/latest/async.html (11.1.1)
                     LOGGER.info("Query " + resourceid + ": " + query);
                 } catch (Exception e) {
                     String message = "Resource " + resourceid + " unavailable: " + e.getMessage();
                     LOGGER.warn(message);
-                    return SearsiaApplication.responseError(503, message);
+                    return SearsiaApplication.responseError(503, message, isJson);
                 }
             }
-        } else {
-            json = new JSONObject();
-            if (this.health) {
-                json.put("health", engine.toJsonHealth());
-            }
-            LOGGER.info("Resource " + resourceid + ".");
-        }
-        if (this.shared) {
-            json.put("resource", engine.toJson());
-        } else {
-            json.put("resource", engine.toJsonEngineDontShare());
-        }
-        return SearsiaApplication.responseOk(json);
+        } 
+        return responseOk(engine, result, null, isJson);
     }
 
-    private Response getLocalResults(String query, int max, int start) {  
-        JSONObject json = null, healthJson = null;
+    
+    private Response getLocalResults(String searchTerms, boolean isJson, int max, int start) {  
         Resource mother = engines.getMother();
         Resource me     = engines.getMyself();
         SearchResult result = null;
-        if (query != null && query.trim().length() > 0) {
+        if (searchTerms != null && searchTerms.trim().length() > 0) {
             try {
-                result = index.search(query);
+                result = index.search(searchTerms);
             } catch (Exception e) {
                 String message = "Service unavailable: " + e.getMessage();
                 LOGGER.warn(message);
                 this.nrOfQueriesError += 1;
-                return SearsiaApplication.responseError(503, message);
+                return SearsiaApplication.responseError(503, message, isJson);
             }
             this.nrOfQueriesOk += 1;
             if (result.getHits().isEmpty() && mother != null) {  // empty? ask mother!
                 try {
-                    result  = mother.search(query);
-                    index.offer(result);  // really trust mother
+                    result  = mother.search(searchTerms);
+                    index.offer(result);
                 } catch (SearchException e) {
                     LOGGER.warn("Mother not available");
                 } catch (Exception e) {
                     LOGGER.warn(e);
                 }
             }
-            result.scoreResourceSelection(query, engines, max, start);
-            LOGGER.info("Local: " + query);
+            result.scoreResourceSelection(searchTerms, engines, max, start);
+            LOGGER.info("Local: " + searchTerms);
         } else { // no query: create a 'resource only' result, plus health report
             result = new SearchResult();
             result.scoreResourceSelection(null, engines, max, start);
-            if (this.health) {
-                healthJson = engines.toJsonHealth();
-                healthJson.put("requestsok", this.nrOfQueriesOk);
-                healthJson.put("requestserr", this.nrOfQueriesError);
-                healthJson.put("upsince", startTime);
-            }
             LOGGER.info("Local.");
         }
-        json = result.toJson();
-        json.put("resource", me.toJson());
-        if (healthJson != null) {
-            json.put("health", healthJson);
+        return jsonResponseOk(me, result, searchTerms);
+    }
+    
+    private Response openSearchDescriptionXml(String resourceid) {
+        DOMBuilder builder = new DOMBuilder();
+        builder.newDocument();
+        Element root = builder.createElement("OpenSearchDescription");
+        builder.setRoot(root);
+        root.setAttribute("xmlns", "http://a9.com/-/spec/opensearch/1.1/");
+
+        Resource engine = engines.get(resourceid);
+        if (engine == null) {
+            Element element = builder.createElement("error");
+            Text text = builder.createTextNode("not found");
+            element.appendChild(text);
+            root.appendChild(element);
+            SearsiaApplication.xmlResponse(404, builder);
         }
-        return SearsiaApplication.responseOk(json);
+        String shortName    = engine.getName();
+        String favicon      = engine.getFavicon();
+        String userTemplate = engine.getUserTemplate();
+        String suggestTemplate = engine.getSuggestTemplate();
+        String apiTemplate  = engine.getAPITemplate();
+        String mimeType     = engine.getMimeType();
+        String postString   = engine.getPostString();
+        String testQuery    = engine.getTestQuery();
+        String method       = "GET";
+        if (postString != null) method = "POST";
+        if (shortName == null) shortName = "Searsia";
+        root.appendChild(builder.createTextElement("shortName", shortName));
+        root.appendChild(builder.createTextElement("Description", "Search the web with " + shortName));
+
+        if(this.shared && apiTemplate != null) { // TODO: own api or foward API?
+            root.appendChild(xmlTemplateElement(builder, mimeType, method, apiTemplate));
+        }
+        if (userTemplate != null) {
+            root.appendChild(xmlTemplateElement(builder, "text/html", "GET", userTemplate));
+        }
+        if (suggestTemplate != null) {
+            root.appendChild(xmlTemplateElement(builder, "application/x-suggestions+json", "GET", suggestTemplate));
+        }
+        if (testQuery != null) {
+            Element element = builder.createElement("Query");
+            element.setAttribute("role", "example");
+            element.setAttribute("searchTerms", testQuery);
+        }
+        if (favicon != null) {
+            root.appendChild(builder.createTextElement("Image", favicon));
+        }
+        root.appendChild(builder.createTextElement("InputEncoding", "UTF-8"));
+        root.appendChild(builder.createTextElement("OutputEncoding", "UTF-8"));
+        return SearsiaApplication.xmlResponse(200, builder);
+    }
+
+
+    private Element xmlTemplateElement(DOMBuilder builder, String mimeType, String method, String template) {
+        Element element = builder.createElement("Url");
+        element.setAttribute("type", mimeType);
+        element.setAttribute("method", method);
+        element.setAttribute("template", template);
+        return element;
     }
 
 }

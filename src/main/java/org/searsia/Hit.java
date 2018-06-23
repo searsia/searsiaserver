@@ -16,12 +16,16 @@
 
 package org.searsia;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.json.JSONObject;
+import org.searsia.engine.DOMBuilder;
+import org.w3c.dom.Element;
+import org.w3c.dom.Text;
 
 /**
  * A single search hit. A hit can have any field. 
@@ -187,23 +191,43 @@ public class Hit implements Comparable<Hit> {
         }
         return json;
     }
-
-	
-	public JSONObject toJsonNoQueryResourceId() {
-		JSONObject json = new JSONObject();
-		for (Entry<String,Object> e: map.entrySet()) {
-			Object value = e.getValue();
-			if (value instanceof String) {
-				value = noHTML((String) value);
-			}
-			String key = e.getKey();
-			if (!key.equals("query") && !key.equals("rid")) {
+    
+    public JSONObject toJsonIndex(String foundBefore, String rid) {
+        boolean doneRid  = false;
+        JSONObject json  = new JSONObject();
+        for (Entry<String,Object> e: map.entrySet()) {
+            Object value = e.getValue();
+            if (value instanceof String) {
+                value = noHTML((String) value);
+            }
+            String key = e.getKey();
+            if (!key.equals("date")) {
                 json.put(key, value);
-			}
-		}
-		return json;
-	}
-	
+            }
+            if (key.equals("rid")) { 
+                doneRid = true; 
+            }
+        }
+        json.put("foundBefore", foundBefore);
+        if (!doneRid && rid != null) { 
+            json.put("rid", rid);
+        }
+        return json;
+    }
+
+    public Element toXml(DOMBuilder builder) {
+        Element root = builder.createElement("item");
+        for (Entry<String,Object> e: map.entrySet()) {
+            Object value = e.getValue();
+            value = noHTML((String) value);
+            Element element = builder.createElement(e.getKey());
+            Text text = builder.createTextNode((String) value);
+            element.appendChild(text);
+            root.appendChild(element);
+        }
+        return root;
+    }
+
     public String toIndexVersion() { // TODO: special treatment for urls, etc. and StringBuilder
     	String result = "";
     	for (Object s : map.values()) {

@@ -22,7 +22,7 @@ public class Redirect {
     @GET
     @Produces(SearchResult.SEARSIA_MIME_ENCODING)
     public Response notFound() {
-        return SearsiaApplication.responseError(404, "Not found");
+        return SearsiaApplication.jsonResponseError(404, "Not found");
     }
 
     /**

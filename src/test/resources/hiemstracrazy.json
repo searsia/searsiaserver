@@ -18,6 +18,7 @@
         },
         "itempath": "//div[@class='post']",
         "maxqueriesperday": 133,
+        "shelflifehours": 24,
         "mimetype": "text/html",
         "prior": 0.3,
         "privateparameters": {
