@@ -325,15 +325,11 @@ public class SearchResult {
 		return r;
 	}
 	
-    public DOMBuilder toXml() {
-        DOMBuilder builder = new DOMBuilder();
-        builder.newDocument();
-        Element root = builder.createElement("rss");
-        builder.setRoot(root);
-        for (Hit hit: hits) {
-            root.appendChild(hit.toXml(builder));
+    public Element toXml(DOMBuilder builder, Element channel) {
+        for (Hit hit: this.hits) {
+            channel.appendChild(hit.toXml(builder));
         }
-        return builder;
+        return channel;
     }
 
 

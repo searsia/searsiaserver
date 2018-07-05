@@ -1033,7 +1033,43 @@ public class Resource implements Comparable<Resource> {
 
     
     public Element toXml(DOMBuilder builder) {
-        return builder.createElement("TODO"); // TODO
+        Element channel = builder.createElement("channel");
+        if (id != null) channel.appendChild(builder.createTextElement("id", id));
+        if (deleted) {
+            channel.appendChild(builder.createTextElement("deleted", "true"));
+        } else {
+            if (name != null)                channel.appendChild(builder.createTextElement("title", name));
+            if (signature != null)           channel.appendChild(builder.createTextElement("signature", signature));
+            if (urlUserTemplate != null)     channel.appendChild(builder.createTextElement("urltemplate", urlUserTemplate));
+            if (favicon != null)             channel.appendChild(builder.createTextElement("favicon", favicon));
+            if (banner != null)              channel.appendChild(builder.createTextElement("banner", banner));
+            if (urlAPITemplate != null)      channel.appendChild(builder.createTextElement("apitemplate", urlAPITemplate));
+            if (urlSuggestTemplate != null)  channel.appendChild(builder.createTextElement("suggesttemplate", urlSuggestTemplate));
+            if (mimeType != null)            channel.appendChild(builder.createTextElement("mimetype", mimeType));
+            if (rerank != null)              channel.appendChild(builder.createTextElement("rerank", rerank));
+            if (postString != null)          channel.appendChild(builder.createTextElement("post", postString));
+            if (postQueryEncode != null)     channel.appendChild(builder.createTextElement("postencode", postQueryEncode));
+            if (testQuery != null)           channel.appendChild(builder.createTextElement("testquery", testQuery));
+            if (prior != null)               channel.appendChild(builder.createTextElement("prior", prior.toString()));
+            if (rate != defaultRATE)         channel.appendChild(builder.createTextElement("maxqueriesperday", new Integer(rate).toString()));
+            if (shelflifehours != defaultSHELFLIFE) channel.appendChild(builder.createTextElement("shelflifehours", new Integer(shelflifehours).toString()));
+            if (itemXpath != null)           channel.appendChild(builder.createTextElement("itempath", itemXpath));
+            if (extractors != null && extractors.size() > 0) {
+                Element extr = builder.createElement("extractors");
+                for (TextExtractor e: extractors) {
+                    extr.appendChild(builder.createTextElement(e.getField(), e.getPath()));
+                }
+                channel.appendChild(extr); 
+            }
+            if (headers != null && headers.size() > 0) {
+                Element head = builder.createElement("headers");
+                for (String header: headers.keySet()) {
+                    head.appendChild(builder.createTextElement(header, headers.get(header)));
+                }
+                channel.appendChild(head);
+            }
+        }
+        return channel;
     }
 
     public Element toXmlEngineDontShare(DOMBuilder builder) {
@@ -1041,7 +1077,7 @@ public class Resource implements Comparable<Resource> {
     }
 
     public Element toXmlHealth(DOMBuilder builder) {
-        return builder.createElement("TODO"); // TODO
+        return builder.createElement("health"); // TODO
     }
 
     

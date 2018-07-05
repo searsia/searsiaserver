@@ -36,17 +36,18 @@ import org.searsia.engine.DOMBuilder;
  */
 public class SearsiaApplication extends ResourceConfig {
 
-	public static final String SEARSIAVERSION  = "v1.2.0";
+    public static final String SEARSIAVERSION  = "v1.1.0";
     public static final String RSSVERSION      = "2.0";
-    public static final String MIMEXML         = "application/json";
-    public static final String MIMEJSON        = "application/xml";
+    public static final String MIMEJSON        = "application/searsia+json";
+    public static final String MIMEXML         = "application/rss+xml";
+    public static final String MIMEOSDX        = "application/opensearchdescription+xml";
     
 
     protected static Response responseError(int status, String error, boolean isJson) {
         if (isJson) {
             return jsonResponseError(status, error);
         } else {
-            return xmlResponseError(status, error);
+            return xmlResponseError(status, error, MIMEXML);
         }
     }
 
@@ -59,11 +60,11 @@ public class SearsiaApplication extends ResourceConfig {
 				.status(status)
 				.entity(entity)
 				.header("Access-Control-Allow-Origin", "*")
-                .header("Mime-type", MIMEJSON)
+                .header("Content-Type", MIMEJSON)
 				.build();
 	}
 
-    private static Response xmlResponseError(int status, String error) {
+    private static Response xmlResponseError(int status, String error, String contentType) {
         DOMBuilder builder = new DOMBuilder();
         builder.newDocument();
         Element root = builder.createElement("rss");
@@ -76,7 +77,7 @@ public class SearsiaApplication extends ResourceConfig {
                 .status(status)
                 .entity(entity)
                 .header("Access-Control-Allow-Origin", "*")
-                .header("Mime-type", MIMEXML)
+                .header("Content-Type", contentType)
                 .build();
     }
     
@@ -87,18 +88,18 @@ public class SearsiaApplication extends ResourceConfig {
 				.status(status)
 				.entity(entity)
 				.header("Access-Control-Allow-Origin", "*")
-                .header("Mime-type", SearsiaApplication.MIMEJSON)
+                .header("Content-Type", SearsiaApplication.MIMEJSON)
 				.build();
 	}
 
-    protected static Response xmlResponse(int status, DOMBuilder builder) {
+    protected static Response xmlResponse(int status, DOMBuilder builder, String contentType) {
         builder.getDocumentElement().setAttribute("searsia", SEARSIAVERSION);
         String entity = builder.toString();
         return  Response
                 .status(status)
                 .entity(entity)
                 .header("Access-Control-Allow-Origin", "*")
-                .header("Mime-type", SearsiaApplication.MIMEXML)
+                .header("Content-Type", contentType)
                 .build();
     }
 

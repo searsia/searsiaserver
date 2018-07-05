@@ -219,9 +219,20 @@ public class Hit implements Comparable<Hit> {
         Element root = builder.createElement("item");
         for (Entry<String,Object> e: map.entrySet()) {
             Object value = e.getValue();
-            value = noHTML((String) value);
-            Element element = builder.createElement(e.getKey());
-            Text text = builder.createTextNode((String) value);
+            if (value instanceof String) {
+                value = (String) value;
+            } else if (value instanceof Integer) {
+                value = new Integer((int) value).toString();
+            } else if (value instanceof Float) {
+                value = new Float((float) value).toString();
+            } else if (value instanceof Boolean) {
+                value = new Boolean((boolean) value).toString();
+            }
+            String key = e.getKey();
+            if (key.equals("url")) { key = "link"; } // RSS uses link instead of url
+            else if (key.equals("link")) { key = "url"; }
+            Element element = builder.createElement(key);
+            Text text = builder.createTextNode(noHTML((String) value));
             element.appendChild(text);
             root.appendChild(element);
         }

@@ -36,23 +36,23 @@ public class SearchTest {
 	private static SearsiaOptions options;
 
 
-    private static Resource wiki() throws XPathExpressionException, JSONException {
+    private static Resource wiki() throws XPathExpressionException {
     	return new Resource(new JSONObject("{\"apitemplate\":\"http://searsia.org/searsia/wiki/wiki{searchTerms}.json\", \"id\":\"wiki\"}"));
     }
  
-    private static Resource wrong() throws XPathExpressionException, JSONException {
+    private static Resource wrong() throws XPathExpressionException {
     	return new Resource(new JSONObject("{\"apitemplate\":\"http://reallyreallydoesnotexist.com/wrong?q={searchTerms}\", \"id\":\"wrong\"}"));
     }
     
-    private static Resource ok() throws XPathExpressionException, JSONException {
+    private static Resource ok() throws XPathExpressionException {
         return new Resource(new JSONObject("{\"apitemplate\":\"http://searsia.org/searsia/wiki/wikifull1{searchTerms}.json\", \"id\":\"wikifull1\"}"));
     }
     
-    private static Resource okDeleted() throws XPathExpressionException, JSONException {
+    private static Resource okDeleted() throws XPathExpressionException {
         return new Resource(new JSONObject("{\"deleted\":true, \"id\":\"wikifull1\"}"));
     }
     
-    private static Resource me() throws XPathExpressionException, JSONException {
+    private static Resource me() throws XPathExpressionException {
     	return new Resource(new JSONObject("{\"apitemplate\":\"http://me.org?q={searchTerms}\", \"id\":\"wiki\"}"));
     }
 

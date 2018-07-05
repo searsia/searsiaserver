@@ -25,7 +25,6 @@ import java.util.Locale;
 import javax.ws.rs.GET;
 import javax.ws.rs.OPTIONS;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
@@ -35,7 +34,6 @@ import org.searsia.SearchResult;
 import org.searsia.SearsiaOptions;
 import org.searsia.index.SearchResultIndex;
 import org.w3c.dom.Element;
-import org.w3c.dom.Text;
 import org.searsia.index.ResourceIndex;
 import org.searsia.engine.DOMBuilder;
 import org.searsia.engine.Resource;
@@ -88,7 +86,7 @@ public class Search {
 	    if (parts.length > 1) {
 	        format = parts[1].toLowerCase();
 	    }
-	    if (format.equals("odsx")) {
+	    if (format.equals("osdx")) {
 	        return openSearchDescriptionXml(resourceid);
 	    }
         if (format.equals("json") || format.equals("xml")) {
@@ -127,14 +125,19 @@ public class Search {
     }
     
     private Response xmlResponseOk(Resource engine, SearchResult result, String searchTerms) {
-        DOMBuilder builder = result.toXml();
-        Element root = builder.getDocumentElement();
+        DOMBuilder builder = new DOMBuilder();
+        builder.newDocument();
+        Element root = builder.createElement("rss");
+        builder.setRoot(root);
         root.setAttribute("version", SearsiaApplication.RSSVERSION);
+        Element channel = null;
         if (this.shared) {
-            root.appendChild(engine.toXml(builder));
+            channel = engine.toXml(builder);
         } else {
-            root.appendChild(engine.toXmlEngineDontShare(builder));                
+            channel = engine.toXmlEngineDontShare(builder);
         }
+        channel = result.toXml(builder, channel);
+        root.appendChild(channel);        
         if (this.health && (searchTerms == null || searchTerms.equals(""))) {
             Resource me = this.engines.getMyself();
             if (engine.getId().equals(me.getId())) {
@@ -146,7 +149,7 @@ public class Search {
                 root.appendChild(engine.toXmlHealth(builder));
             }
         }
-        return SearsiaApplication.xmlResponse(200, builder);
+        return SearsiaApplication.xmlResponse(200, builder, SearsiaApplication.MIMEXML);
     }
 
     private Response responseOk(Resource engine, SearchResult result, String searchTerms, boolean isJson) {
@@ -267,7 +270,7 @@ public class Search {
             result.scoreResourceSelection(null, engines, max, start);
             LOGGER.info("Local.");
         }
-        return jsonResponseOk(me, result, searchTerms);
+        return responseOk(me, result, searchTerms, isJson);
     }
     
     private Response openSearchDescriptionXml(String resourceid) {
@@ -276,14 +279,17 @@ public class Search {
         Element root = builder.createElement("OpenSearchDescription");
         builder.setRoot(root);
         root.setAttribute("xmlns", "http://a9.com/-/spec/opensearch/1.1/");
-
-        Resource engine = engines.get(resourceid);
+        Resource me = this.engines.getMyself();
+        Resource engine = null;
+        if (resourceid.equals(me.getId())) {
+            engine = me;
+        } else {
+            engine = this.engines.get(resourceid);
+        }
         if (engine == null) {
-            Element element = builder.createElement("error");
-            Text text = builder.createTextNode("not found");
-            element.appendChild(text);
+            Element element = builder.createTextElement("error", "not found");
             root.appendChild(element);
-            SearsiaApplication.xmlResponse(404, builder);
+            return SearsiaApplication.xmlResponse(404, builder, SearsiaApplication.MIMEOSDX);
         }
         String shortName    = engine.getName();
         String favicon      = engine.getFavicon();
@@ -298,7 +304,6 @@ public class Search {
         if (shortName == null) shortName = "Searsia";
         root.appendChild(builder.createTextElement("shortName", shortName));
         root.appendChild(builder.createTextElement("Description", "Search the web with " + shortName));
-
         if(this.shared && apiTemplate != null) { // TODO: own api or foward API?
             root.appendChild(xmlTemplateElement(builder, mimeType, method, apiTemplate));
         }
@@ -318,7 +323,7 @@ public class Search {
         }
         root.appendChild(builder.createTextElement("InputEncoding", "UTF-8"));
         root.appendChild(builder.createTextElement("OutputEncoding", "UTF-8"));
-        return SearsiaApplication.xmlResponse(200, builder);
+        return SearsiaApplication.xmlResponse(200, builder, SearsiaApplication.MIMEOSDX);
     }
 
 

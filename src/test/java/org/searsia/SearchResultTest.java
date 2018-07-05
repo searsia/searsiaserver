@@ -4,6 +4,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.searsia.Hit;
 import org.searsia.SearchResult;
+import org.searsia.engine.DOMBuilder;
+import org.w3c.dom.Element;
 
 public class SearchResultTest {
  
@@ -27,7 +29,12 @@ public class SearchResultTest {
 
     @Test
     public void testSimpleXml() {
-        Assert.assertEquals("<rss><item><title>boo</title></item></rss>", boo().toXml().toString());
+        DOMBuilder builder = new DOMBuilder();
+        builder.newDocument();
+        Element channel = builder.createElement("channel");
+        channel = boo().toXml(builder, channel);
+        builder.setRoot(channel);
+        Assert.assertEquals("<channel><item><title>boo</title></item></channel>", builder.toString());
     }
 
 	@Test
@@ -35,12 +42,6 @@ public class SearchResultTest {
 		SearchResult sr = new SearchResult();
 		Assert.assertEquals("{\"hits\":[]}", sr.toJson().toString());
 	}
-
-    @Test
-    public void testEmptyXml() {
-        SearchResult sr = new SearchResult();
-        Assert.assertEquals("<rss/>", sr.toXml().toString());
-    }
 
     @Test
 	public void testSampleAndRerank() {
