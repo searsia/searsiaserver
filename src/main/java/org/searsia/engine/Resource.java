@@ -271,20 +271,62 @@ public class Resource implements Comparable<Resource> {
         updateWith(resource);
         return this;
     }
-    
 
-	public SearchResult randomSearch() throws SearchException {
+
+    private static boolean wrongUrl(Hit hit) {
+        String urlString = hit.getUrl();
+        if (urlString == null) { return false; }
+        try {
+            URL url = new URL(urlString);
+            URLConnection connection = url.openConnection();
+            connection.connect();
+        } catch (Exception e) {
+            return true;
+        }
+        return false;
+    }
+
+
+    private void handleSearchError(String message, SearchResult result, String debugInfo) throws SearchException {
+        this.nrOfError += 1;
+        this.lastUsedError = new Date().getTime();
+        this.lastMessage = message;
+        result.setError(message);
+        if (debugInfo == null) {
+            throw new SearchException(message);
+        }
+    }
+    
+    public SearchResult randomSearch() throws SearchException {
+        return randomSearch(null);
+    }
+
+
+	public SearchResult randomSearch(String debugInfo) throws SearchException {
 		if (this.nextQuery == null) {
 			this.nextQuery = this.testQuery;
 		}
 		String thisQuery = this.nextQuery;
 		this.nextQuery = null; // so, nextQuery will be null in case of a searchexception
-		SearchResult result = search(thisQuery, null);
-		if (this.testQuery.equals(thisQuery) && result.getHits().isEmpty()) {
-	        this.nrOfError += 1;
-	        this.lastUsedError = new Date().getTime();
-	        this.lastMessage = "No results for test query: " + thisQuery;
-		    throw new SearchException(this.lastMessage);
+		SearchResult result = search(thisQuery, debugInfo);
+		if (this.getTestQuery().equals(thisQuery)) {
+		    if (result.getHits().isEmpty()) {
+                String message = "No results for test query: " + thisQuery;
+                if (this.getRerank() != null) {
+                    message += "; Try removing rerank.";
+                }
+                handleSearchError(message, result, debugInfo);
+            } else {
+                if (wrongUrl(result.getHits().get(0))) {
+                    handleSearchError("Url in first result cannot be found.", result, debugInfo);
+                }
+                for (Hit hit: result.getHits()) {
+                    if ((hit.getTitle() == null || hit.getTitle().equals("")) && 
+                        (hit.getRid() == null || hit.getRid().equals(""))) {
+                        handleSearchError("Search result must have a title or a rid.", result, debugInfo);
+                    }
+                }
+            }
 		} else {
 		    this.nextQuery = result.randomTerm(thisQuery);
 		}		

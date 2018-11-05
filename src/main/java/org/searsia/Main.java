@@ -249,7 +249,7 @@ public class Main {
 	private static void testEngine(Resource mother, String debugInfo, Boolean isQuiet) throws SearchException {
         printMessage("Testing: " + mother.getId() + " (" + mother.getName() + ")", isQuiet);
         SearchResult result = null;
-        result = mother.search(mother.getTestQuery(), debugInfo);
+        result = mother.randomSearch(debugInfo);
         if (!isQuiet) {
             if (debugInfo.equals("json")) {
                 System.out.println(result.toJson().toString(2));
@@ -263,19 +263,9 @@ public class Main {
             }
             System.out.flush();
         }
-        if (result.getHits().isEmpty()) {
-        	String tip = "";
-        	if (mother.getRerank() != null) {
-        		tip = " Try removing rerank.";
-        	}
-            throw new SearchException("No results for test query." + tip);
-        } else {
-            for (Hit hit: result.getHits()) {
-                if ((hit.getTitle() == null || hit.getTitle().equals("")) && 
-                	(hit.getRid() == null || hit.getRid().equals(""))) {
-                	throw new SearchException("Search result must have a title or a rid.");
-                }
-            }
+        String error = result.getError();
+        if (error != null) {
+            throw new SearchException(error);
         }
         if (result.getHits().size() < 10) {
             printMessage("Warning: less than 10 results for query '" + result.getQuery() + "'; see \"testquery\" or \"rerank\".", isQuiet);

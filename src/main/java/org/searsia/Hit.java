@@ -161,6 +161,10 @@ public class Hit implements Comparable<Hit> {
 		return (String) map.get("title");
 	}
 	
+    public String getUrl() {
+        return (String) map.get("url");
+    }
+
     public String getRid() {
         return (String) map.get("rid");
     }

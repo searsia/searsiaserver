@@ -50,6 +50,7 @@ public class SearchResult {
 	private String query;
     private String resourceId;
 	private String version;
+	private String error;
 	
 	public SearchResult() {
 		this(null);
@@ -62,6 +63,7 @@ public class SearchResult {
 		this.query = null;
 		this.version = null;
 		this.debugOut = null;
+		this.error = null;
 		if (hit != null) {
 			this.hits.add(hit);
 		}
@@ -95,8 +97,16 @@ public class SearchResult {
 	    return this.version;
 	}
 
+    public String getError() {
+        return this.error;
+    }
+
     public void setVersion(String version) {
         this.version = version;
+    }
+
+    public void setError(String error) {
+        this.error = error;
     }
 
 	public void setDebugOut(String debugOut) {
