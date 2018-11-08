@@ -135,7 +135,7 @@ public class SearchResultIndex {
     	closeReader();
     }
     
-    @Override
+    @Override // deprecated, but we don't rely on this
     protected void finalize() throws Throwable {
         close();
     	super.finalize();
