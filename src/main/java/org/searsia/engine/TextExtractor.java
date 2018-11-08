@@ -49,6 +49,25 @@ public class TextExtractor {
 		compiledXpath = xp.compile(this.xpath);
 	}
 
+	private String absoluteUrl(String baseUrl, String url) {
+	    if (baseUrl != null && url != null && !(url.startsWith("http://") || url.startsWith("https://"))) {
+	        if (url.startsWith("/")) {
+	            int index = baseUrl.indexOf("/", 10); // after "https://"
+	            if (index != -1) {
+	                baseUrl = baseUrl.substring(0, index);
+	            }
+	        } else {
+	            int index = baseUrl.lastIndexOf("/");
+	            if (index != -1 && index > 10) {
+	                baseUrl = baseUrl.substring(0, index + 1);
+	            } else {
+	                baseUrl += "/";
+	            }
+	        }
+            return baseUrl + url;
+	    }
+	    return url;
+	}
 
 	/**
 	 * Modifies hit by adding result for the text extractor
@@ -56,23 +75,28 @@ public class TextExtractor {
 	 * @param hit An updated hit
 	 * @throws XPathExpressionException
 	 */
-	public void extract(Node item, Hit hit) throws XPathExpressionException {
-        String resultString = ""; // TODO: StringBuilder
-		try {
+	public void extract(Node item, Hit hit, String urlPath) throws XPathExpressionException {
+        String resultString;
+	    try {
+	        StringBuilder sb = new StringBuilder();
             NodeList nodeList = (NodeList) this.compiledXpath.evaluate(item, XPathConstants.NODESET);
             if (nodeList != null) {
                 for (int i=0; i < nodeList.getLength(); i++) {
                     Node node = nodeList.item(i);
-                    if (!resultString.equals("")) {
-                        resultString += " ";
+                    if (sb.length() != 0) {
+                        sb.append(" ");
                     }
-                    resultString += node.getTextContent();
+                    sb.append(node.getTextContent());
                 }
             }
+            resultString = sb.toString();
 		} catch (XPathExpressionException e) { // just the STRING result does not work :-(
             resultString = (String) this.compiledXpath.evaluate(item, XPathConstants.STRING);
 		}
 		if (!resultString.equals("")) {
+		    if (this.field.equals("url")) {
+		        resultString = absoluteUrl(urlPath, resultString);
+		    }
 			hit.put(this.field, processMatch(resultString));
 		}
 	}

@@ -521,7 +521,7 @@ public class Resource implements Comparable<Resource> {
     private Hit extractHit(Node item) throws XPathExpressionException {
     	Hit hit = new Hit();
     	for(TextExtractor extractor: this.extractors) {
-			extractor.extract(item, hit);
+			extractor.extract(item, hit, this.getUserTemplate());
     	}
 		return hit;
 	}
