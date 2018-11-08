@@ -267,6 +267,22 @@ public class SearchResult {
         }
     }
 
+    private float scoreText(String text, Map<String, Float> queryTerms, float weight) {
+        float score = 0.0f;
+        if (text != null) {
+            for (String term: queryTerms.keySet()) {
+                queryTerms.put(term, weight);
+            }
+            for (String term: text.toLowerCase().split(TOKENIZER)) {
+                if (queryTerms.containsKey(term)) {
+                    score += queryTerms.get(term);
+                    queryTerms.put(term, 0.0f);
+                }
+            }
+        }
+        return score;
+    }
+
 	private void scoreRerankingGeneral(String query, int count) {
         SearchResult newResult = new SearchResult();
         Map<String, Float> queryTerms  = new HashMap<String, Float>();
@@ -274,17 +290,8 @@ public class SearchResult {
         	queryTerms.put(term, 0.1f); // TODO idf from Lucene index
         };
 		for (Hit hit: this.hits) {
-	        float score = 0.0f;
-			String text = hit.toIndexVersion();
-			for (String term: queryTerms.keySet()) {
-			    queryTerms.put(term, 0.1f);
-			}
-			for (String term: text.toLowerCase().split(TOKENIZER)) {
-	        	if (queryTerms.containsKey(term)) {
-	        		score += queryTerms.get(term);
-	        		queryTerms.put(term, 0.0f);
-	        	}
-			}
+	        float score = scoreText(hit.toIndexVersion(), queryTerms, 0.1f);
+			score += scoreText(hit.getTitle(), queryTerms, 0.01f);
 			if (count > 0) {
 			    score += 0.01f;
 			    count -= 1;
