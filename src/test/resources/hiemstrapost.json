@@ -1,22 +1,23 @@
 {
+    "searsia": "v1.0.0",
     "resource": {
         "id": "hiemstra",
-        "apitemplate": "http://wwwhome.cs.utwente.nl/~hiemstra/",
+        "apitemplate": "https://djoerdhiemstra.com/",
         "post": "s={searchTerms}&api={apikey}&paged={startPage?}",
         "extractors": {
-            "description": "./h3/following-sibling::text()",
-            "title": "./h3",
-            "url": "./h3/a/@href"
+            "description": "./div/p/text()",
+            "title": "./header/h2",
+            "url": "./header/h2/a/@href"
         },
-        "favicon": "http://wwwhome.cs.utwente.nl/~hiemstra/images/ut.ico",
-        "itempath": "//div[@class='post']",
+        "favicon": "https://djoerdhiemstra.com/wp-content/uploads/cropped-me-cartoon-192x192.png",
+        "itempath": "//article[./header/h2]",
         "maxqueriesperday": 133,
-        "mimetype": "application/xml",
+        "mimetype": "text/html",
         "prior": 0.3,
         "privateparameters": {
             "apikey": "SECRET!!"
         },
         "testquery": "searsia",
-        "urltemplate": "http://wwwhome.cs.utwente.nl/~hiemstra/?s={searchTerms}&api={apikey}&paged={startPage?}"
+        "urltemplate": "https://djoerdhiemstra.com/?s={searchTerms}&api={apikey}&paged={startPage?}"
     }
 }

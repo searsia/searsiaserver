@@ -43,7 +43,7 @@ public class ResourceTest {
 	public void testSearchPost() throws XPathExpressionException, SearchException {
         Resource se = new Resource("file:src/test/resources/hiemstrapost.json").updateFromAPI();
 		SearchResult result = se.search("dolf trieschnigg");
-		Assert.assertEquals("application/xml", se.getMimeType());
+		Assert.assertEquals("text/html", se.getMimeType());
 		Assert.assertEquals(10, result.getHits().size());
 	}
 

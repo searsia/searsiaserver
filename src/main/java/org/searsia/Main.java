@@ -247,7 +247,11 @@ public class Main {
     
     
 	private static void testEngine(Resource mother, String debugInfo, Boolean isQuiet) throws SearchException {
-        printMessage("Testing: " + mother.getId() + " (" + mother.getName() + ")", isQuiet);
+	    if (mother.getName() != null) {
+            printMessage("Testing: " + mother.getId() + " (" + mother.getName() + ")", isQuiet);
+	    } else {
+            printMessage("Testing: " + mother.getId(), isQuiet);	        
+	    }
         SearchResult result = null;
         result = mother.randomSearch(debugInfo);
         if (!isQuiet) {
