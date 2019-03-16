@@ -71,6 +71,7 @@ public class Search {
 	    return Response.status(Response.Status.NO_CONTENT)
 				.header("Access-Control-Allow-Origin", "*")
 				.header("Access-Control-Allow-Methods", "GET")
+	            .header("Access-Control-Allow-Headers", "Content-Type")
         		.build();
 	}
 

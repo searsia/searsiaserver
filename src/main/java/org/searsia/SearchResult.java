@@ -241,7 +241,9 @@ public class SearchResult {
             scoreRerankingRandom();
         } else if ("bestrandom".equals(model)) {
             scoreRerankingBestRandom(query);
-        } else {
+        } else if ("anyresult".equals(model)) {
+            scoreRerankingAnyResult(query);
+       } else {
             scoreRerankingRest(query);
         }
     }
@@ -305,6 +307,23 @@ public class SearchResult {
 		Collections.sort(this.hits, Collections.reverseOrder());
 	}
 
+	/* if any result matches the query, the full list is returned, otherwise nothing */
+    private void scoreRerankingAnyResult(String query) {
+        Map<String, Float> queryTerms  = new HashMap<String, Float>();
+        for (String term: query.toLowerCase().split(TOKENIZER)) {
+            queryTerms.put(term, 0.1f); // TODO idf from Lucene index
+        }
+        boolean found = false;
+        for (Hit hit: this.hits) {
+            if (scoreText(hit.toIndexVersion(), queryTerms, 0.1f) > 0.0f) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+           this.hits = new SearchResult().getHits();
+        }
+    }
 	
     /* ******************************************************************* 
      *  End of reranking code

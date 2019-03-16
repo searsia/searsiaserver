@@ -41,6 +41,8 @@ public class SearchResultTest {
         sr.scoreReranking("test", "or");
         Assert.assertEquals("First hit", "http://searsia.org", sr.getHits().get(0).getUrl()); // title hit is better
         Assert.assertEquals("Nr of hits after reranking", 2, sr.getHits().size());
+        sr.scoreReranking("yeah", "anyresult");
+        Assert.assertEquals("Nr of hits after reranking any", 2, sr.getHits().size());
 		sr.scoreReranking("doesnotmatch", "or");
 		Assert.assertEquals("Query matches zero results", 0, sr.getHits().size());
 	}
