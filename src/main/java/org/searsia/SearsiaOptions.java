@@ -146,7 +146,7 @@ public class SearsiaOptions {
             throw new IllegalArgumentException(e.getMessage() + " (use '-h' for help)");
         }
         if (cmd.hasOption("c")) {
-            cacheSize = new Integer(cmd.getOptionValue("c"));
+            cacheSize = Integer.parseInt(cmd.getOptionValue("c"));
             if (cacheSize < 30) {
             	cacheSize = 30;
             }
@@ -158,13 +158,13 @@ public class SearsiaOptions {
             }
         }
         if (cmd.hasOption("i")) {
-            pollInterval = new Integer(cmd.getOptionValue("i"));
+            pollInterval = Integer.parseInt(cmd.getOptionValue("i"));
             if (pollInterval < 10) {
               	pollInterval = 10;
             }
         }
         if (cmd.hasOption("l")) {
-            logLevel = new Integer(cmd.getOptionValue("l"));
+            logLevel = Integer.parseInt(cmd.getOptionValue("l"));
             if (logLevel < 0) {
             	logLevel = 0;
             }

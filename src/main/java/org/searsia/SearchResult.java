@@ -53,6 +53,7 @@ public class SearchResult {
     private String resourceId;
 	private String version;
 	private String date;
+	private String error;
 	
 	public SearchResult() {
 		this(null);
@@ -66,6 +67,7 @@ public class SearchResult {
 		this.version = null;
 		this.debugOut = null;
 		this.date = df.format(new Date());
+		this.error = null;
 		if (hit != null) {
 			this.hits.add(hit);
 		}
@@ -99,8 +101,16 @@ public class SearchResult {
 	    return this.version;
 	}
 
+    public String getError() {
+        return this.error;
+    }
+
     public void setVersion(String version) {
         this.version = version;
+    }
+
+    public void setError(String error) {
+        this.error = error;
     }
 
 	public void setDebugOut(String debugOut) {
@@ -232,7 +242,9 @@ public class SearchResult {
             scoreRerankingRandom();
         } else if ("bestrandom".equals(model)) {
             scoreRerankingBestRandom(query);
-        } else {
+        } else if ("anyresult".equals(model)) {
+            scoreRerankingAnyResult(query);
+       } else {
             scoreRerankingRest(query);
         }
     }
@@ -258,6 +270,22 @@ public class SearchResult {
         }
     }
 
+    private float scoreText(String text, Map<String, Float> queryTerms, float weight) {
+        float score = 0.0f;
+        if (text != null) {
+            for (String term: queryTerms.keySet()) {
+                queryTerms.put(term, weight);
+            }
+            for (String term: text.toLowerCase().split(TOKENIZER)) {
+                if (queryTerms.containsKey(term)) {
+                    score += queryTerms.get(term);
+                    queryTerms.put(term, 0.0f);
+                }
+            }
+        }
+        return score;
+    }
+
 	private void scoreRerankingGeneral(String query, int count) {
         SearchResult newResult = new SearchResult();
         Map<String, Float> queryTerms  = new HashMap<String, Float>();
@@ -265,17 +293,8 @@ public class SearchResult {
         	queryTerms.put(term, 0.1f); // TODO idf from Lucene index
         };
 		for (Hit hit: this.hits) {
-	        float score = 0.0f;
-			String text = hit.toIndexVersion();
-			for (String term: queryTerms.keySet()) {
-			    queryTerms.put(term, 0.1f);
-			}
-			for (String term: text.toLowerCase().split(TOKENIZER)) {
-	        	if (queryTerms.containsKey(term)) {
-	        		score += queryTerms.get(term);
-	        		queryTerms.put(term, 0.0f);
-	        	}
-			}
+	        float score = scoreText(hit.toIndexVersion(), queryTerms, 0.1f);
+			score += scoreText(hit.getTitle(), queryTerms, 0.01f);
 			if (count > 0) {
 			    score += 0.01f;
 			    count -= 1;
@@ -289,6 +308,23 @@ public class SearchResult {
 		Collections.sort(this.hits, Collections.reverseOrder());
 	}
 
+	/* if any result matches the query, the full list is returned, otherwise nothing */
+    private void scoreRerankingAnyResult(String query) {
+        Map<String, Float> queryTerms  = new HashMap<String, Float>();
+        for (String term: query.toLowerCase().split(TOKENIZER)) {
+            queryTerms.put(term, 0.1f); // TODO idf from Lucene index
+        }
+        boolean found = false;
+        for (Hit hit: this.hits) {
+            if (scoreText(hit.toIndexVersion(), queryTerms, 0.1f) > 0.0f) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+           this.hits = new SearchResult().getHits();
+        }
+    }
 	
     /* ******************************************************************* 
      *  End of reranking code

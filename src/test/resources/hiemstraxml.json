@@ -1,17 +1,18 @@
 {
+    "searsia": "v1.1.0",
     "resource": {
         "id": "hiemstraxml",
-        "apitemplate": "http://wwwhome.cs.utwente.nl/~hiemstra/?s={searchTerms}&paged={startPage?}",
+        "apitemplate": "https://djoerdhiemstra.com/feed/?s={searchTerms}",
         "extractors": {
-            "description": "./h3/following-sibling::text()",
-            "title": "./h3",
-            "url": "./h3/a/@href"
+            "description": "./description",
+            "title": "./title",
+            "url": "./link"
         },
-        "favicon": "http://wwwhome.cs.utwente.nl/~hiemstra/images/ut.ico",
-        "itempath": "//div[@class='post']",
+        "favicon": "https://djoerdhiemstra.com/wp-content/uploads/cropped-me-cartoon-192x192.png",
+        "itempath": "//item",
         "mimetype": "application/xml",
         "prior": 0.3,
-        "testquery": "searsia",
-        "urltemplate": "http://wwwhome.cs.utwente.nl/~hiemstra/?s={searchTerms}&api={apikey}&paged={startPage?}"
+        "testquery": "xml",
+        "urltemplate": "https://djoerdhiemstra/?s={searchTerms}"
     }
 }

@@ -46,11 +46,11 @@ public class SearchResultTest {
     @Test
 	public void testSampleAndRerank() {
 		SearchResult sr = new SearchResult();
-		Hit h = new Hit("The ultimate test", "Oh yeah", "http://searsia.org", 
-				"http://searsia.org/images/search.png");
-		sr.addHit(h);
+		Hit h = new Hit("Another", "yeah", "http://searsia.org/test.html", 
+                "http://searsia.org/images/search.png");
+        sr.addHit(h);
         String terms = h.toIndexVersion().toLowerCase();
-        h = new Hit("Another test", "yeah", "http://searsia.org/test.html", 
+        h = new Hit("The ultimate test", "Oh yeah", "http://searsia.org", 
                 "http://searsia.org/images/search.png");
         sr.addHit(h);
         terms += " " + h.toIndexVersion().toLowerCase();
@@ -60,7 +60,10 @@ public class SearchResultTest {
 		Assert.assertTrue("Index contains random term: " + term, terms.contains(term));
         Assert.assertEquals("Total nr of hits", 2, sr.getHits().size());
         sr.scoreReranking("test", "or");
+        Assert.assertEquals("First hit", "http://searsia.org", sr.getHits().get(0).getUrl()); // title hit is better
         Assert.assertEquals("Nr of hits after reranking", 2, sr.getHits().size());
+        sr.scoreReranking("yeah", "anyresult");
+        Assert.assertEquals("Nr of hits after reranking any", 2, sr.getHits().size());
 		sr.scoreReranking("doesnotmatch", "or");
 		Assert.assertEquals("Query matches zero results", 0, sr.getHits().size());
 	}

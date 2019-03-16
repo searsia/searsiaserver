@@ -19,7 +19,7 @@ import org.searsia.index.SearchResultIndex;
 /**
  *  Tests Searsia's hits  index
  */
-public class TestSearchResultIndex {
+public class SearchResultIndexTest {
 
     private static final Logger LOGGER = Logger.getLogger("org.searsia");
     private static final String PATH  = "target/index-test";

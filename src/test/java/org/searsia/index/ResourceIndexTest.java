@@ -15,7 +15,7 @@ import org.junit.Test;
 import org.searsia.index.ResourceIndex;
 import org.searsia.engine.Resource;
 
-public class TestResourceIndex {
+public class ResourceIndexTest {
 	
     private static final Logger LOGGER = Logger.getLogger("org.searsia");
     private static final String PATH  = "target/index-test";

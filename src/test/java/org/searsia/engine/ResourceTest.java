@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import javax.xml.xpath.XPathExpressionException;
 
+import org.searsia.Hit;
 import org.searsia.SearchResult;
 import org.searsia.engine.Resource;
 
@@ -42,7 +43,7 @@ public class ResourceTest {
 	public void testSearchPost() throws XPathExpressionException, SearchException {
         Resource se = new Resource("file:src/test/resources/hiemstrapost.json").updateFromAPI();
 		SearchResult result = se.search("dolf trieschnigg");
-		Assert.assertEquals("application/xml", se.getMimeType());
+		Assert.assertEquals("text/html", se.getMimeType());
 		Assert.assertEquals(10, result.getHits().size());
 	}
 
@@ -89,6 +90,9 @@ public class ResourceTest {
 		SearchResult result = se.search(se.getTestQuery());
 		Assert.assertEquals("application/html+json", se.getMimeType());
 		Assert.assertTrue("Result size 3", result.getHits().size() == 3);
+		for (Hit hit: result.getHits()) {
+		    Assert.assertEquals("Url starts with", "http://searsia.org/blog/", hit.getUrl().substring(0, 24));
+		}
 	}
 
 	@Test
