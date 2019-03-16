@@ -125,9 +125,9 @@ public class Hit implements Comparable<Hit> {
         if (scoreObject instanceof Float) {
             score = (float) scoreObject;
         } else if (scoreObject instanceof Double) {
-            score = new Float((double) scoreObject); 
+            score = (float) ((double) scoreObject); 
         } else if (scoreObject instanceof Integer) {
-            score = new Float((int) scoreObject); 
+            score = (float) ((int) scoreObject); 
         } else if (scoreObject instanceof String) {
             try {
                 score = Float.parseFloat((String) scoreObject);

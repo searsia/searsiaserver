@@ -132,7 +132,7 @@ public class Resource implements Comparable<Resource> {
 		if (jo.has("banner"))          this.banner          = jo.getString("banner");
 		if (jo.has("itempath"))        this.itemXpath       = jo.getString("itempath");
         if (jo.has("deleted"))         this.deleted         = jo.getBoolean("deleted");
-		if (jo.has("prior"))           this.prior           = new Float(jo.getDouble("prior"));
+		if (jo.has("prior"))           this.prior           = (float) jo.getDouble("prior");
 		if (jo.has("maxqueriesperday")) this.rate           = jo.getInt("maxqueriesperday");
 		if (jo.has("extractors")) {
 			JSONObject json = (JSONObject) jo.get("extractors");
