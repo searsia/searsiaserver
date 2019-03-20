@@ -80,13 +80,15 @@ public class Search {
 	@GET @Path("{resourceid}")
 	@Produces(SearchResult.SEARSIA_MIME_ENCODING)
 	public Response query(@PathParam("resourceid")  String resourceid, 
-	                      @QueryParam("q")          String searchTerms, 
+	                      @QueryParam("q")          String searchTerms,
+	                      @QueryParam("type")       String resultType,
                           @QueryParam("resources")  String countResources, 
 	                      @QueryParam("page")       String startPage) {
+        LOGGER.trace("Web call " + resourceid + ": " + searchTerms + ", " + resultType);
         resourceid = resourceid.replaceAll("\\.json$", "");
 		Resource me = engines.getMyself();
 		if (!resourceid.equals(me.getId())) {
-		    return getRemoteResults(resourceid, searchTerms);
+		    return getRemoteResults(resourceid, searchTerms); // TODO: also pass resultType to remote Searsia engines?
 		} else {
 		    Integer max = 10, start = 0;
 		    if (countResources != null) {
@@ -107,7 +109,7 @@ public class Search {
                 }
                 if (start < 0) { start = 0; }
             }
-		    return getLocalResults(searchTerms, max, start);
+		    return getLocalResults(searchTerms, resultType, max, start);
 		}
 	}
 
@@ -173,14 +175,15 @@ public class Search {
         return SearsiaApplication.responseOk(json);
     }
 
-    private Response getLocalResults(String query, int max, int start) {  
+    private Response getLocalResults(String query, String type, int max, int start) {  
         JSONObject json = null, healthJson = null;
         Resource mother = engines.getMother();
         Resource me     = engines.getMyself();
         SearchResult result = null;
+        LOGGER.trace("Local query: " + query + ", " + type);
         if (query != null && query.trim().length() > 0) {
             try {
-                result = index.search(query);
+                result = index.search(query); // TODO: pass on type.
             } catch (Exception e) {
                 String message = "Service unavailable: " + e.getMessage();
                 LOGGER.warn(message);
@@ -198,11 +201,11 @@ public class Search {
                     LOGGER.warn(e);
                 }
             }
-            result.scoreResourceSelection(query, engines, max, start);
+            result.scoreResourceSelection(query, type, engines, max, start);
             LOGGER.info("Local: " + query);
         } else { // no query: create a 'resource only' result, plus health report
             result = new SearchResult();
-            result.scoreResourceSelection(null, engines, max, start);
+            result.scoreResourceSelection(null, type, engines, max, start);
             if (this.health) {
                 healthJson = engines.toJsonHealth();
                 healthJson.put("requestsok", this.nrOfQueriesOk);

@@ -26,11 +26,11 @@ public class SearchResultTest {
 	public void testSampleAndRerank() {
 		SearchResult sr = new SearchResult();
 		Hit h = new Hit("Another", "yeah", "http://searsia.org/test.html", 
-                "http://searsia.org/images/search.png");
+                "http://searsia.org/images/search.png", null);
         sr.addHit(h);
         String terms = h.toIndexVersion().toLowerCase();
         h = new Hit("The ultimate test", "Oh yeah", "http://searsia.org", 
-                "http://searsia.org/images/search.png");
+                "http://searsia.org/images/search.png", null);
         sr.addHit(h);
         terms += " " + h.toIndexVersion().toLowerCase();
 		String notThis = "test";
@@ -66,4 +66,5 @@ public class SearchResultTest {
         Hit h6 = new Hit("{\"title\":\"boo\",\"score\":9.7E-4}");
         Assert.assertTrue(h6.getScore() > 0.0f);
 	}
+
 }

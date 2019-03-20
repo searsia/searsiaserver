@@ -203,6 +203,7 @@ public class ResourceTest {
 		Assert.assertEquals("headers", se1.getHeaders().size(), se2.getHeaders().size());
 		Assert.assertEquals("post", se1.getPostString(), se2.getPostString());
 		Assert.assertEquals("postencode", se1.getPostQueryEncode(), se2.getPostQueryEncode());
+        Assert.assertEquals("type", se1.getResultTypes(), se2.getResultTypes());
 		Assert.assertFalse("secret revealed", json.toString().contains(SECRET_API_KEY));
 	}
 	
@@ -230,4 +231,30 @@ public class ResourceTest {
         Assert.assertEquals("Equals small equals", se1, se2);
 	}
 	
+	@Test
+	public void testResultTypes() throws SearchException {
+        Resource se = new Resource("file:src/test/resources/searsia.json").updateFromAPI();
+        Assert.assertEquals("ResultType 1", "web", se.getResultTypes());
+        se.addResultType("Blog");
+        Assert.assertEquals("ResultType 2", "web blog", se.getResultTypes());
+        se.addResultType("blog");
+        se.addResultType("Web");
+        Assert.assertEquals("ResultType 3", "web blog", se.getResultTypes());
+        Assert.assertTrue("ResultType matches blog", se.matchesResultTypes("blog"));
+        Assert.assertFalse("ResultType does not match video", se.matchesResultTypes("video"));
+        for (int i = 0; i < 50; i++) { // maximum of 250 characters
+            se.addResultType("type" + i);
+        }
+        Assert.assertTrue("ResultType starts with type", se.getResultTypes().startsWith("type"));
+        Resource se2 = new Resource("file:src/test/resources/searsia.json").updateFromAPI();
+        Assert.assertTrue("ResultType comparison", se.compareTo(se2) == 0);
+	}
+	
+    @Test
+    public void testScoring() throws SearchException {
+        Resource se = new Resource("file:src/test/resources/searsia.json").updateFromAPI();
+        Assert.assertEquals("Score does not match", 0.0f, se.score("somethingstrange"), 0.001f);
+        Assert.assertTrue("Score matches", se.score("searsia") > 0.001f);
+    }
+
 }

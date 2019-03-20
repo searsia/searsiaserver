@@ -53,7 +53,7 @@ public class ResourceIndexTest {
     
     private static Resource newby() throws XPathExpressionException, JSONException {
         JSONObject json = new JSONObject(
-            "{\"apitemplate\":\"http://new.com/?q={searchTerms}\",\"id\":\"new\",\"privateparameters\":{\"apikey\":\"secret\"}}"
+            "{\"apitemplate\":\"http://new.com/?q={searchTerms}\",\"id\":\"new\",\"type\":\"blog\",\"privateparameters\":{\"apikey\":\"secret\"}}"
         );
     	return new Resource(json);
     }
@@ -66,7 +66,7 @@ public class ResourceIndexTest {
     }
     
     
-    public static void checkFiles() throws IOException, XPathExpressionException, JSONException {
+    private static void checkFiles() throws IOException, XPathExpressionException, JSONException {
     	Resource e1 = me();
     	Resource e2 = engines.getMyself();
     	Assert.assertTrue("Trying to retrieve me", e1.equals(e2));
@@ -76,8 +76,10 @@ public class ResourceIndexTest {
     	Assert.assertTrue("No private parameters expected", e4.getJsonPrivateParameters() == null);
     	Resource e6 = engines.get(newby().getId());
     	Assert.assertTrue("Private parameters expected", e6.getJsonPrivateParameters() != null);
-    	Assert.assertTrue("Top 1", engines.topValuesNotDeleted("anything", 1).size() == 1);
-    	Assert.assertTrue("Top 2", engines.topValuesNotDeleted(null, 2).size() == 2);
+    	Assert.assertTrue("Top 1", engines.topValuesNotDeleted("anything", null, 1).size() == 1);
+    	Assert.assertTrue("Top 2", engines.topValuesNotDeleted(null, null, 2).size() == 2);
+        Assert.assertTrue("Top 3", engines.topValuesNotDeleted(null, "nothing", 2).size() == 0);
+        Assert.assertTrue("Top 4", engines.topValuesNotDeleted(null, "blog", 2).size() == 1);
     }
 	
     @Test

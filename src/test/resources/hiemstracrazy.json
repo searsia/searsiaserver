@@ -11,6 +11,7 @@
         },
         "post": "POST",
         "postencode": "application/x-www-form-urlencoded",
+        "type": "blog",
         "rerank": "lm",
         "banner": "me.png",
         "suggesttemplate": "https://djoerdhiemstra.com/keywords.php?q=d&limit=10",

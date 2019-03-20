@@ -258,7 +258,7 @@ public class ResourceIndex {
 	}
 	
 	// Efficiency can be gained here?
-	public Map<String, Float> topValuesNotDeleted(String queryString, int max) {
+	public Map<String, Float> topValuesNotDeleted(String queryString, String typeString, int max) {
         float[] topScores = new float[max];
 		Resource[] topEngines = new Resource[max];
 		int size = 0;
@@ -266,6 +266,7 @@ public class ResourceIndex {
 		String lastId = "";
 		for (Resource engine: this.engines.values()) {
 		    if (engine.isDeleted()) { continue; }
+		    if (typeString != null && !typeString.isEmpty() && !engine.matchesResultTypes(typeString)) { continue; }
 		    float score = engine.score(queryString) + engine.getPrior();
 		    String id = engine.getId();
 	        if (size < max || (score > lastScore || (score == lastScore && id.compareTo(lastId) > 0))) {

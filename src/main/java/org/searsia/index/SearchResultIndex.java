@@ -63,7 +63,7 @@ import org.searsia.SearchResult;
 public class SearchResultIndex {
 
     public static final Hit SEARSIA_HIT  = 
-  	    new Hit("Searsia", "Search for noobs", "http://searsia.org", "http://searsia.org/images/searsia.png");
+  	    new Hit("Searsia", "Search for noobs", "http://searsia.org", "http://searsia.org/images/searsia.png", "blog");
     private final static Logger LOGGER   = Logger.getLogger(SearchResultIndex.class.getName());
     private final static Version VERSION = Version.LUCENE_4_10_4;
     private final static String[] FIELDS = { "title", "terms" };

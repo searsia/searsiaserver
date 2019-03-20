@@ -150,14 +150,18 @@ public class SearchResult {
 	 * @param query
 	 * @param engines
 	 */
-	public void scoreResourceSelection(String query, ResourceIndex engines, int max, int start) {
+	public void scoreResourceSelection(String query, String type, ResourceIndex engines, int max, int start) {
 	    SearchResult newResult = new SearchResult();
 		final float boost = 0.05f;
 		final int maxSize = max + start;
 		Map<String, Float> maxScores   = new HashMap<String, Float>();
         Map<String, Integer> resourceReturned = new HashMap<String, Integer>();
-		Map<String, Float> topEngines = engines.topValuesNotDeleted(query, maxSize);
+		Map<String, Float> topEngines = engines.topValuesNotDeleted(query, type, maxSize);
 		for (Hit hit: this.hits) {
+		    if (type != null && !type.isEmpty()) { // hard select on type
+		        String hitType = hit.getString("type");
+		        if (hitType == null || !hitType.contains(type)) { continue; }
+		    }
 			String rid = hit.getString("rid");
 			if (rid != null) {
                 Resource engine = engines.get(rid);

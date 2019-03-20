@@ -93,6 +93,7 @@ public class Resource implements Comparable<Resource> {
 	private String rerank = null;
 	private int rate = defaultRATE;
 	private boolean deleted = false;
+    private String resultTypes = null;
 	
 	// internal data shared for health report
 	private String   nextQuery = null;
@@ -122,6 +123,7 @@ public class Resource implements Comparable<Resource> {
 		if (jo.has("mimetype"))        this.mimeType        = jo.getString("mimetype");
 		if (jo.has("post"))            this.postString      = jo.getString("post");
 		if (jo.has("postencode"))      this.postQueryEncode = jo.getString("postencode");
+        if (jo.has("type"))            this.resultTypes     = jo.getString("type");
 		if (jo.has("signature"))       this.signature       = jo.getString("signature");
 		if (jo.has("name"))            this.name            = jo.getString("name");
 		if (jo.has("testquery"))       this.testQuery       = jo.getString("testquery");
@@ -272,7 +274,27 @@ public class Resource implements Comparable<Resource> {
         return this;
     }
 
-
+    /**
+     * Add result type (like 'image', 'video') to be stored as a single string of multiple types
+     * Beware: Uses simple string contains
+     * @param type result type
+     */
+    public void addResultType(String type) {
+        type = type.toLowerCase();
+        if (this.resultTypes == null) {
+            this.resultTypes = type; 
+        } else if (!this.resultTypes.contains(type)) {
+            if (this.resultTypes.length() > 250) {
+                int first = this.resultTypes.indexOf(' ');
+                int last  = this.resultTypes.length();
+                if (first > 0 && last > 1) {
+                    this.resultTypes = this.resultTypes.substring(first + 1, last);
+                }
+            }
+            this.resultTypes += " " + type;
+        }            
+    }
+    
     private static boolean wrongUrl(Hit hit) {
         String urlString = hit.getUrl();
         if (urlString == null) { return false; }
@@ -800,6 +822,14 @@ public class Resource implements Comparable<Resource> {
 		return this.postQueryEncode;
 	}
 
+    public String getResultTypes() {
+        return this.resultTypes;
+    }
+    
+	public boolean matchesResultTypes(String type) {
+	    return this.resultTypes != null && type != null && !type.isEmpty() && this.resultTypes.contains(type);
+	}
+	
 	public String getItemXpath() {
 		return this.itemXpath;
 	}
@@ -963,7 +993,7 @@ public class Resource implements Comparable<Resource> {
 		    }
     		for (String term: query.toLowerCase().split("[^0-9a-z]+")) {
 	    		if (nameTerm.containsKey(term)) {
-	    		    score += 2.0f; // some arbitrary number	
+	    		    score += 1.0f; // some arbitrary number	
 	    		}
 		    }
         }
@@ -1005,6 +1035,7 @@ public class Resource implements Comparable<Resource> {
             this.rerank   = e2.rerank;
             this.postString = e2.postString;
             this.postQueryEncode = e2.postQueryEncode;
+            this.resultTypes = e2.resultTypes;
             if (e2.testQuery == null) { this.testQuery = defaultTestQuery; } else { this.testQuery = e2.testQuery; }
             this.prior = e2.prior;
             this.rate = e2.rate;
@@ -1042,6 +1073,7 @@ public class Resource implements Comparable<Resource> {
             if (rerank != null)              engine.put("rerank", rerank);
             if (postString != null)          engine.put("post", postString);
             if (postQueryEncode != null)     engine.put("postencode", postQueryEncode);
+            if (resultTypes != null)         engine.put("type", resultTypes);
             if (testQuery != null)           engine.put("testquery", testQuery);
             if (prior != null)               engine.put("prior", prior);
             if (rate != defaultRATE)         engine.put("maxqueriesperday", rate);
@@ -1079,6 +1111,7 @@ public class Resource implements Comparable<Resource> {
                                              engine.put("mimetype", mimeType);
             if (rerank != null)              engine.put("rerank", rerank);
             if (rate != defaultRATE)         engine.put("maxqueriesperday", rate);
+            if (resultTypes != null)         engine.put("type", resultTypes);
         }
         return engine;
     }
@@ -1112,7 +1145,8 @@ public class Resource implements Comparable<Resource> {
         this.lastUsedError = dateFormat.parse(health.getString("lasterror")).getTime();
         this.lastUpdated = dateFormat.parse(health.getString("lastupdated")).getTime();
         this.upsince = dateFormat.parse(health.getString("upsince")).getTime();
-        if (health.has("lastmessage")) this.lastMessage   = health.getString("lastmessage");
+        if (health.has("lastmessage")) this.lastMessage = health.getString("lastmessage");
+        if (health.has("type")) this.resultTypes = health.getString("type");
     }
 
     
@@ -1134,7 +1168,9 @@ public class Resource implements Comparable<Resource> {
         }
     }
 
-   
+    /**
+     * resultTypes is omitted because it is also learned.
+     */
     @Override
     public boolean equals(Object o) {  // TODO: AARGH, can't this be done simpler?
     	if (o == null) return false;

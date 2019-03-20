@@ -8,6 +8,7 @@
         "title": "./title",
         "url": "./url"
     },
+    "type": "web",
     "favicon": "http://searsia.org/images/searsia.png",
     "mimetype": "application/json",
     "name": "Searsia",

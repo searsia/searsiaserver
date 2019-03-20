@@ -33,7 +33,7 @@ import org.searsia.index.ResourceIndex;
  */
 public class SearsiaApplication extends ResourceConfig {
 
-	public static final String VERSION = "v1.1.0";
+	public static final String VERSION = "v1.2.0";
 
 	protected static Response responseOk(JSONObject json) {
 		json.put("searsia", VERSION);

@@ -38,12 +38,13 @@ public class Hit implements Comparable<Hit> {
 		this.map = new HashMap<>();
 	}
 	
-	public Hit(String title, String description, String url, String favicon) {
+	public Hit(String title, String description, String url, String favicon, String type) {
 		this.map = new HashMap<>();
 		map.put("title", title);
 		map.put("url",   url);
 		map.put("description", description);
 		map.put("favicon", favicon);
+		map.put("type", type);
 	}
 
 	public Hit(JSONObject json) {
