@@ -30,6 +30,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
+import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.searsia.SearchResult;
 import org.searsia.SearsiaOptions;
@@ -47,11 +48,11 @@ import org.searsia.engine.SearchException;
 @Path("searsia")
 public class Search {
 
-	private final static org.apache.log4j.Logger LOGGER = org.apache.log4j.Logger.getLogger(Search.class);
+    private final static Logger LOGGER = Logger.getLogger(Search.class);
     private final static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
     private final static String startTime = dateFormat.format(new Date());
 	
-	private ResourceIndex engines;
+    private ResourceIndex engines;
     private SearchResultIndex index;
     private boolean health;
     private boolean shared;

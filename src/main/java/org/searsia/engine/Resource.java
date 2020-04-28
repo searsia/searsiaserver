@@ -274,26 +274,6 @@ public class Resource implements Comparable<Resource> {
         return this;
     }
 
-    /**
-     * Add result type (like 'image', 'video') to be stored as a single string of multiple types
-     * Beware: Uses simple string contains
-     * @param type result type
-     */
-    public void addResultType(String type) {
-        type = type.toLowerCase();
-        if (this.resultTypes == null) {
-            this.resultTypes = type; 
-        } else if (!this.resultTypes.contains(type)) {
-            if (this.resultTypes.length() > 250) {
-                int first = this.resultTypes.indexOf(' ');
-                int last  = this.resultTypes.length();
-                if (first > 0 && last > 1) {
-                    this.resultTypes = this.resultTypes.substring(first + 1, last);
-                }
-            }
-            this.resultTypes += " " + type;
-        }            
-    }
     
     private static boolean wrongUrl(Hit hit) {
         String urlString = hit.getUrl();
@@ -1185,6 +1165,7 @@ public class Resource implements Comparable<Resource> {
     	if (!stringEquals(this.getBanner(), e.getBanner())) return false;
     	if (!stringEquals(this.getPostString(), e.getPostString())) return false;
     	if (!stringEquals(this.getPostQueryEncode(), e.getPostQueryEncode())) return false;
+    	if (!stringEquals(this.getResultTypes(), e.getResultTypes())) return false;
     	if (!stringEquals(this.getTestQuery(), e.getTestQuery())) return false;
     	if (!stringEquals(this.getItemXpath(), e.getItemXpath())) return false;
     	if (!stringEquals(this.getAPITemplate(), e.getAPITemplate())) return false;
