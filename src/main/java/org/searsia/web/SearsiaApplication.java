@@ -33,7 +33,7 @@ import org.searsia.index.ResourceIndex;
  */
 public class SearsiaApplication extends ResourceConfig {
 
-	public static final String VERSION = "v1.2.0";
+	public static final String VERSION = "v1.3.0";
 
 	protected static Response responseOk(JSONObject json) {
 		json.put("searsia", VERSION);
@@ -63,6 +63,15 @@ public class SearsiaApplication extends ResourceConfig {
 				.entity(entity)
 				.header("Access-Control-Allow-Origin", "*")
 				.build();
+	}
+	
+	protected static Response responseRedirect(String location) {
+        return  Response
+                .status(302)
+                .entity("")
+                .header("Access-Control-Allow-Origin", "*")
+                .header("Location", location)
+                .build();
 	}
 
 	public SearsiaApplication(SearchResultIndex index, 

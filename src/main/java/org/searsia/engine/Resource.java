@@ -84,6 +84,7 @@ public class Resource implements Comparable<Resource> {
     private String postQueryEncode = null;
     private String favicon = null;
     private String banner = null;
+    private String redirect = null;
 	private String itemXpath = null;
 	private String testQuery = defaultTestQuery;
 	private List<TextExtractor> extractors = new ArrayList<>();
@@ -132,6 +133,7 @@ public class Resource implements Comparable<Resource> {
 		if (jo.has("favicon"))         this.favicon         = jo.getString("favicon");
 		if (jo.has("rerank"))          this.rerank          = jo.getString("rerank");
 		if (jo.has("banner"))          this.banner          = jo.getString("banner");
+		if (jo.has("redirect"))        this.redirect        = jo.getString("redirect");
 		if (jo.has("itempath"))        this.itemXpath       = jo.getString("itempath");
         if (jo.has("deleted"))         this.deleted         = jo.getBoolean("deleted");
 		if (jo.has("prior"))           this.prior           = (float) jo.getDouble("prior");
@@ -151,6 +153,9 @@ public class Resource implements Comparable<Resource> {
 				String key = (String) keys.next();
 				addHeader((String) key, (String) json.get(key));
 			}
+			if (this.redirect != null) {
+				throw new IllegalArgumentException("Headers not allowed for Redirect");	
+			}
 		}
 		if (jo.has("privateparameters")) {
 			JSONObject json = (JSONObject) jo.get("privateparameters");
@@ -159,12 +164,23 @@ public class Resource implements Comparable<Resource> {
 				String key = (String) keys.next();
 				addPrivateParameter((String) key, (String) json.get(key));
 			}
+			if (this.redirect != null) {
+				throw new IllegalArgumentException("Privateparameters not allowed for Redirect");	
+			}
 		}
 		if (this.urlAPITemplate != null && this.urlAPITemplate.startsWith("file")) {
 			throw new IllegalArgumentException("Illegal 'file' API Template");
 		}
 		if (this.id == null) {
 			throw new IllegalArgumentException("Missing Identifier");
+		}
+		if (this.redirect != null) {
+			if (this.mimeType == null || !this.mimeType.equals(SearchResult.SEARSIA_MIME_TYPE)) {
+				throw new IllegalArgumentException("Only Mime Type Searsia allowed for Redirect");
+			}
+			if (this.postString != null) {
+				throw new IllegalArgumentException("Poststring not allowed for Redirect");
+			}
 		}
 	}
 	
@@ -396,6 +412,27 @@ public class Resource implements Comparable<Resource> {
         return result;
 	}
 
+	public String redirectSearch(String query) throws SearchException {
+        return redirectSearch(query, null);
+	}
+	
+	public String redirectSearch(String query, Integer startPage) throws SearchException {
+        if (this.urlAPITemplate == null) {
+            throw new SearchException("No API Redirect Template");
+		}
+        String url = null;
+        try {
+            url = fillTemplate(this.urlAPITemplate, URLEncoder.encode(query, "UTF-8"), startPage);
+        } catch (Exception e) {  // catch all, also runtime exceptions
+	        this.nrOfError += 1;
+	        this.lastUsedError = new Date().getTime();
+	        SearchException se = createPrivateSearchException(e);
+		    this.lastMessage = se.getMessage();
+			throw se;
+		}
+        return url;
+	}
+	
 	public SearchResult searchWithoutQuery() throws SearchException {
 		if (!this.mimeType.equals(SearchResult.SEARSIA_MIME_TYPE)) {
 			throw new SearchException("Engine is not a searsia engine: " + this.id);
@@ -881,6 +918,10 @@ public class Resource implements Comparable<Resource> {
 		return prior;
 	}
 
+    public String getRedirect() {
+    	return this.redirect;
+    }
+
 	public int getNrOfErrors() {
 	    return this.nrOfError;
 	}
@@ -1008,6 +1049,7 @@ public class Resource implements Comparable<Resource> {
             this.urlUserTemplate = e2.urlUserTemplate;
             this.favicon  = e2.favicon;
             this.banner   = e2.banner;
+            this.redirect = e2.redirect;
             this.urlAPITemplate = e2.urlAPITemplate;
             this.urlSuggestTemplate = e2.urlSuggestTemplate;
             if (e2.mimeType == null) { this.mimeType = SearchResult.SEARSIA_MIME_TYPE; }
@@ -1047,6 +1089,7 @@ public class Resource implements Comparable<Resource> {
             if (urlUserTemplate != null)     engine.put("urltemplate", urlUserTemplate);
             if (favicon != null)             engine.put("favicon", favicon);
             if (banner != null)              engine.put("banner", banner);
+            if (redirect != null)            engine.put("redirect", redirect);
             if (urlAPITemplate != null)      engine.put("apitemplate", urlAPITemplate);
             if (urlSuggestTemplate != null)  engine.put("suggesttemplate", urlSuggestTemplate);
             if (mimeType != null)            engine.put("mimetype", mimeType);
@@ -1087,6 +1130,7 @@ public class Resource implements Comparable<Resource> {
             if (urlUserTemplate != null)     engine.put("urltemplate", urlUserTemplate);
             if (favicon != null)             engine.put("favicon", favicon);
             if (banner != null)              engine.put("banner", banner);
+            if (redirect != null)            engine.put("redirect", redirect);
             if (mimeType != null && !mimeType.equals(SearchResult.SEARSIA_MIME_TYPE))
                                              engine.put("mimetype", mimeType);
             if (rerank != null)              engine.put("rerank", rerank);
@@ -1163,6 +1207,7 @@ public class Resource implements Comparable<Resource> {
         if (!stringEquals(this.getRerank(), e.getRerank())) return false;
     	if (!stringEquals(this.getFavicon(), e.getFavicon())) return false;
     	if (!stringEquals(this.getBanner(), e.getBanner())) return false;
+    	if (!stringEquals(this.getRedirect(), e.getRedirect())) return false;
     	if (!stringEquals(this.getPostString(), e.getPostString())) return false;
     	if (!stringEquals(this.getPostQueryEncode(), e.getPostQueryEncode())) return false;
     	if (!stringEquals(this.getResultTypes(), e.getResultTypes())) return false;

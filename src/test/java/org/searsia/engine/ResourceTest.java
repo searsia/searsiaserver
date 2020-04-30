@@ -195,6 +195,7 @@ public class ResourceTest {
 		Assert.assertEquals("favicon", se1.getFavicon(), se2.getFavicon());
 		Assert.assertEquals("rerank", se1.getRerank(), se2.getRerank());
 		Assert.assertEquals("banner", se1.getBanner(), se2.getBanner());
+		Assert.assertEquals("banner", se1.getRedirect(), se2.getRedirect());
 		Assert.assertEquals("itempath", se1.getItemXpath(), se2.getItemXpath());
 		Assert.assertEquals("testquery", se1.getTestQuery(), se2.getTestQuery());
 		Assert.assertEquals("prior", se1.getPrior(), se2.getPrior(), 0.0001d);

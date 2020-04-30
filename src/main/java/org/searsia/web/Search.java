@@ -76,7 +76,7 @@ public class Search {
         		.build();
 	}
 
-	// TODO: gives 406 not acceptable whith "Accept: application/json"
+	// TODO: gives 406 not acceptable with "Accept: application/json"
 	
 	@GET @Path("{resourceid}")
 	@Produces(SearchResult.SEARSIA_MIME_ENCODING)
@@ -141,25 +141,31 @@ public class Search {
             LOGGER.warn(message);
             return SearsiaApplication.responseError(410, message);
         }
+        
         if (query != null && query.trim().length() > 0) {
-            SearchResult result = index.cacheSearch(query, engine.getId());
-            if (result != null) {
-                boolean censorQueryResourceId = true;
-                json = result.toJson(censorQueryResourceId);
-                LOGGER.info("Cache " + resourceid + ": " + query);
-            } else {
-                try {
+            try {
+            	String redirect = engine.getRedirect();
+                if (redirect != null && redirect.startsWith("30")) { // 302, 307, whatever
+                	LOGGER.info("Redirect: " + resourceid);
+                    return SearsiaApplication.responseRedirect(engine.redirectSearch(query));
+                }       	
+                SearchResult result = index.cacheSearch(query, engine.getId());
+                if (result != null) {
+                    boolean censorQueryResourceId = true;
+                    json = result.toJson(censorQueryResourceId);
+                    LOGGER.info("Cache " + resourceid + ": " + query);
+                } else {
                     result = engine.search(query);
                     result.removeResource();     // only trust your mother
                     json = result.toJson();                         // first json for response, so
                     result.addResourceDate(engine.getId()); // response will not have resource id + date
                     index.offer(result);  //  maybe do this AFTER the http response is sent:  https://jersey.java.net/documentation/latest/async.html (11.1.1)
                     LOGGER.info("Query " + resourceid + ": " + query);
-                } catch (Exception e) {
-                    String message = "Resource " + resourceid + " unavailable: " + e.getMessage();
-                    LOGGER.warn(message);
-                    return SearsiaApplication.responseError(503, message);
                 }
+            } catch (Exception e) {
+                String message = "Resource " + resourceid + " unavailable: " + e.getMessage();
+                LOGGER.warn(message);
+                return SearsiaApplication.responseError(503, message);
             }
         } else {
             json = new JSONObject();
