@@ -327,6 +327,12 @@ public class Resource implements Comparable<Resource> {
 		String thisQuery = this.nextQuery;
 		this.nextQuery = null; // so, nextQuery will be null in case of a searchexception
 		SearchResult result = search(thisQuery, debugInfo);
+        if (this.getRedirect() != null) {
+        	Resource redirectResource = result.getResource();
+        	if (redirectResource == null || !this.getId().equals(redirectResource.getId())) {
+        		handleSearchError("Redirected engine must have resource with same Id.", result, debugInfo);
+        	}
+        }
 		if (this.getTestQuery().equals(thisQuery)) {
 		    if (result.getHits().isEmpty()) {
                 String message = "No results for test query: " + thisQuery;
