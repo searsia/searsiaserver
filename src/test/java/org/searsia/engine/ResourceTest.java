@@ -195,7 +195,7 @@ public class ResourceTest {
 		Assert.assertEquals("favicon", se1.getFavicon(), se2.getFavicon());
 		Assert.assertEquals("rerank", se1.getRerank(), se2.getRerank());
 		Assert.assertEquals("banner", se1.getBanner(), se2.getBanner());
-		Assert.assertEquals("banner", se1.getRedirect(), se2.getRedirect());
+		Assert.assertEquals("directaccess", se1.getDirectAccess(), se2.getDirectAccess());
 		Assert.assertEquals("itempath", se1.getItemXpath(), se2.getItemXpath());
 		Assert.assertEquals("testquery", se1.getTestQuery(), se2.getTestQuery());
 		Assert.assertEquals("prior", se1.getPrior(), se2.getPrior(), 0.0001d);
@@ -246,4 +246,10 @@ public class ResourceTest {
         Assert.assertTrue("Score matches", se.score("searsia") > 0.001f);
     }
 
+    @Test
+    public void testDirectAccess() throws SearchException {
+        Resource se = new Resource("file:src/test/resources/search.json").updateFromAPI();
+        SearchResult result = se.randomSearch();
+        Assert.assertTrue("Successful directaccess engine", result != null);
+    }
 }

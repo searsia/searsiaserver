@@ -144,8 +144,8 @@ public class Search {
         
         if (query != null && query.trim().length() > 0) {
             try {
-            	String redirect = engine.getRedirect();
-                if (redirect != null && redirect.startsWith("30")) { // 302, 307, whatever
+            	String redirect = engine.getDirectAccess();
+                if (redirect != null && redirect.equals("yes")) {
                 	LOGGER.info("Redirect: " + resourceid);
                     return SearsiaApplication.responseRedirect(engine.redirectSearch(query));
                 }       	

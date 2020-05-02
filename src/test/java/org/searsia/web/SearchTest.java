@@ -49,7 +49,7 @@ public class SearchTest {
     }
     
     private static Resource redirect() throws XPathExpressionException, JSONException {
-        return new Resource(new JSONObject("{\"apitemplate\":\"http://searsia.org/searsia/wiki/wikifull1{searchTerms}.json\",\"id\":\"wikiredirect\",\"redirect\":\"302\"}"));
+        return new Resource(new JSONObject("{\"apitemplate\":\"http://searsia.org/searsia/search.json?q={searchTerms}\",\"id\":\"search\",\"directaccess\":\"yes\"}"));
     }
     
     private static Resource okDeleted() throws XPathExpressionException, JSONException {
@@ -210,20 +210,20 @@ public class SearchTest {
     @Test // returns results for the engine 'wikiredirect'
     public void testRedirect() throws IOException, XPathExpressionException, JSONException {
         Search search = new Search(index, engines, options);
-        Response response = search.query("wikiredirect.json", null, null, null, null);
+        Response response = search.query("search.json", null, null, null, null);
         int status = response.getStatus();
         String entity = (String) response.getEntity();
         JSONObject json = new JSONObject(entity);
         json = json.getJSONObject("resource");
         Assert.assertEquals(200, status);
-        Assert.assertEquals("wikiredirect", json.get("id"));
+        Assert.assertEquals("search", json.get("id"));
 
         // query redirects:
-        response = search.query("wikiredirect.json", "informat", null, null, null);
+        response = search.query("search.json", "informat", null, null, null);
         status = response.getStatus();
         String location = response.getHeaderString("Location");
         Assert.assertEquals(302, status);
-        Assert.assertEquals("http://searsia.org/searsia/wiki/wikifull1informat.json", location);
+        Assert.assertEquals("http://searsia.org/searsia/search.json?q=informat", location);
         LOGGER.trace("Redirect: " + location);
     }
     

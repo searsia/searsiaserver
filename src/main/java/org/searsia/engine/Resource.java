@@ -84,7 +84,7 @@ public class Resource implements Comparable<Resource> {
     private String postQueryEncode = null;
     private String favicon = null;
     private String banner = null;
-    private String redirect = null;
+    private String directaccess = null;
 	private String itemXpath = null;
 	private String testQuery = defaultTestQuery;
 	private List<TextExtractor> extractors = new ArrayList<>();
@@ -133,7 +133,7 @@ public class Resource implements Comparable<Resource> {
 		if (jo.has("favicon"))         this.favicon         = jo.getString("favicon");
 		if (jo.has("rerank"))          this.rerank          = jo.getString("rerank");
 		if (jo.has("banner"))          this.banner          = jo.getString("banner");
-		if (jo.has("redirect"))        this.redirect        = jo.getString("redirect");
+		if (jo.has("directaccess"))    this.directaccess    = jo.getString("directaccess");
 		if (jo.has("itempath"))        this.itemXpath       = jo.getString("itempath");
         if (jo.has("deleted"))         this.deleted         = jo.getBoolean("deleted");
 		if (jo.has("prior"))           this.prior           = (float) jo.getDouble("prior");
@@ -153,8 +153,8 @@ public class Resource implements Comparable<Resource> {
 				String key = (String) keys.next();
 				addHeader((String) key, (String) json.get(key));
 			}
-			if (this.redirect != null) {
-				throw new IllegalArgumentException("Headers not allowed for Redirect");	
+			if (this.directaccess != null) {
+				throw new IllegalArgumentException("Headers not allowed for DirectAccess");	
 			}
 		}
 		if (jo.has("privateparameters")) {
@@ -164,8 +164,8 @@ public class Resource implements Comparable<Resource> {
 				String key = (String) keys.next();
 				addPrivateParameter((String) key, (String) json.get(key));
 			}
-			if (this.redirect != null) {
-				throw new IllegalArgumentException("Privateparameters not allowed for Redirect");	
+			if (this.directaccess != null) {
+				throw new IllegalArgumentException("Privateparameters not allowed for DirectAcess");	
 			}
 		}
 		if (this.urlAPITemplate != null && this.urlAPITemplate.startsWith("file")) {
@@ -174,12 +174,12 @@ public class Resource implements Comparable<Resource> {
 		if (this.id == null) {
 			throw new IllegalArgumentException("Missing Identifier");
 		}
-		if (this.redirect != null) {
+		if (this.directaccess != null) {
 			if (this.mimeType == null || !this.mimeType.equals(SearchResult.SEARSIA_MIME_TYPE)) {
-				throw new IllegalArgumentException("Only Mime Type Searsia allowed for Redirect");
+				throw new IllegalArgumentException("Only Mime Type Searsia allowed for DirectAccess");
 			}
 			if (this.postString != null) {
-				throw new IllegalArgumentException("Poststring not allowed for Redirect");
+				throw new IllegalArgumentException("Poststring not allowed for DirectAccess");
 			}
 		}
 	}
@@ -327,10 +327,14 @@ public class Resource implements Comparable<Resource> {
 		String thisQuery = this.nextQuery;
 		this.nextQuery = null; // so, nextQuery will be null in case of a searchexception
 		SearchResult result = search(thisQuery, debugInfo);
-        if (this.getRedirect() != null) {
+        if (this.getDirectAccess() != null) {
         	Resource redirectResource = result.getResource();
         	if (redirectResource == null || !this.getId().equals(redirectResource.getId())) {
-        		handleSearchError("Redirected engine must have resource with same Id.", result, debugInfo);
+        		handleSearchError("DirectAccess engine must have resource with same Id.", result, debugInfo);
+        	} else if (!this.getAPITemplate().equals(redirectResource.getAPITemplate())){
+        		handleSearchError("DirectAccess engine must have same APItemplate.", result, debugInfo);
+        	} else if (redirectResource.getDirectAccess() == null) {
+        		handleSearchError("DirectAccess engine must also have 'directaccess'.", result, debugInfo);
         	}
         }
 		if (this.getTestQuery().equals(thisQuery)) {
@@ -424,7 +428,7 @@ public class Resource implements Comparable<Resource> {
 	
 	public String redirectSearch(String query, Integer startPage) throws SearchException {
         if (this.urlAPITemplate == null) {
-            throw new SearchException("No API Redirect Template");
+            throw new SearchException("No API Template");
 		}
         String url = null;
         try {
@@ -924,8 +928,8 @@ public class Resource implements Comparable<Resource> {
 		return prior;
 	}
 
-    public String getRedirect() {
-    	return this.redirect;
+    public String getDirectAccess() {
+    	return this.directaccess;
     }
 
 	public int getNrOfErrors() {
@@ -1055,7 +1059,7 @@ public class Resource implements Comparable<Resource> {
             this.urlUserTemplate = e2.urlUserTemplate;
             this.favicon  = e2.favicon;
             this.banner   = e2.banner;
-            this.redirect = e2.redirect;
+            this.directaccess = e2.directaccess;
             this.urlAPITemplate = e2.urlAPITemplate;
             this.urlSuggestTemplate = e2.urlSuggestTemplate;
             if (e2.mimeType == null) { this.mimeType = SearchResult.SEARSIA_MIME_TYPE; }
@@ -1095,7 +1099,7 @@ public class Resource implements Comparable<Resource> {
             if (urlUserTemplate != null)     engine.put("urltemplate", urlUserTemplate);
             if (favicon != null)             engine.put("favicon", favicon);
             if (banner != null)              engine.put("banner", banner);
-            if (redirect != null)            engine.put("redirect", redirect);
+            if (directaccess != null)            engine.put("directaccess", directaccess);
             if (urlAPITemplate != null)      engine.put("apitemplate", urlAPITemplate);
             if (urlSuggestTemplate != null)  engine.put("suggesttemplate", urlSuggestTemplate);
             if (mimeType != null)            engine.put("mimetype", mimeType);
@@ -1136,7 +1140,7 @@ public class Resource implements Comparable<Resource> {
             if (urlUserTemplate != null)     engine.put("urltemplate", urlUserTemplate);
             if (favicon != null)             engine.put("favicon", favicon);
             if (banner != null)              engine.put("banner", banner);
-            if (redirect != null)            engine.put("redirect", redirect);
+            if (directaccess != null)            engine.put("directaccess", directaccess);
             if (mimeType != null && !mimeType.equals(SearchResult.SEARSIA_MIME_TYPE))
                                              engine.put("mimetype", mimeType);
             if (rerank != null)              engine.put("rerank", rerank);
@@ -1213,7 +1217,7 @@ public class Resource implements Comparable<Resource> {
         if (!stringEquals(this.getRerank(), e.getRerank())) return false;
     	if (!stringEquals(this.getFavicon(), e.getFavicon())) return false;
     	if (!stringEquals(this.getBanner(), e.getBanner())) return false;
-    	if (!stringEquals(this.getRedirect(), e.getRedirect())) return false;
+    	if (!stringEquals(this.getDirectAccess(), e.getDirectAccess())) return false;
     	if (!stringEquals(this.getPostString(), e.getPostString())) return false;
     	if (!stringEquals(this.getPostQueryEncode(), e.getPostQueryEncode())) return false;
     	if (!stringEquals(this.getResultTypes(), e.getResultTypes())) return false;

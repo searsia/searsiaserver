@@ -1,0 +1,11 @@
+{
+  "resource": {
+    "id": "search",
+    "apitemplate": "http://searsia.org/searsia/search.json?q={searchTerms}",
+    "type": "web",
+    "directaccess": "yes",
+    "favicon": "http://searsia.org/images/searsia.png",
+    "mimetype": "application/searsia+json",
+    "name": "Searsia Search",
+  }
+}
