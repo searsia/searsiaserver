@@ -543,6 +543,8 @@ public class Resource implements Comparable<Resource> {
 			document = parseDocumentJavascript(page);
 	    } else if (this.mimeType.equals("application/html+json")) { // html with a json wrapper, yes that's done on the web 
 			document = parseDocumentJSONandHTML(page);
+	    } else if (this.mimeType.equals("application/json+html")) { // json inside an html attribute, yes that's done too 
+			document = parseDocumentHTMLwithJSONattr(page, url);
 	    } else {
 		    throw new IOException("MIME Type not supported: " + this.mimeType);
 		}
@@ -622,6 +624,11 @@ public class Resource implements Comparable<Resource> {
         	jsonString = "{\"list\":" + jsonString + "}";
         }
         return DOMBuilder.jsonAndHtml2DOM(new JSONObject(jsonString));
+    }
+    
+	private Document parseDocumentHTMLwithJSONattr(String htmlString, String urlString) {
+        org.jsoup.nodes.Document jsoupDoc = Jsoup.parse(htmlString, urlString);
+        return DOMBuilder.jsoupAndJson2DOM(jsoupDoc);
     }
 	
     private Document parseDocumentXML(String xmlString) {

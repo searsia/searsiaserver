@@ -32,6 +32,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
@@ -106,6 +107,16 @@ public class DOMBuilder {
    * @return A W3C Document.
    */
   public static Document jsoup2DOM(org.jsoup.nodes.Document jsoupDocument) {
+	return jsoup2DOMparseOption(jsoupDocument, false);
+  }
+
+  
+  public static Document jsoupAndJson2DOM(org.jsoup.nodes.Document jsoupDocument) {
+	return jsoup2DOMparseOption(jsoupDocument, true);
+  }
+
+
+  public static Document jsoup2DOMparseOption(org.jsoup.nodes.Document jsoupDocument, boolean parseJSON) {
     Document document = null;
     try {
       /* Obtain the document builder for the configured XML parser. */
@@ -114,7 +125,7 @@ public class DOMBuilder {
       
       /* Create a document to contain the content. */
       document = docBuilder.newDocument();
-      createDOMfromJsoup(jsoupDocument, document, document, new HashMap<String,String>());
+      createDOMfromJsoup(jsoupDocument, document, document, new HashMap<String,String>(), parseJSON);
     } catch (ParserConfigurationException pce) {
       throw new RuntimeException(pce);
     }
@@ -165,12 +176,12 @@ public class DOMBuilder {
    * @param node The Jsoup node containing the content to copy to the specified W3C {@link Node}.
    * @param out The W3C {@link Node} that receives the DOM content.
    */
-  private static void createDOMfromJsoup(org.jsoup.nodes.Node node, Node out, Document doc, Map<String,String> ns) {
+  private static void createDOMfromJsoup(org.jsoup.nodes.Node node, Node out, Document doc, Map<String,String> ns, boolean parseJSON) {
     if (node instanceof org.jsoup.nodes.Document) {
       
       org.jsoup.nodes.Document d = ((org.jsoup.nodes.Document) node);
       for (org.jsoup.nodes.Node n : d.childNodes()) {
-        createDOMfromJsoup(n, out,doc,ns);
+        createDOMfromJsoup(n, out, doc, ns, parseJSON);
       }
       
     } else if (node instanceof org.jsoup.nodes.Element) {
@@ -199,15 +210,27 @@ public class DOMBuilder {
             }
           }
         }
+        String value = a.getValue();
+        if (parseJSON) {
+        	try {
+                JSONObject jsonObject = new JSONObject(value);
+                org.w3c.dom.Element _e2 = doc.createElement(correctXML(attName));
+                _e.appendChild(_e2);
+                createDOMfromJSONObject(jsonObject, _e2, doc, false);
+                continue;
+        	} catch (JSONException jsonExcept) {
+        		// nothing
+        	}
+        } 
         try {
-          _e.setAttribute(attName, a.getValue());
+          _e.setAttribute(attName, value);
         } catch (DOMException domExcept) {
            continue;
         }
       }
       
       for (org.jsoup.nodes.Node n : e.childNodes()) {
-        createDOMfromJsoup(n, _e, doc,ns);
+        createDOMfromJsoup(n, _e, doc, ns, parseJSON);
       }
       
     } else if (node instanceof org.jsoup.nodes.TextNode) {
