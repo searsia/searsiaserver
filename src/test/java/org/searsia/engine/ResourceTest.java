@@ -130,6 +130,12 @@ public class ResourceTest {
         Assert.assertEquals("mailto:info@searsia.org", result.getHits().get(1).getString("url")); // TODO getUrl instead of getString
     }
 
+    @Test(expected = SearchException.class)
+    public void testSearchUrl() throws XPathExpressionException, SearchException {
+        Resource se = new Resource("http://searsia.org/searsia/wiki/urltest.json");
+      	se.randomSearch();
+    }
+
     @Test
 	public void testSearchJavascript() throws XPathExpressionException, SearchException {
 		Resource se = new Resource("file:src/test/resources/javascript.json").updateFromAPI();

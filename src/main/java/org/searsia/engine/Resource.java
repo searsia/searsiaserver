@@ -291,13 +291,12 @@ public class Resource implements Comparable<Resource> {
     }
 
     
-    private static boolean wrongUrl(Hit hit) {
+    private boolean wrongUrl(Hit hit) {
         String urlString = hit.getUrl();
         if (urlString == null) { return false; }
         try {
-            URL url = new URL(urlString);
-            URLConnection connection = url.openConnection();
-            connection.connect();
+        	Map <String, String> headers = new HashMap<String, String>();
+        	getCompletePage(urlString, null, headers);
         } catch (Exception e) {
             return true;
         }
