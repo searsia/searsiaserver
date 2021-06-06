@@ -291,16 +291,29 @@ public class Resource implements Comparable<Resource> {
     }
 
     
-    private boolean wrongUrl(Hit hit) {
+    private boolean checkHitUrl(Hit hit) throws IOException {
         String urlString = hit.getUrl();
         if (urlString == null) { return false; }
-        try {
-        	Map <String, String> headers = new HashMap<String, String>();
-        	getCompletePage(urlString, null, headers);
-        } catch (Exception e) {
-            return true;
+        URL obj = new URL(urlString);
+        HttpURLConnection http = (HttpURLConnection) obj.openConnection();
+        http.setReadTimeout(7000);
+        http.addRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+        http.addRequestProperty("Accept-Language", "nl,en-US;q=0.7,en;q=0.3");
+        http.addRequestProperty("Accept-Encoding", "gzip, deflate, br");
+        http.addRequestProperty("User-Agent", "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:88.0) Gecko/20100101 Firefox/88.0");
+        http.addRequestProperty("Referer", "https://drsheetmusic.com/");
+        http.addRequestProperty("DNT", "1");
+        http.addRequestProperty("Upgrade-Insecure-Requests", "1");
+        http.addRequestProperty("Connection", "keep-alive");
+        http.setInstanceFollowRedirects(true);
+        http.setRequestMethod("GET");
+        http.connect();
+        int status = http.getResponseCode();
+        String message = http.getResponseMessage();
+        if (status >= 400) {
+            throw new IOException(message);
         }
-        return false;
+        return true;
     }
 
 
@@ -344,8 +357,10 @@ public class Resource implements Comparable<Resource> {
                 }
                 handleSearchError(message, result, debugInfo);
             } else {
-                if (wrongUrl(result.getHits().get(0))) {
-                    handleSearchError("Url in first result cannot be found.", result, debugInfo);
+            	try {
+                    checkHitUrl(result.getHits().get(0));
+            	} catch (Exception e){
+                    handleSearchError("Error getting url in first result: " + e.getMessage(), result, debugInfo);
                 }
                 for (Hit hit: result.getHits()) {
                     if ((hit.getTitle() == null || hit.getTitle().equals("")) && 

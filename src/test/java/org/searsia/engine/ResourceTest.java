@@ -131,9 +131,20 @@ public class ResourceTest {
     }
 
     @Test(expected = SearchException.class)
-    public void testSearchUrl() throws XPathExpressionException, SearchException {
-        Resource se = new Resource("http://searsia.org/searsia/wiki/urltest.json");
+    public void testSearchUrlWrong() throws XPathExpressionException, SearchException {
+        Resource se = new Resource("http://searsia.org/searsia/wiki/urltest.json").updateFromAPI();
       	se.randomSearch();
+    }
+
+    @Test
+    public void testSearchUrlRight() throws XPathExpressionException, SearchException {
+        Resource se = new Resource("http://searsia.org/searsia/wiki/urltest.json").updateFromAPI();
+        SearchResult result = se.search("url pretty please");
+      	Assert.assertEquals(5, result.getHits().size());
+      	Assert.assertEquals("http://searsia.org/blog/2017-12-14-searsia-version-1/index.html", result.getHits().get(1).getUrl());
+      	Assert.assertEquals("http://searsia.org/blog/2018-01-19-web-search-no-tracking/index.html", result.getHits().get(2).getUrl());
+      	Assert.assertEquals("http://searsia.org/searsia/wiki/2017-11-30-ethical-search-advertising/", result.getHits().get(3).getUrl());
+      	Assert.assertEquals("http://searsia.org/blog/2017-11-24-searsia-at-dir/", result.getHits().get(4).getUrl());
     }
 
     @Test

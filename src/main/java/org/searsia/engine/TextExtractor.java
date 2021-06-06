@@ -49,11 +49,17 @@ public class TextExtractor {
 		compiledXpath = xp.compile(this.xpath);
 	}
 
+	// TODO: This should be moved to Resource, so it also works on Searsia resources
 	private String absoluteUrl(String baseUrl, String url) {
-	    if (baseUrl != null && url != null && !(url.startsWith("http://") || url.startsWith("https://"))) {
+		if (baseUrl != null && url != null && !(url.startsWith("http://") || url.startsWith("https://"))) {
 	        if (url.startsWith("/")) {
-	            int index = baseUrl.indexOf("/", 10); // after "https://"
-	            if (index != -1) {
+	        	int index;
+	        	if (url.startsWith("//")) {
+		            index = baseUrl.indexOf(":") + 1;
+	        	} else {
+		            index = baseUrl.indexOf("/", 10); // after "https://"		            
+	        	}
+	        	if (index != -1) {
 	                baseUrl = baseUrl.substring(0, index);
 	            }
 	        } else {
