@@ -16,6 +16,8 @@
 
 package org.searsia;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -127,6 +129,8 @@ public class Hit implements Comparable<Hit> {
             score = (float) scoreObject;
         } else if (scoreObject instanceof Double) {
             score = (float) ((double) scoreObject); 
+        } else if (scoreObject instanceof BigDecimal || scoreObject instanceof BigInteger) {
+            score = new BigDecimal(scoreObject.toString()).floatValue();
         } else if (scoreObject instanceof Integer) {
             score = (float) ((int) scoreObject); 
         } else if (scoreObject instanceof String) {
