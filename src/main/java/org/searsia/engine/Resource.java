@@ -296,17 +296,16 @@ public class Resource implements Comparable<Resource> {
         if (urlString == null) { return false; }
         URL obj = new URL(urlString);
         HttpURLConnection http = (HttpURLConnection) obj.openConnection();
-        http.setReadTimeout(7000);
         http.addRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
         http.addRequestProperty("Accept-Language", "nl,en-US;q=0.7,en;q=0.3");
         http.addRequestProperty("Accept-Encoding", "gzip, deflate, br");
         http.addRequestProperty("User-Agent", "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:88.0) Gecko/20100101 Firefox/88.0");
-        http.addRequestProperty("Referer", "https://drsheetmusic.com/");
         http.addRequestProperty("DNT", "1");
         http.addRequestProperty("Upgrade-Insecure-Requests", "1");
         http.addRequestProperty("Connection", "keep-alive");
-        http.setInstanceFollowRedirects(true);
+        http.setInstanceFollowRedirects(false); // true may lead to redirect loops because cookies are not handled
         http.setRequestMethod("GET");
+        http.setReadTimeout(7000);
         http.connect();
         int status = http.getResponseCode();
         String message = http.getResponseMessage();
