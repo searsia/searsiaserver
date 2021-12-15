@@ -21,6 +21,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.logging.Logger;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.OPTIONS;
@@ -30,7 +31,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
-import org.apache.log4j.Logger;
 import org.json.JSONObject;
 import org.searsia.SearchResult;
 import org.searsia.SearsiaOptions;
@@ -48,7 +48,7 @@ import org.searsia.engine.SearchException;
 @Path("searsia")
 public class Search {
 
-    private final static Logger LOGGER = Logger.getLogger(Search.class);
+    private final static Logger LOGGER = Logger.getLogger(Search.class.getName());
     private final static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
     private final static String startTime = dateFormat.format(new Date());
 	
@@ -85,7 +85,7 @@ public class Search {
 	                      @QueryParam("type")       String resultType,
                           @QueryParam("resources")  String countResources, 
 	                      @QueryParam("page")       String startPage) {
-        LOGGER.trace("Web call " + resourceid + ": " + searchTerms + ", " + resultType);
+        LOGGER.finest("Web call " + resourceid + ": " + searchTerms + ", " + resultType);
         resourceid = resourceid.replaceAll("\\.json$", "");
 		Resource me = engines.getMyself();
 		if (!resourceid.equals(me.getId())) {
@@ -126,19 +126,19 @@ public class Search {
                     engines.put(engine);
                 } catch (SearchException e) {
                     if (engine != null) {
-                        LOGGER.warn("Not found at mother: " + resourceid);
+                        LOGGER.warning("Not found at mother: " + resourceid);
                     }
                 }
             }
             if (engine == null) {
                 String message = "Not found: " + resourceid;
-                LOGGER.warn(message);
+                LOGGER.warning(message);
                 return SearsiaApplication.responseError(404, message);
             }
         }
         if (engine.isDeleted()) {
             String message = "Gone: " + resourceid;
-            LOGGER.warn(message);
+            LOGGER.warning(message);
             return SearsiaApplication.responseError(410, message);
         }
         
@@ -164,7 +164,7 @@ public class Search {
                 }
             } catch (Exception e) {
                 String message = "Resource " + resourceid + " unavailable: " + e.getMessage();
-                LOGGER.warn(message);
+                LOGGER.warning(message);
                 return SearsiaApplication.responseError(503, message);
             }
         } else {
@@ -187,13 +187,13 @@ public class Search {
         Resource mother = engines.getMother();
         Resource me     = engines.getMyself();
         SearchResult result = null;
-        LOGGER.trace("Local query: " + query + ", " + type);
+        LOGGER.finest("Local query: " + query + ", " + type);
         if (query != null && query.trim().length() > 0) {
             try {
                 result = index.search(query); // TODO: pass on type.
             } catch (Exception e) {
                 String message = "Service unavailable: " + e.getMessage();
-                LOGGER.warn(message);
+                LOGGER.warning(message);
                 this.nrOfQueriesError += 1;
                 return SearsiaApplication.responseError(503, message);
             }
@@ -203,9 +203,9 @@ public class Search {
                     result  = mother.search(query);
                     index.offer(result);  // really trust mother
                 } catch (SearchException e) {
-                    LOGGER.warn("Mother not available");
+                    LOGGER.warning("Mother not available");
                 } catch (Exception e) {
-                    LOGGER.warn(e);
+                    LOGGER.warning(e.toString());
                 }
             }
             result.scoreResourceSelection(query, type, engines, max, start);

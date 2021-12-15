@@ -3,9 +3,11 @@ package org.searsia.index;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import org.apache.log4j.Logger;
-import org.apache.log4j.varia.NullAppender;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Assert;
@@ -28,8 +30,12 @@ public class SearchResultIndexTest {
       
     @BeforeClass
     public static void setUp() throws Exception {
-    	LOGGER.removeAllAppenders();
-    	LOGGER.addAppender(new NullAppender());
+    	Handler[] handlers = LOGGER.getHandlers();
+    	for(Handler handler : handlers) {
+    	  LOGGER.removeHandler(handler);
+    	}
+    	LOGGER.addHandler(new ConsoleHandler());
+    	LOGGER.setLevel(Level.SEVERE);
     	index = new SearchResultIndex(PATH, INDEX, 10);
         SearchResult result = readFile("exampleSearchResult.json");
         index.offer(result);

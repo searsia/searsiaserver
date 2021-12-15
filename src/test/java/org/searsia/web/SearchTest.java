@@ -1,16 +1,15 @@
 package org.searsia.web;
 
 import java.io.IOException;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import java.util.logging.Handler;
 
 import javax.ws.rs.core.Response;
 import javax.xml.xpath.XPathExpressionException;
 
-import org.apache.log4j.Appender;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-import org.apache.log4j.varia.NullAppender;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -18,6 +17,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.searsia.SearsiaOptions;
 import org.searsia.index.SearchResultIndex;
 import org.searsia.index.ResourceIndex;
@@ -62,15 +62,18 @@ public class SearchTest {
 
     @BeforeClass
     public static void setUp() throws Exception {
-        Appender appender = null;
-    	LOGGER.removeAllAppenders();
-    	if (letsLog) {
-    	    appender = new ConsoleAppender(new PatternLayout("%m%n"), ConsoleAppender.SYSTEM_ERR);
-    	} else {
-    	    appender = new NullAppender();  // thou shall not log
+    	Handler[] handlers = LOGGER.getHandlers();
+    	for(Handler handler : handlers) {
+    	  LOGGER.removeHandler(handler);
     	}
-    	LOGGER.addAppender(appender);
-        LOGGER.setLevel(Level.ALL);
+    	Handler handler = new ConsoleHandler();
+    	handler.setFormatter(new SimpleFormatter());
+    	LOGGER.addHandler(handler);
+    	if (letsLog) {
+        	LOGGER.setLevel(Level.ALL);
+    	} else {
+        	LOGGER.setLevel(Level.SEVERE);
+    	}
     	index = new SearchResultIndex(PATH, INDEX, 10);
     	engines = new ResourceIndex(PATH, INDEX);
     	options = new SearsiaOptions();
@@ -90,7 +93,7 @@ public class SearchTest {
         String entity = (String) response.getEntity();
         JSONObject json = new JSONObject(entity);
         Assert.assertEquals(410, status);
-        LOGGER.trace("No result: " + json);        
+        LOGGER.finest("No result: " + json);        
         index.close();    	
     }
    
@@ -126,7 +129,7 @@ public class SearchTest {
 		Assert.assertTrue(hits.length() == 4);
 		Assert.assertEquals("http://searsia.org", url);
 		Assert.assertNotNull(json.get("resource"));		
-		LOGGER.trace("Local result: " + json.toString());
+		LOGGER.finest("Local result: " + json.toString());
 		
 		response = search.query("wiki.json", "searsia", "blog", null, null);
         status = response.getStatus();
@@ -134,7 +137,7 @@ public class SearchTest {
         json = new JSONObject(entity);
         hits  = json.getJSONArray("hits");
         Assert.assertTrue(hits.length() == 2);
-        LOGGER.trace("Local blog result: " + json.toString());
+        LOGGER.finest("Local blog result: " + json.toString());
 	}
     
     @Test // returns local resource 'wrong' 
@@ -148,7 +151,7 @@ public class SearchTest {
 		Assert.assertEquals(200, status);
 		Assert.assertTrue(json.has("health"));
 		Assert.assertEquals(wrong().getAPITemplate(), resource.get("apitemplate"));
-		LOGGER.trace("Wrong: " + resource.toString());
+		LOGGER.finest("Wrong: " + resource.toString());
 	}
     
     @Test // returns local resource 'wrong' without apitemplate and health 
@@ -162,7 +165,7 @@ public class SearchTest {
 		JSONObject resource  = (JSONObject) json.get("resource");
 		Assert.assertFalse(json.has("health"));
 		Assert.assertFalse(resource.has("apitemplate"));
-        LOGGER.trace("Wrong limited: " + resource.toString());
+        LOGGER.finest("Wrong limited: " + resource.toString());
 	}
     
     @Test // returns resource 'wikididyoumean' (from mother)
@@ -195,7 +198,7 @@ public class SearchTest {
         Assert.assertEquals(200, status);
         Assert.assertNotNull(json.get("hits"));
         Assert.assertNotNull(json.get("resource"));
-        LOGGER.trace("Query result: " + json);
+        LOGGER.finest("Query result: " + json);
         
         response = search.query("wikifull1.json", "informat", null, null, null);
         status = response.getStatus();
@@ -204,7 +207,7 @@ public class SearchTest {
         Assert.assertEquals(200, status);
         Assert.assertNotNull(json.get("hits"));
         Assert.assertNotNull(json.get("resource"));
-        LOGGER.trace("Cache result: " + json);
+        LOGGER.finest("Cache result: " + json);
     }
     
     @Test // returns results for the engine 'wikiredirect'
@@ -224,7 +227,7 @@ public class SearchTest {
         String location = response.getHeaderString("Location");
         Assert.assertEquals(302, status);
         Assert.assertEquals("http://searsia.org/searsia/search.json?q=informat", location);
-        LOGGER.trace("Redirect: " + location);
+        LOGGER.finest("Redirect: " + location);
     }
     
 

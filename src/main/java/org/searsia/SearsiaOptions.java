@@ -18,8 +18,8 @@ package org.searsia;
 
 import java.io.File;
 import java.net.MalformedURLException;
+import java.util.logging.Level;
 
-import org.apache.log4j.Level;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -242,12 +242,12 @@ public class SearsiaOptions {
     public Level getLoggerLevel() {
     	switch(logLevel) {
         	case 0 : return Level.OFF; 
-        	case 1 : return Level.ERROR; // or FATAL we don't care
-    	    case 2 : return Level.WARN;
+        	case 1 : return Level.SEVERE;
+    	    case 2 : return Level.WARNING;
     	    case 3 : return Level.INFO;
-    	    case 4 : return Level.DEBUG;
-    	    case 5 : return Level.TRACE;
-    	    default: return Level.WARN;    	   
+    	    case 4 : return Level.FINE;
+    	    case 5 : return Level.ALL;
+    	    default: return Level.WARNING;    	   
     	}
     }
     

@@ -17,6 +17,8 @@
 package org.searsia.web;
 
 import java.io.IOException;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 import javax.ws.rs.core.Response;
 
@@ -33,7 +35,7 @@ import org.searsia.index.ResourceIndex;
  */
 public class SearsiaApplication extends ResourceConfig {
 
-	public static final String VERSION = "v1.4.0";
+	public static final String VERSION = "v1.4.1";
 
 	protected static Response responseOk(JSONObject json) {
 		json.put("searsia", VERSION);
@@ -78,7 +80,7 @@ public class SearsiaApplication extends ResourceConfig {
 			                  ResourceIndex engines, 
 			                  SearsiaOptions options) throws IOException {
 		super();
-		java.util.logging.Logger.getLogger("").setLevel(java.util.logging.Level.OFF);
+		Logger.getLogger("").setLevel(Level.OFF);
 		register(new Search(index, engines, options));
 		register(new OpenSearch(engines, options.isNotShared()));
         register(new Redirect(engines.getMyself().getId()));

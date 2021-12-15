@@ -1,11 +1,13 @@
 package org.searsia.index;
 
 import java.io.IOException;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.Handler;
 
 import javax.xml.xpath.XPathExpressionException;
 
-import org.apache.log4j.Logger;
-import org.apache.log4j.varia.NullAppender;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Assert;
@@ -24,8 +26,12 @@ public class ResourceIndexTest {
    
     @BeforeClass
     public static void setUp() throws Exception {
-        LOGGER.removeAllAppenders();
-        LOGGER.addAppender(new NullAppender());
+    	Handler[] handlers = LOGGER.getHandlers();
+    	for(Handler handler : handlers) {
+    	  LOGGER.removeHandler(handler);
+    	}
+    	LOGGER.addHandler(new ConsoleHandler());
+    	LOGGER.setLevel(Level.SEVERE);
     	engines = new ResourceIndex(PATH, INDEX);
     	Resource engine = searsia();
     	engines.putMother(engine);

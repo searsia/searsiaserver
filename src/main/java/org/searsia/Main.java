@@ -25,12 +25,13 @@ import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.logging.SimpleFormatter;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
-import org.apache.log4j.Appender;
-import org.apache.log4j.DailyRollingFileAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.searsia.index.SearchResultIndex;
@@ -56,6 +57,7 @@ import org.searsia.engine.SearchException;
  * @author Djoerd Hiemstra and Dolf Trieschnigg
  * 
  */
+
 public class Main {
 	
 	private static final Logger LOGGER = Logger.getLogger("org.searsia");
@@ -74,7 +76,7 @@ public class Main {
                 	SearchResult result = null;
                 	if (mother != null && random.nextBoolean()) { // sample mostly from mother
                 		engine = mother;
-                        LOGGER.trace("Next: mother sample");
+                        LOGGER.finest("Next: mother sample");
                        	result = engine.randomSearch();
                         Resource newmother = result.getResource();
                         if (newmother != null && newmother.getId().equals(mother.getId())) {
@@ -84,12 +86,12 @@ public class Main {
                             engines.putMother(newmother);
                             engines.putMyself(newmother.getLocalResource());
                         } else {
-                            LOGGER.warn("Unable to update mother: Did ids change?");
+                            LOGGER.warning("Unable to update mother: Did ids change?");
                         }
                         getResources(mother, result, engines);
                 	} else {
                     	engine = engines.getRandom();
-                        LOGGER.trace("Next sample: " + engine.getId());
+                        LOGGER.finest("Next sample: " + engine.getId());
                        	result = engine.randomSearch();
         				result.removeResource();     // only trust your mother
         				result.addResourceDate(engine.getId());
@@ -99,9 +101,9 @@ public class Main {
                 }
             } catch (Exception e) {
                 if (engine != null) {
-                	LOGGER.warn("Sampling " + engine.getId() + " failed: " + e.getMessage());
+                	LOGGER.warning("Sampling " + engine.getId() + " failed: " + e.getMessage());
                 } else {
-                    LOGGER.warn("Flushing index to disk failed:" + e.getMessage());
+                    LOGGER.warning("Flushing index to disk failed:" + e.getMessage());
                 }
             }
         }
@@ -119,17 +121,17 @@ public class Main {
     	    	     try {
     	    	         engine = mother.searchResource(rid);
     	    	     } catch (SearchException e) {
-    	    	         LOGGER.warn("Warning: Update failed: " + e.getMessage());
+    	    	         LOGGER.warning("Warning: Update failed: " + e.getMessage());
     	    	     }
                      if (engine != null && rid.equals(engine.getId())) { 
                          engines.put(engine);
                          if (engine.isDeleted()) {
-                             LOGGER.debug("Deleted: " + rid);
+                             LOGGER.fine("Deleted: " + rid);
                          } else {
-                             LOGGER.debug("Updated: " + rid);
+                             LOGGER.fine("Updated: " + rid);
                          }
                      } else {
-                         LOGGER.warn("Warning: Resource not found: " + rid);
+                         LOGGER.warning("Warning: Resource not found: " + rid);
                      }
     	         }
      	     } 
@@ -303,13 +305,13 @@ public class Main {
 		if (!Files.exists(logDir)) {
 			Files.createDirectories(logDir);
 		}
-		Appender appender = new DailyRollingFileAppender(
-				new PatternLayout("%p %d{ISO8601} %m%n"),
-				logDir.resolve("searsia.log").toString(),
-				"'.'yyyy-MM-dd");
-		LOGGER.addAppender(appender);
+		String fileName = logDir.resolve("searsia.log").toString();
+        Handler fileHandler = new FileHandler(fileName, 1048576, 100, true);
+        fileHandler.setFormatter(new SimpleFormatter());
+        LogManager.getLogManager().reset();
+		LOGGER.addHandler(fileHandler);
 		LOGGER.setLevel(level);
-		LOGGER.warn("Searsia restart");
+		LOGGER.warning("Searsia restart");
 	}
 
 
@@ -386,7 +388,6 @@ public class Main {
         } else {
         	printMessage("Starting: " + myself.getName() + " (" + myself.getId() + ")", options.isQuiet());
         }
-
 
         // Create or open indexes. The filename appends the MD5 of the id so we don't confuse indexes
         try {

@@ -24,10 +24,10 @@ import java.text.ParseException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.logging.Logger;
 
 import javax.xml.xpath.XPathExpressionException;
 
-import org.apache.log4j.Logger;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -83,7 +83,7 @@ public class ResourceIndex {
 			try {
         		this.me = readMyselfFile(meFile);
 			} catch (IOException e) {
-				LOGGER.warn("Myself not found: " + e.getMessage());
+				LOGGER.warning("Myself not found: " + e.getMessage());
         		meFile.toFile().delete();
         	}
 		}
@@ -127,7 +127,7 @@ public class ResourceIndex {
             reader = DirectoryReader.open(dir); 
         }
         catch (org.apache.lucene.index.IndexNotFoundException e) { 
-            LOGGER.warn("No resources in index.");
+            LOGGER.warning("No resources in index.");
             return;
         }
         try {
@@ -147,7 +147,7 @@ public class ResourceIndex {
                     }
                     this.engines.put(engine.getId(), engine);
                 } catch (XPathExpressionException | JSONException | ParseException e) { 
-                  LOGGER.warn("Garbled index: " + e.getLocalizedMessage());	
+                  LOGGER.warning("Garbled index: " + e.getLocalizedMessage());	
                 }
             }
         } catch (IOException e) {
@@ -307,7 +307,7 @@ public class ResourceIndex {
 		try {
 			writeMyselfFile(me);
 		} catch (IOException e) {
-			LOGGER.error("Could not write resource index file");
+			LOGGER.severe("Could not write resource index file");
 		}
 		this.me = me;
 	}
@@ -367,7 +367,7 @@ public class ResourceIndex {
         	    LOGGER.info("Flushed resources to disk.");
 	        }
 	    } catch (Exception e) {
-	        LOGGER.warn("Flushing resource index failed: " + e);
+	        LOGGER.warning("Flushing resource index failed: " + e);
 	    }
 	}
 	
