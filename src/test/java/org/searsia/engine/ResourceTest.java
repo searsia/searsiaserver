@@ -133,6 +133,15 @@ public class ResourceTest {
         Assert.assertEquals("mailto:info@searsia.org", result.getHits().get(1).getString("url")); // TODO getUrl instead of getString
     }
 
+    @Test
+    public void testSearchJsonUnicode() throws XPathExpressionException, SearchException {
+        Resource se = new Resource("http://searsia.org/searsia/wiki/wikifull1{searchTerms}.json");
+        SearchResult result = se.search("unicode");
+        Assert.assertEquals(3, result.getHits().size());
+        Assert.assertEquals("Naïeve ingrediënten überhaupt vóór hè?", result.getHits().get(0).getDescription());
+        Assert.assertEquals("عشق و صلح", result.getHits().get(1).getTitle());
+    }
+
     @Test(expected = SearchException.class)
     public void testSearchUrlWrong() throws XPathExpressionException, SearchException {
         Resource se = new Resource("http://searsia.org/searsia/wiki/urltest.json").updateFromAPI();

@@ -102,6 +102,7 @@ public class SearchResultIndexTest {
         Hit hit1 = result.getHits().get(0);
 		Assert.assertEquals(6, result.getHits().size());
 		Assert.assertTrue(hit1.getTitle().startsWith("Ilya")); // title match gets boost
+		Assert.assertTrue(hit1.getDescription().contains("Università"));
     }
     
     @Test  // test hit lookup (not used currently)
