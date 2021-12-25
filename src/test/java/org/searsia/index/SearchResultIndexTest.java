@@ -3,6 +3,7 @@ package org.searsia.index;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -46,7 +47,7 @@ public class SearchResultIndexTest {
     private static SearchResult readFile(String fileString) throws IOException {
         SearchResult result = new SearchResult();       
         String s, jsonString = "";       // TODO: Does the following file name work in Windows?
-        BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/" + fileString)); 
+        BufferedReader reader = new BufferedReader(new FileReader("src/test/resources/" + fileString, StandardCharsets.UTF_8));
         try {
             while ((s = reader.readLine()) != null) {
             	jsonString += s;
